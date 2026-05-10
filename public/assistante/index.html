@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SomnoHub Assistante">
+  <meta name="theme-color" content="#1a3d2b">
+  <link rel="manifest" href="/manifest-assistante.json">
+  <link rel="apple-touch-icon" href="/icons/icon-192.svg">
+  <title>SomnoHub — Assistante</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #1a3d2b; --primary-light: #2d6a4f;
+      --accent: #52b788; --accent-light: #b7e4c7;
+      --bg: #f0f4f2; --white: #fff;
+      --text: #1c2b22; --text-mid: #4a5e53; --text-light: #7a9186;
+      --border: #d4e0d9;
+      --shadow: 0 2px 12px rgba(26,61,43,.10);
+      --shadow-lg: 0 8px 32px rgba(26,61,43,.14);
+      --radius: 16px;
+      --disponible: #2d6a4f;
+      --hors-service: #c62828;
+    }
+    * { -webkit-tap-highlight-color: transparent; }
+    html { font-size: 16px; }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      min-height: 100dvh;
+      overscroll-behavior: none;
+    }
+
+    /* ── APP SHELL ── */
+    .app {
+      display: flex; flex-direction: column;
+      min-height: 100vh; min-height: 100dvh;
+      max-width: 500px; margin: 0 auto;
+      background: var(--bg);
+    }
+
+    /* ── HEADER ── */
+    .header {
+      background: var(--primary);
+      color: var(--white);
+      padding: env(safe-area-inset-top, 0) 0 0;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .header-inner {
+      padding: 14px 18px 14px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .header-brand { font-size: 1.15rem; font-weight: 800; letter-spacing: -.3px; }
+    .header-brand span { color: var(--accent-light); }
+    .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+    .header-name { font-size: .82rem; opacity: .85; font-weight: 500; }
+    .btn-logout {
+      background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2);
+      color: var(--white); padding: 4px 10px; border-radius: 7px;
+      font-size: .72rem; font-weight: 600; cursor: pointer; font-family: inherit;
+    }
+
+    /* ── MAIN ── */
+    .main {
+      flex: 1;
+      padding: 16px 14px 100px;
+      display: flex; flex-direction: column; gap: 14px;
+    }
+
+    /* ── SCANNER CARD ── */
+    .scanner-card {
+      background: var(--white);
+      border-radius: 20px;
+      box-shadow: var(--shadow-lg);
+      border: 1.5px solid var(--border);
+      overflow: hidden;
+    }
+    .scanner-card-header {
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      padding: 24px 20px 20px;
+      text-align: center;
+      color: var(--white);
+    }
+    .scanner-card-icon {
+      width: 68px; height: 68px;
+      background: rgba(255,255,255,.15);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.8rem;
+      margin: 0 auto 14px;
+      border: 2px solid rgba(255,255,255,.25);
+    }
+    .scanner-card-title {
+      font-size: 1.05rem; font-weight: 700; margin-bottom: 6px;
+    }
+    .scanner-card-desc {
+      font-size: .82rem; opacity: .75; line-height: 1.5;
+    }
+    .scanner-card-body { padding: 20px; }
+
+    /* ── QR ZONE ── */
+    .qr-area {
+      background: #000; border-radius: 14px;
+      overflow: hidden; position: relative;
+      display: none; aspect-ratio: 1; margin-bottom: 14px;
+    }
+    .qr-area.active { display: block; }
+    #qr-reader-assist { width: 100%; }
+    #qr-reader-assist video { width: 100% !important; object-fit: cover; }
+    #qr-reader-assist canvas { display: none !important; }
+    .qr-overlay {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      pointer-events: none;
+    }
+    .qr-frame {
+      width: 58%; aspect-ratio: 1;
+      border: 3px solid var(--accent);
+      border-radius: 14px;
+      box-shadow: 0 0 0 3000px rgba(0,0,0,.48);
+    }
+    .btn-close-scan {
+      background: rgba(255,255,255,.92); color: var(--primary);
+      border: none; padding: 12px; border-radius: 10px;
+      font-size: .85rem; font-weight: 700; width: 100%;
+      cursor: pointer; font-family: inherit;
+    }
+
+    /* ── BOUTON SCAN ── */
+    .btn-scan-main {
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      color: var(--white); border: none;
+      padding: 18px; border-radius: 14px;
+      font-size: 1rem; font-weight: 700; width: 100%;
+      cursor: pointer; display: flex; align-items: center;
+      justify-content: center; gap: 10px;
+      transition: all .18s; font-family: inherit;
+      box-shadow: 0 4px 16px rgba(26,61,43,.3);
+    }
+    .btn-scan-main:active { transform: scale(.97); }
+    .btn-scan-main:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+    .btn-scan-icon { font-size: 1.2rem; }
+
+    /* ── SAISIE MANUELLE ── */
+    .manual-section {
+      margin-top: 16px; padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+    .manual-label {
+      font-size: .76rem; color: var(--text-light);
+      font-weight: 600; margin-bottom: 8px;
+      text-transform: uppercase; letter-spacing: .4px;
+    }
+    .manual-row { display: flex; gap: 8px; }
+    .manual-row input {
+      flex: 1; padding: 13px 14px;
+      border: 1.5px solid var(--border); border-radius: 12px;
+      font-size: .92rem; font-family: monospace; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1.5px; outline: none;
+      color: var(--primary);
+    }
+    .manual-row input:focus { border-color: var(--accent); }
+    .btn-manual-ok {
+      background: var(--accent); color: var(--primary);
+      border: none; border-radius: 12px;
+      padding: 13px 18px; font-size: .9rem; font-weight: 800;
+      cursor: pointer; font-family: inherit; white-space: nowrap;
+    }
+
+    /* ── RESULT SHEET ── */
+    .result-sheet {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      max-width: 500px; margin: 0 auto;
+      background: var(--white);
+      border-radius: 24px 24px 0 0;
+      padding: 24px 24px calc(28px + env(safe-area-inset-bottom, 0));
+      box-shadow: 0 -8px 40px rgba(0,0,0,.18);
+      z-index: 300;
+      transform: translateY(110%);
+      transition: transform .35s cubic-bezier(.34,1.56,.64,1);
+    }
+    .result-sheet.show { transform: translateY(0); }
+    .result-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+    .result-icon-big { font-size: 3.2rem; text-align: center; margin-bottom: 10px; }
+    .result-title { font-size: 1.05rem; font-weight: 700; text-align: center; }
+    .result-sub { font-size: .85rem; color: var(--text-light); text-align: center; margin-top: 6px; line-height: 1.5; }
+    .result-sheet.ok { background: #f0fff8; }
+    .result-sheet.ok .result-title { color: #1b5e20; }
+    .result-sheet.err { background: #fff0f0; }
+    .result-sheet.err .result-title { color: #b71c1c; }
+    .btn-result-close {
+      width: 100%; margin-top: 20px;
+      background: var(--primary); color: var(--white);
+      border: none; border-radius: 14px;
+      padding: 16px; font-size: .95rem; font-weight: 700;
+      cursor: pointer; font-family: inherit;
+    }
+
+    /* ── HISTORIQUE ── */
+    .history-card {
+      background: var(--white);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .history-header {
+      padding: 14px 16px 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .history-header-title {
+      font-size: .82rem; font-weight: 700; color: var(--text-mid);
+      text-transform: uppercase; letter-spacing: .5px;
+      display: flex; align-items: center; gap: 7px;
+    }
+    .history-count {
+      background: var(--accent-light); color: var(--primary);
+      font-size: .75rem; font-weight: 800;
+      padding: 2px 9px; border-radius: 10px;
+    }
+    .history-list { padding: 4px 0; }
+    .history-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      transition: background .1s;
+    }
+    .history-item:last-child { border-bottom: none; }
+    .history-item:active { background: var(--bg); }
+    .history-boitier {
+      background: #e8f5ee; color: var(--primary);
+      padding: 5px 11px; border-radius: 9px;
+      font-size: .82rem; font-weight: 800; font-family: monospace;
+      letter-spacing: .5px; flex-shrink: 0;
+    }
+    .history-info { flex: 1; min-width: 0; }
+    .history-label { font-size: .88rem; font-weight: 600; color: var(--text); }
+    .history-time { font-size: .75rem; color: var(--text-light); margin-top: 2px; }
+    .history-ok { color: var(--disponible); font-size: 1.1rem; flex-shrink: 0; }
+    .history-empty {
+      text-align: center; padding: 28px 20px;
+      font-size: .85rem; color: var(--text-light);
+    }
+    .history-empty .e-icon { font-size: 2rem; margin-bottom: 8px; }
+
+    /* ── STATS ── */
+    .stats-bar {
+      background: var(--white); border-radius: 14px;
+      border: 1px solid var(--border); display: flex; overflow: hidden;
+    }
+    .stats-bar-item { flex: 1; padding: 14px 8px; text-align: center; border-right: 1px solid var(--border); }
+    .stats-bar-item:last-child { border: none; }
+    .stats-val { font-size: 1.4rem; font-weight: 800; color: var(--primary); }
+    .stats-lbl { font-size: .65rem; color: var(--text-light); font-weight: 600; text-transform: uppercase; letter-spacing: .3px; margin-top: 3px; }
+
+    /* ── BOTTOM BAR ── */
+    .bottom-bar {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 500px;
+      background: var(--white);
+      border-top: 1px solid var(--border);
+      padding: 10px 20px calc(10px + env(safe-area-inset-bottom, 0));
+      display: flex; align-items: center; justify-content: center;
+      z-index: 40;
+    }
+    .btn-scan-fab {
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      color: var(--white); border: none;
+      padding: 14px 32px; border-radius: 50px;
+      font-size: .95rem; font-weight: 700;
+      cursor: pointer; font-family: inherit;
+      display: flex; align-items: center; gap: 10px;
+      box-shadow: 0 4px 18px rgba(26,61,43,.3);
+      transition: all .18s;
+    }
+    .btn-scan-fab:active { transform: scale(.95); }
+
+    /* ── SPINNER ── */
+    .spinner {
+      width: 28px; height: 28px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      margin: 0 auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── TOAST ── */
+    #toast-container {
+      position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+      z-index: 500; display: flex; flex-direction: column; gap: 8px;
+      pointer-events: none; width: 90%; max-width: 400px;
+    }
+    .toast {
+      padding: 12px 18px; border-radius: 12px;
+      font-size: .88rem; font-weight: 600;
+      text-align: center; animation: toastIn .25s ease;
+      pointer-events: none;
+    }
+    @keyframes toastIn { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: none; } }
+    .toast-error { background: #ffebee; color: #b71c1c; border: 1px solid #ef9a9a; }
+    .toast-info { background: var(--primary); color: var(--white); }
+
+    @media (min-width: 501px) {
+      .app { border-left: 1px solid var(--border); border-right: 1px solid var(--border); box-shadow: 0 0 60px rgba(0,0,0,.08); }
+      .result-sheet, .bottom-bar { max-width: 500px; left: 50%; transform: translateX(-50%); }
+      .result-sheet.show { transform: translateX(-50%) translateY(0); }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-brand">Somni<span>Link</span> <span style="font-size:.75rem;opacity:.6;font-weight:500">Assistante</span></div>
+      <div class="header-right">
+        <div class="header-name" id="assistanteName"></div>
+        <button class="btn-logout" onclick="logout()">Déconnexion</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+
+    <!-- STATS -->
+    <div class="stats-bar" id="statsBar">
+      <div class="stats-bar-item"><div class="stats-val" id="statTotal">—</div><div class="stats-lbl">Aujourd'hui</div></div>
+      <div class="stats-bar-item"><div class="stats-val" id="statSemaine">—</div><div class="stats-lbl">Ce mois</div></div>
+      <div class="stats-bar-item"><div class="stats-val" id="statDispo">—</div><div class="stats-lbl">En stock</div></div>
+    </div>
+
+    <!-- SCANNER CARD -->
+    <div class="scanner-card">
+      <div class="scanner-card-header">
+        <div class="scanner-card-icon">🧹</div>
+        <div class="scanner-card-title">Boîtier nettoyé &amp; uploadé</div>
+        <div class="scanner-card-desc">Scannez le QR code pour remettre le boîtier en disponible</div>
+      </div>
+      <div class="scanner-card-body">
+
+        <!-- QR Camera Zone -->
+        <div class="qr-area" id="qrArea">
+          <div id="qr-reader-assist"></div>
+          <div class="qr-overlay"><div class="qr-frame"></div></div>
+          <button class="btn-close-scan" style="position:absolute;bottom:10px;left:10px;right:10px;width:auto" onclick="stopScan()">✕ Annuler</button>
+        </div>
+
+        <!-- Scan Button -->
+        <button class="btn-scan-main" id="btnScan" onclick="startScan()">
+          <span class="btn-scan-icon">📷</span>
+          <span>Scanner un boîtier</span>
+        </button>
+
+        <!-- Saisie manuelle -->
+        <div class="manual-section">
+          <div class="manual-label">Saisie manuelle si QR illisible</div>
+          <div class="manual-row">
+            <input type="text" id="manualBoitier" placeholder="SL-B01" maxlength="10" autocomplete="off" autocorrect="off" spellcheck="false">
+            <button class="btn-manual-ok" onclick="submitManual()">OK</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- HISTORIQUE -->
+    <div class="history-card">
+      <div class="history-header">
+        <div class="history-header-title">✅ Traités aujourd'hui</div>
+        <div class="history-count" id="historyCount">0</div>
+      </div>
+      <div class="history-list" id="historyList">
+        <div class="history-empty">
+          <div class="e-icon">📦</div>
+          Chargement...
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- RESULT SHEET -->
+<div class="result-sheet" id="resultSheet">
+  <div class="result-handle"></div>
+  <div class="result-icon-big" id="resultIcon"></div>
+  <div class="result-title" id="resultTitle"></div>
+  <div class="result-sub" id="resultSub"></div>
+  <button class="btn-result-close" onclick="closeResult()">Continuer</button>
+</div>
+
+<!-- BOTTOM BAR -->
+<div class="bottom-bar">
+  <button class="btn-scan-fab" onclick="startScan()">
+    <span style="font-size:1.2rem">📷</span> Scanner un boîtier
+  </button>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+const API = '';
+const token = localStorage.getItem('sl_token');
+const user = JSON.parse(localStorage.getItem('sl_user') || 'null');
+if (!token || !user || user.role !== 'assistante') window.location.href = '/';
+document.getElementById('assistanteName').textContent = `${user.prenom} ${user.nom}`;
+
+function authHeaders() {
+  return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+}
+function logout() {
+  localStorage.removeItem('sl_token');
+  localStorage.removeItem('sl_user');
+  window.location.href = '/';
+}
+
+let html5QrCode = null;
+let scanning = false;
+
+// ── SCANNER ────────────────────────────────────────────
+function startScan() {
+  if (scanning) return;
+  scanning = true;
+  const area = document.getElementById('qrArea');
+  const btn = document.getElementById('btnScan');
+  area.classList.add('active');
+  btn.style.display = 'none';
+  closeResult();
+
+  const el = document.getElementById('qr-reader-assist');
+  el.innerHTML = '';
+  html5QrCode = new Html5Qrcode('qr-reader-assist');
+  html5QrCode.start(
+    { facingMode: 'environment' },
+    { fps: 12, qrbox: { width: 200, height: 200 } },
+    (decoded) => {
+      stopScan();
+      submitScan(decoded.trim().toUpperCase());
+    },
+    () => {}
+  ).catch(() => {
+    document.getElementById('qr-reader-assist').innerHTML =
+      `<div style="color:#fff;text-align:center;padding:40px 20px;font-size:.88rem;line-height:1.6">
+        📷 Caméra non disponible<br><small style="opacity:.6">Utilisez la saisie manuelle</small>
+      </div>`;
+  });
+}
+
+function stopScan() {
+  scanning = false;
+  document.getElementById('qrArea').classList.remove('active');
+  document.getElementById('btnScan').style.display = '';
+  if (html5QrCode) {
+    html5QrCode.stop().catch(() => {});
+    html5QrCode = null;
+  }
+}
+
+function submitManual() {
+  const val = document.getElementById('manualBoitier').value.trim().toUpperCase();
+  if (!val) { showToast('Entrez un numéro de boîtier', 'error'); return; }
+  document.getElementById('manualBoitier').value = '';
+  submitScan(val);
+}
+
+document.getElementById('manualBoitier').addEventListener('keydown', e => {
+  if (e.key === 'Enter') submitManual();
+});
+
+async function submitScan(numero) {
+  const btn = document.getElementById('btnScan');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner" style="width:22px;height:22px;border-width:2px;margin:0"></div><span>Traitement...</span>';
+  closeResult();
+
+  try {
+    const res = await fetch(`${API}/api/assistante/scan`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ boitier_numero: numero })
+    });
+    const data = await res.json();
+
+    if (res.ok) {
+      const detail = data.patient_mis_a_jour
+        ? `Patient : ${data.patient_mis_a_jour.prenom} ${data.patient_mis_a_jour.nom} — résultat disponible`
+        : 'Boîtier remis en stock disponible';
+      showResult('ok', '✅', `Boîtier ${numero} disponible`, detail);
+      loadHistory();
+      loadStats();
+    } else {
+      showResult('err', '❌', 'Erreur', data.error || 'Statut incorrect');
+    }
+  } catch (e) {
+    showResult('err', '❌', 'Erreur réseau', 'Vérifiez votre connexion');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span class="btn-scan-icon">📷</span><span>Scanner un boîtier</span>';
+  }
+}
+
+// ── RESULT ─────────────────────────────────────────────
+function showResult(type, icon, title, sub) {
+  const sheet = document.getElementById('resultSheet');
+  sheet.className = `result-sheet ${type}`;
+  document.getElementById('resultIcon').textContent = icon;
+  document.getElementById('resultTitle').textContent = title;
+  document.getElementById('resultSub').textContent = sub;
+  sheet.classList.add('show');
+  if (type === 'ok') setTimeout(closeResult, 4000);
+}
+function closeResult() {
+  document.getElementById('resultSheet').classList.remove('show');
+}
+
+// ── HISTORIQUE ─────────────────────────────────────────
+async function loadHistory() {
+  try {
+    const res = await fetch(`${API}/api/assistante/scans-aujourd-hui`, { headers: authHeaders() });
+    const scans = await res.json();
+    const el = document.getElementById('historyList');
+    document.getElementById('historyCount').textContent = scans.length;
+
+    if (scans.length === 0) {
+      el.innerHTML = `<div class="history-empty"><div class="e-icon">📦</div>Aucun boîtier traité aujourd'hui</div>`;
+      return;
+    }
+
+    el.innerHTML = scans.map(s => `
+      <div class="history-item">
+        <div class="history-boitier">${s.numero}</div>
+        <div class="history-info">
+          <div class="history-label">Remis disponible</div>
+          <div class="history-time">${formatTime(s.derniere_action)}</div>
+        </div>
+        <div class="history-ok">✓</div>
+      </div>
+    `).join('');
+  } catch (e) {}
+}
+
+// ── STATS ──────────────────────────────────────────────
+async function loadStats() {
+  try {
+    const res = await fetch(`${API}/api/assistante/stats`, { headers: authHeaders() });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.aujourd_hui !== undefined) document.getElementById('statTotal').textContent = data.aujourd_hui;
+    if (data.ce_mois !== undefined) document.getElementById('statSemaine').textContent = data.ce_mois;
+    if (data.disponibles !== undefined) document.getElementById('statDispo').textContent = data.disponibles;
+  } catch (e) {}
+}
+
+function formatTime(d) {
+  if (!d) return '';
+  return new Date(d).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+}
+
+function showToast(msg, type = 'info') {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// ── INIT ───────────────────────────────────────────────
+loadHistory();
+loadStats();
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) { loadHistory(); loadStats(); }
+});
+</script>
+</body>
+</html>

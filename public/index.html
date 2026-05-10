@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SomnoHub — Polygraphie ventilatoire à domicile</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #1a3d2b;
+      --primary-light: #2d6a4f;
+      --accent: #52b788;
+      --accent-light: #b7e4c7;
+      --bg: #f4f7f5;
+      --white: #ffffff;
+      --text: #1c2b22;
+      --text-mid: #4a5e53;
+      --text-light: #7a9186;
+      --border: #d4e0d9;
+      --radius: 16px;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', sans-serif; color: var(--text); background: var(--white); overflow-x: hidden; }
+
+    /* ── NAVBAR ── */
+    .navbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      padding: 0 5%; height: 68px;
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(255,255,255,.95); backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(212,224,217,.5);
+      transition: box-shadow .3s;
+    }
+    .navbar.scrolled { box-shadow: 0 2px 24px rgba(26,61,43,.1); }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .nav-logo-text { font-size: 1.35rem; font-weight: 800; color: var(--primary); letter-spacing: -.5px; }
+    .nav-logo-text span { color: var(--accent); }
+    .nav-logo-badge { background: var(--accent-light); color: var(--primary); font-size: .62rem; font-weight: 700; padding: 3px 8px; border-radius: 20px; letter-spacing: .3px; }
+    .nav-links { display: flex; align-items: center; gap: 28px; }
+    .nav-links a { font-size: .875rem; font-weight: 500; color: var(--text-mid); text-decoration: none; transition: color .2s; }
+    .nav-links a:hover { color: var(--primary); }
+    .btn-connexion {
+      background: var(--primary); color: var(--white) !important;
+      padding: 9px 20px; border-radius: 9px;
+      font-weight: 600 !important; font-size: .85rem !important;
+      border: none; cursor: pointer; transition: all .2s !important;
+    }
+    .btn-connexion:hover { background: var(--primary-light) !important; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(26,61,43,.25); }
+    .nav-burger { display: none; background: none; border: none; cursor: pointer; padding: 8px; }
+    .nav-burger span { display: block; width: 22px; height: 2px; background: var(--primary); margin: 5px 0; border-radius: 2px; transition: all .3s; }
+    .mobile-menu {
+      display: none; position: fixed; top: 68px; left: 0; right: 0;
+      background: var(--white); border-bottom: 1px solid var(--border);
+      padding: 20px 5%; z-index: 199;
+      flex-direction: column; gap: 14px; box-shadow: 0 8px 24px rgba(0,0,0,.08);
+    }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a { font-size: .95rem; font-weight: 500; color: var(--text-mid); text-decoration: none; padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .mobile-menu a:last-child { border: none; }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      background: linear-gradient(140deg, #0d2318 0%, #1a3d2b 45%, #2d6a4f 80%, #1a7a50 100%);
+      display: flex; flex-direction: column; justify-content: center;
+      padding: 100px 5% 60px; position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 70% 50%, rgba(82,183,136,.12) 0%, transparent 70%);
+    }
+    /* Decorative circles */
+    .hero::after {
+      content: '';
+      position: absolute; right: -120px; top: 50%; transform: translateY(-50%);
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(82,183,136,.08) 0%, transparent 65%);
+      border-radius: 50%;
+    }
+    .hero-inner { position: relative; z-index: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; max-width: 1200px; margin: 0 auto; width: 100%; }
+    .hero-tag {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(82,183,136,.18); border: 1px solid rgba(82,183,136,.35);
+      color: var(--accent-light); padding: 6px 14px; border-radius: 20px;
+      font-size: .78rem; font-weight: 600; letter-spacing: .5px; margin-bottom: 22px;
+    }
+    .hero-tag .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-light); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.8)} }
+    .hero h1 {
+      font-size: clamp(2rem, 4.5vw, 3.2rem); font-weight: 900;
+      color: var(--white); line-height: 1.1; letter-spacing: -1.5px; margin-bottom: 20px;
+    }
+    .hero h1 em { color: #74c69d; font-style: normal; }
+    .hero-desc { font-size: 1.05rem; color: rgba(255,255,255,.72); line-height: 1.75; margin-bottom: 36px; max-width: 500px; }
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 48px; }
+    .btn-hero-primary {
+      background: var(--accent); color: var(--primary);
+      padding: 15px 28px; border-radius: 12px; font-size: .95rem; font-weight: 700;
+      border: none; cursor: pointer; transition: all .2s; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-hero-primary:hover { background: #64c896; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(82,183,136,.4); }
+    .btn-hero-ghost {
+      color: rgba(255,255,255,.82); padding: 15px 24px; border-radius: 12px;
+      font-size: .9rem; font-weight: 600; border: 1.5px solid rgba(255,255,255,.25);
+      background: transparent; cursor: pointer; transition: all .2s;
+      text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-hero-ghost:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.45); }
+    .hero-stats { display: flex; gap: 36px; flex-wrap: wrap; }
+    .hero-stat .val { font-size: 2.2rem; font-weight: 900; color: #74c69d; letter-spacing: -1.5px; line-height: 1; }
+    .hero-stat .lbl { font-size: .78rem; color: rgba(255,255,255,.55); margin-top: 4px; font-weight: 500; }
+
+    /* Hero right visual */
+    .hero-visual { position: relative; }
+    .hero-phone {
+      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.14);
+      border-radius: 28px; padding: 22px; backdrop-filter: blur(12px);
+      box-shadow: 0 24px 60px rgba(0,0,0,.3);
+    }
+    .phone-header {
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid rgba(255,255,255,.1); padding-bottom: 14px; margin-bottom: 16px;
+    }
+    .phone-logo { font-size: .88rem; font-weight: 800; color: var(--white); }
+    .phone-logo span { color: var(--accent-light); }
+    .phone-date { font-size: .72rem; color: rgba(255,255,255,.45); }
+    .patient-row {
+      display: flex; align-items: center; gap: 12px; padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+    .patient-row:last-child { border: none; }
+    .patient-avatar {
+      width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .85rem; font-weight: 700; color: var(--white);
+    }
+    .patient-name { font-size: .84rem; color: rgba(255,255,255,.85); font-weight: 600; flex: 1; }
+    .patient-badge { padding: 4px 10px; border-radius: 12px; font-size: .68rem; font-weight: 700; white-space: nowrap; }
+    .badge-blue { background: rgba(33,150,243,.25); color: #90caf9; }
+    .badge-orange { background: rgba(255,152,0,.25); color: #ffcc80; }
+    .badge-green { background: rgba(76,175,80,.25); color: #a5d6a7; }
+    .badge-grey { background: rgba(144,164,174,.2); color: rgba(255,255,255,.5); }
+
+    /* Floating badge */
+    .hero-float {
+      position: absolute; top: -20px; right: -20px;
+      background: var(--white); border-radius: 16px; padding: 14px 18px;
+      box-shadow: 0 12px 36px rgba(0,0,0,.18); display: flex; align-items: center; gap: 10px;
+    }
+    .float-icon { font-size: 1.4rem; }
+    .float-text .t1 { font-size: .75rem; font-weight: 700; color: var(--primary); }
+    .float-text .t2 { font-size: .68rem; color: var(--text-light); margin-top: 1px; }
+
+    /* ── STRIP AVANTAGES ── */
+    .strip {
+      background: var(--primary); padding: 28px 5%;
+    }
+    .strip-inner {
+      max-width: 1200px; margin: 0 auto;
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px;
+    }
+    .strip-item { display: flex; align-items: center; gap: 14px; }
+    .strip-icon { font-size: 1.6rem; flex-shrink: 0; }
+    .strip-item .t1 { font-size: .88rem; font-weight: 700; color: var(--white); }
+    .strip-item .t2 { font-size: .75rem; color: rgba(255,255,255,.55); margin-top: 2px; }
+
+    /* ── SECTION COMMONS ── */
+    section { padding: 88px 5%; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .section-eyebrow {
+      display: inline-block; background: var(--accent-light); color: var(--primary);
+      padding: 5px 14px; border-radius: 20px; font-size: .72rem; font-weight: 700;
+      letter-spacing: .6px; text-transform: uppercase; margin-bottom: 14px;
+    }
+    .section-title { font-size: clamp(1.6rem, 3vw, 2.1rem); font-weight: 800; color: var(--primary); letter-spacing: -.7px; line-height: 1.2; margin-bottom: 14px; }
+    .section-sub { font-size: 1rem; color: var(--text-light); line-height: 1.7; max-width: 560px; }
+
+    /* ── STOP-BANG ── */
+    .stopbang { background: var(--bg); }
+    .stopbang-header { text-align: center; margin-bottom: 48px; }
+    .stopbang-header .section-sub { margin: 0 auto; max-width: 520px; }
+    .quiz-box {
+      background: var(--white); border-radius: 24px; max-width: 680px; margin: 0 auto;
+      box-shadow: 0 8px 40px rgba(26,61,43,.1); border: 1.5px solid var(--border); overflow: hidden;
+    }
+    .quiz-progress { height: 5px; background: var(--border); transition: none; }
+    .quiz-progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); border-radius: 3px; transition: width .4s ease; }
+    .quiz-body { padding: 36px 40px; }
+    .quiz-step { display: none; }
+    .quiz-step.active { display: block; }
+    .quiz-q-num { font-size: .75rem; font-weight: 700; color: var(--text-light); letter-spacing: .5px; text-transform: uppercase; margin-bottom: 10px; }
+    .quiz-q-text { font-size: 1.2rem; font-weight: 700; color: var(--primary); line-height: 1.4; margin-bottom: 28px; }
+    .quiz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .quiz-opt {
+      border: 2px solid var(--border); background: var(--bg); border-radius: 14px;
+      padding: 16px 20px; cursor: pointer; transition: all .18s;
+      font-size: .92rem; font-weight: 600; color: var(--text-mid); text-align: center;
+    }
+    .quiz-opt:hover { border-color: var(--accent); background: #eef8f2; color: var(--primary); transform: translateY(-2px); }
+    .quiz-opt.selected { border-color: var(--primary); background: var(--primary); color: var(--white); }
+    .quiz-nav { display: flex; align-items: center; justify-content: space-between; margin-top: 28px; }
+    .btn-quiz-back {
+      background: none; border: 1.5px solid var(--border); border-radius: 10px;
+      padding: 10px 20px; font-size: .88rem; font-weight: 600; color: var(--text-mid);
+      cursor: pointer; font-family: inherit; transition: all .18s;
+    }
+    .btn-quiz-back:hover { border-color: var(--primary); color: var(--primary); }
+    .btn-quiz-next {
+      background: var(--primary); color: var(--white);
+      border: none; border-radius: 10px; padding: 11px 24px;
+      font-size: .88rem; font-weight: 700; cursor: pointer; font-family: inherit;
+      transition: all .18s; display: flex; align-items: center; gap: 6px;
+    }
+    .btn-quiz-next:hover { background: var(--primary-light); }
+    .btn-quiz-next:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* Quiz result */
+    .quiz-result { display: none; padding: 36px 40px; text-align: center; }
+    .quiz-result.show { display: block; }
+    .result-gauge {
+      width: 120px; height: 120px; border-radius: 50%;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      margin: 0 auto 20px; border: 5px solid;
+    }
+    .gauge-low { border-color: #4caf50; background: #f1f8e9; }
+    .gauge-mid { border-color: #ff9800; background: #fff8e1; }
+    .gauge-high { border-color: #f44336; background: #ffebee; }
+    .gauge-score { font-size: 2.2rem; font-weight: 900; line-height: 1; }
+    .gauge-low .gauge-score { color: #2e7d32; }
+    .gauge-mid .gauge-score { color: #e65100; }
+    .gauge-high .gauge-score { color: #b71c1c; }
+    .gauge-label { font-size: .72rem; font-weight: 700; opacity: .7; }
+    .result-title-text { font-size: 1.15rem; font-weight: 800; color: var(--primary); margin-bottom: 10px; }
+    .result-msg { font-size: .9rem; color: var(--text-light); line-height: 1.6; max-width: 420px; margin: 0 auto 24px; }
+    .btn-quiz-reset {
+      background: var(--bg); border: 1.5px solid var(--border); border-radius: 10px;
+      padding: 10px 22px; font-size: .85rem; font-weight: 600; color: var(--text-mid);
+      cursor: pointer; font-family: inherit;
+    }
+    .btn-quiz-cta {
+      background: var(--primary); color: var(--white);
+      border: none; border-radius: 10px; padding: 13px 28px;
+      font-size: .92rem; font-weight: 700; cursor: pointer; font-family: inherit; margin-left: 10px;
+    }
+
+    /* ── HOW IT WORKS ── */
+    .how { background: var(--white); }
+    .how-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+    .how-steps { display: flex; flex-direction: column; gap: 0; }
+    .step {
+      display: flex; gap: 20px; align-items: flex-start; padding: 24px 0;
+      border-bottom: 1px solid var(--border); position: relative;
+    }
+    .step:last-child { border: none; }
+    .step-num {
+      width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: var(--white); display: flex; align-items: center; justify-content: center;
+      font-size: .9rem; font-weight: 800; margin-top: 2px;
+    }
+    .step-body h4 { font-size: 1rem; font-weight: 700; color: var(--primary); margin-bottom: 6px; }
+    .step-body p { font-size: .86rem; color: var(--text-light); line-height: 1.65; }
+    .step-tag { display: inline-block; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 3px 10px; font-size: .7rem; font-weight: 700; color: var(--text-mid); margin-top: 8px; }
+
+    /* Visual timeline */
+    .how-timeline {
+      background: linear-gradient(180deg, var(--primary) 0%, #1e5c3a 100%);
+      border-radius: 24px; padding: 32px; display: flex; flex-direction: column; gap: 4px;
+    }
+    .tl-item {
+      background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.1);
+      border-radius: 14px; padding: 16px 18px; display: flex; align-items: center; gap: 14px;
+      transition: all .2s;
+    }
+    .tl-item:hover { background: rgba(255,255,255,.13); transform: translateX(4px); }
+    .tl-icon { font-size: 1.3rem; flex-shrink: 0; }
+    .tl-text { flex: 1; }
+    .tl-text .tl-title { font-size: .88rem; font-weight: 700; color: var(--white); }
+    .tl-text .tl-sub { font-size: .75rem; color: rgba(255,255,255,.55); margin-top: 2px; }
+    .tl-arrow { color: rgba(82,183,136,.7); font-size: .85rem; flex-shrink: 0; }
+    .tl-connector { height: 20px; width: 2px; background: rgba(255,255,255,.1); margin: 0 auto; border-radius: 1px; }
+
+    /* ── FEATURES ── */
+    .features { background: var(--bg); }
+    .features-header { text-align: center; margin-bottom: 52px; }
+    .features-header .section-sub { margin: 0 auto; }
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 22px; }
+    .feat-card {
+      background: var(--white); border-radius: 18px; padding: 28px;
+      border: 1.5px solid var(--border); transition: all .25s; position: relative; overflow: hidden;
+    }
+    .feat-card::after {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      transform: scaleX(0); transition: transform .3s; transform-origin: left;
+    }
+    .feat-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(26,61,43,.1); border-color: var(--accent); }
+    .feat-card:hover::after { transform: scaleX(1); }
+    .feat-icon {
+      width: 50px; height: 50px; background: linear-gradient(135deg, var(--primary), var(--accent));
+      border-radius: 13px; display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; margin-bottom: 16px;
+    }
+    .feat-card h3 { font-size: 1rem; font-weight: 700; color: var(--primary); margin-bottom: 8px; }
+    .feat-card p { font-size: .85rem; color: var(--text-light); line-height: 1.65; }
+
+    /* ── STATS ── */
+    .stats-section {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      padding: 80px 5%; text-align: center;
+    }
+    .stats-section .section-title { color: var(--white); margin-bottom: 8px; }
+    .stats-section .section-sub { color: rgba(255,255,255,.6); margin: 0 auto 52px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 32px; max-width: 900px; margin: 0 auto; }
+    .stat-item .val { font-size: 3rem; font-weight: 900; color: var(--accent-light); letter-spacing: -2px; line-height: 1; }
+    .stat-item .lbl { font-size: .85rem; color: rgba(255,255,255,.6); margin-top: 8px; }
+
+    /* ── TEMOIGNAGES ── */
+    .temoignages { background: var(--white); }
+    .temo-header { text-align: center; margin-bottom: 48px; }
+    .temo-header .section-sub { margin: 0 auto; }
+    .temo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 22px; }
+    .temo-card {
+      background: var(--bg); border-radius: 18px; padding: 28px;
+      border: 1.5px solid var(--border); transition: all .2s;
+    }
+    .temo-card:hover { box-shadow: 0 8px 28px rgba(26,61,43,.08); transform: translateY(-2px); }
+    .temo-stars { color: #ffc107; font-size: .9rem; letter-spacing: 2px; margin-bottom: 14px; }
+    .temo-text { font-size: .9rem; color: var(--text-mid); line-height: 1.7; font-style: italic; margin-bottom: 20px; }
+    .temo-author { display: flex; align-items: center; gap: 12px; }
+    .temo-avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display: flex; align-items: center; justify-content: center;
+      font-size: .82rem; font-weight: 800; color: var(--white); flex-shrink: 0;
+    }
+    .temo-name { font-size: .88rem; font-weight: 700; color: var(--primary); }
+    .temo-role { font-size: .75rem; color: var(--text-light); margin-top: 1px; }
+
+    /* ── INTERFACES ── */
+    .interfaces { background: var(--bg); }
+    .interfaces-header { text-align: center; margin-bottom: 48px; }
+    .interfaces-header .section-sub { margin: 0 auto; }
+    .if-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
+    .if-card {
+      border-radius: 18px; padding: 28px; text-align: center;
+      border: 2px solid transparent; transition: all .25s;
+    }
+    .if-card.medecin { background: #edf5f0; border-color: #c5ddd0; }
+    .if-card.livreur { background: #e3f1fd; border-color: #b3d4f0; }
+    .if-card.assistante { background: #fff4e1; border-color: #ffd69a; }
+    .if-card.admin { background: #f4e6f7; border-color: #d7b3e8; }
+    .if-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,.1); }
+    .if-icon { font-size: 2.2rem; margin-bottom: 12px; }
+    .if-role { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--text-light); margin-bottom: 7px; }
+    .if-title { font-size: .98rem; font-weight: 700; color: var(--primary); margin-bottom: 8px; }
+    .if-desc { font-size: .8rem; color: var(--text-light); line-height: 1.55; }
+
+    /* ── FAQ ── */
+    .faq { background: var(--white); }
+    .faq-header { text-align: center; margin-bottom: 48px; }
+    .faq-header .section-sub { margin: 0 auto; }
+    .faq-list { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
+    .faq-item {
+      background: var(--bg); border-radius: 14px;
+      border: 1.5px solid var(--border); overflow: hidden; transition: border-color .2s;
+    }
+    .faq-item.open { border-color: var(--accent); }
+    .faq-q {
+      display: flex; align-items: center; justify-content: space-between; gap: 14px;
+      padding: 20px 24px; cursor: pointer; user-select: none;
+    }
+    .faq-q-text { font-size: .95rem; font-weight: 600; color: var(--primary); }
+    .faq-chevron {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--border); display: flex; align-items: center; justify-content: center;
+      font-size: .75rem; flex-shrink: 0; transition: all .25s; color: var(--text-mid);
+    }
+    .faq-item.open .faq-chevron { background: var(--primary); color: var(--white); transform: rotate(180deg); }
+    .faq-a {
+      max-height: 0; overflow: hidden; transition: max-height .35s ease, padding .25s;
+      padding: 0 24px;
+    }
+    .faq-item.open .faq-a { max-height: 300px; padding: 0 24px 20px; }
+    .faq-a p { font-size: .88rem; color: var(--text-mid); line-height: 1.7; }
+
+    /* ── CTA ── */
+    .cta { background: var(--bg); }
+    .cta-box {
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      border-radius: 28px; padding: 70px 48px;
+      max-width: 800px; margin: 0 auto; text-align: center;
+      position: relative; overflow: hidden;
+    }
+    .cta-box::before {
+      content: ''; position: absolute; top: -80px; right: -80px;
+      width: 300px; height: 300px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(82,183,136,.18) 0%, transparent 70%);
+    }
+    .cta-box::after {
+      content: ''; position: absolute; bottom: -60px; left: -60px;
+      width: 250px; height: 250px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(82,183,136,.1) 0%, transparent 70%);
+    }
+    .cta-box h2 { font-size: 1.85rem; font-weight: 800; color: var(--white); margin-bottom: 14px; position: relative; letter-spacing: -.5px; }
+    .cta-box p { color: rgba(255,255,255,.68); margin-bottom: 36px; position: relative; line-height: 1.65; font-size: 1rem; }
+    .cta-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; position: relative; }
+    .btn-cta-primary {
+      background: var(--accent); color: var(--primary);
+      padding: 15px 32px; border-radius: 12px; font-size: .95rem; font-weight: 700;
+      border: none; cursor: pointer; transition: all .2s;
+    }
+    .btn-cta-primary:hover { background: #64c896; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(82,183,136,.4); }
+    .btn-cta-ghost {
+      background: transparent; color: rgba(255,255,255,.82);
+      padding: 15px 32px; border-radius: 12px; font-size: .95rem; font-weight: 600;
+      border: 1.5px solid rgba(255,255,255,.3); cursor: pointer; transition: all .2s; font-family: inherit;
+    }
+    .btn-cta-ghost:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.5); }
+
+    /* ── FOOTER ── */
+    footer { background: var(--primary); color: rgba(255,255,255,.6); padding: 56px 5% 32px; }
+    .footer-inner { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 44px; max-width: 1200px; margin: 0 auto 44px; }
+    .footer-brand .logo { font-size: 1.25rem; font-weight: 800; color: var(--white); margin-bottom: 12px; }
+    .footer-brand .logo span { color: var(--accent-light); }
+    .footer-brand p { font-size: .82rem; line-height: 1.65; max-width: 260px; }
+    .footer-col h4 { font-size: .82rem; font-weight: 700; color: var(--white); margin-bottom: 14px; letter-spacing: .3px; }
+    .footer-col a { display: block; font-size: .8rem; color: rgba(255,255,255,.5); text-decoration: none; margin-bottom: 9px; transition: color .2s; }
+    .footer-col a:hover { color: var(--accent-light); }
+    .footer-bottom {
+      max-width: 1200px; margin: 0 auto;
+      border-top: 1px solid rgba(255,255,255,.1); padding-top: 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: .76rem; flex-wrap: wrap; gap: 12px;
+    }
+    .footer-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+    .footer-badge {
+      background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1);
+      padding: 4px 12px; border-radius: 20px; font-size: .7rem; color: rgba(255,255,255,.45);
+    }
+
+    /* ── MODAL CONNEXION ── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(10,22,15,.65); backdrop-filter: blur(10px);
+      z-index: 500; display: flex; align-items: center; justify-content: center;
+      padding: 20px; opacity: 0; pointer-events: none; transition: opacity .3s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal-box {
+      background: var(--white); border-radius: 24px;
+      width: 100%; max-width: 440px;
+      box-shadow: 0 32px 80px rgba(0,0,0,.3);
+      transform: translateY(28px) scale(.96);
+      transition: transform .38s cubic-bezier(.34,1.56,.64,1);
+      overflow: hidden;
+    }
+    .modal-overlay.open .modal-box { transform: translateY(0) scale(1); }
+    .modal-top {
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      padding: 28px 28px 24px; position: relative;
+    }
+    .modal-logo { font-size: 1.2rem; font-weight: 800; color: var(--white); margin-bottom: 4px; }
+    .modal-logo span { color: var(--accent-light); }
+    .modal-subtitle { font-size: .8rem; color: rgba(255,255,255,.6); }
+    .modal-close {
+      position: absolute; top: 16px; right: 16px;
+      background: rgba(255,255,255,.15); border: none; color: var(--white);
+      width: 30px; height: 30px; border-radius: 8px; cursor: pointer; font-size: 1rem;
+      display: flex; align-items: center; justify-content: center; transition: background .2s;
+    }
+    .modal-close:hover { background: rgba(255,255,255,.25); }
+    .modal-body { padding: 26px 28px; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: .8rem; font-weight: 600; color: var(--text-mid); margin-bottom: 5px; }
+    .form-control {
+      width: 100%; padding: 11px 13px; border: 1.5px solid var(--border); border-radius: 10px;
+      font-size: .9rem; color: var(--text); background: var(--white); outline: none;
+      transition: border-color .2s; font-family: inherit;
+    }
+    .form-control:focus { border-color: var(--accent); }
+    .btn-login {
+      width: 100%; padding: 13px; background: var(--primary); color: var(--white);
+      border: none; border-radius: 10px; font-size: .92rem; font-weight: 700;
+      cursor: pointer; transition: all .2s; font-family: inherit;
+    }
+    .btn-login:hover { background: var(--primary-light); }
+    .btn-login:disabled { opacity: .6; cursor: not-allowed; }
+    .login-error {
+      background: #fde8e8; color: #c0392b; border: 1px solid #f5b7b1;
+      border-radius: 8px; padding: 9px 13px; font-size: .8rem; margin-bottom: 14px; display: none;
+    }
+    .demo-chips { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
+    .demo-label { font-size: .7rem; color: var(--text-light); font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 9px; }
+    .demo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+    .demo-chip {
+      background: var(--bg); border: 1.5px solid var(--border); border-radius: 10px;
+      padding: 9px 10px; cursor: pointer; transition: all .18s; text-align: center;
+    }
+    .demo-chip:hover { border-color: var(--accent); background: #eef8f2; }
+    .demo-chip .chip-icon { font-size: 1rem; margin-bottom: 2px; }
+    .demo-chip .chip-name { font-size: .72rem; font-weight: 700; color: var(--primary); }
+    .demo-chip .chip-email { font-size: .62rem; color: var(--text-light); margin-top: 1px; font-family: monospace; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 1024px) {
+      .hero-inner { grid-template-columns: 1fr; }
+      .hero-visual { display: none; }
+      .how-inner { grid-template-columns: 1fr; gap: 40px; }
+      .strip-inner { grid-template-columns: 1fr 1fr; }
+      .footer-inner { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .nav-burger { display: block; }
+      section { padding: 60px 5%; }
+      .strip-inner { grid-template-columns: 1fr 1fr; gap: 16px; }
+      .cta-box { padding: 44px 24px; }
+      .footer-inner { grid-template-columns: 1fr; gap: 28px; }
+    }
+    @media (max-width: 520px) {
+      .hero-stats { gap: 20px; }
+      .quiz-options { grid-template-columns: 1fr; }
+      .quiz-body { padding: 24px 22px; }
+      .strip-inner { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar" id="navbar">
+  <a href="#" class="nav-logo">
+    <div class="nav-logo-text">Somni<span>Link</span></div>
+    <span class="nav-logo-badge">Médical</span>
+  </a>
+  <div class="nav-links">
+    <a href="#stopbang">Évaluation</a>
+    <a href="#how">Comment ça marche</a>
+    <a href="#faq">FAQ</a>
+    <a href="#contact">Contact</a>
+    <button class="btn-connexion" onclick="openLogin()">Connexion partenaire →</button>
+  </div>
+  <button class="nav-burger" onclick="toggleMenu()" id="burgerBtn"><span></span><span></span><span></span></button>
+</nav>
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#stopbang" onclick="closeMenu()">Évaluation du risque</a>
+  <a href="#how" onclick="closeMenu()">Comment ça marche</a>
+  <a href="#faq" onclick="closeMenu()">FAQ</a>
+  <a href="#contact" onclick="closeMenu()">Contact</a>
+  <a href="#" onclick="closeMenu(); openLogin();">🔐 Connexion partenaire</a>
+</div>
+
+<!-- HERO -->
+<section class="hero" id="hero">
+  <div class="hero-inner">
+    <div class="hero-left">
+      <div class="hero-tag"><span class="dot"></span> Polygraphie ventilatoire à domicile</div>
+      <h1>Diagnostiquer l'apnée du sommeil,<br><em>depuis chez vous</em></h1>
+      <p class="hero-desc">SomnoHub coordonne votre examen du sommeil de A à Z — livraison du boîtier à votre domicile, enregistrement nocturne, analyse par des spécialistes certifiés.</p>
+      <div class="hero-actions">
+        <button class="btn-hero-primary" onclick="document.getElementById('stopbang').scrollIntoView({behavior:'smooth'})">Évaluer mon risque →</button>
+        <a href="#how" class="btn-hero-ghost">▶ Comment ça marche</a>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat"><div class="val">1 nuit</div><div class="lbl">pour un résultat complet</div></div>
+        <div class="hero-stat"><div class="val">100%</div><div class="lbl">à domicile</div></div>
+        <div class="hero-stat"><div class="val">HDS</div><div class="lbl">certifié santé</div></div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div style="position:relative">
+        <div class="hero-float">
+          <div class="float-icon">✅</div>
+          <div class="float-text"><div class="t1">Boîtier livré</div><div class="t2">Martin B. — aujourd'hui 18h30</div></div>
+        </div>
+        <div class="hero-phone">
+          <div class="phone-header">
+            <div class="phone-logo">Somni<span>Link</span></div>
+            <div class="phone-date">Mes patients</div>
+          </div>
+          <div class="patient-row">
+            <div class="patient-avatar" style="background:#1565c0">MB</div>
+            <div class="patient-name">Martin Bernard</div>
+            <div class="patient-badge badge-blue">Livraison prévue</div>
+          </div>
+          <div class="patient-row">
+            <div class="patient-avatar" style="background:#e65100">SL</div>
+            <div class="patient-name">Sophie Leroy</div>
+            <div class="patient-badge badge-orange">Examen en cours</div>
+          </div>
+          <div class="patient-row">
+            <div class="patient-avatar" style="background:#2e7d32">JL</div>
+            <div class="patient-name">Jean Laurent</div>
+            <div class="patient-badge badge-green">Résultat dispo</div>
+          </div>
+          <div class="patient-row">
+            <div class="patient-avatar" style="background:#546e7a">AP</div>
+            <div class="patient-name">Anne Petit</div>
+            <div class="patient-badge badge-grey">Prescrit</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STRIP -->
+<div class="strip">
+  <div class="strip-inner">
+    <div class="strip-item"><div class="strip-icon">🏠</div><div><div class="t1">Confort total</div><div class="t2">Examen dans votre propre lit</div></div></div>
+    <div class="strip-item"><div class="strip-icon">📋</div><div><div class="t1">Résultats fiables</div><div class="t2">Analyse par des spécialistes certifiés</div></div></div>
+    <div class="strip-item"><div class="strip-icon">💳</div><div><div class="t1">Pris en charge</div><div class="t2">Remboursement Sécu + mutuelle possible</div></div></div>
+    <div class="strip-item"><div class="strip-icon">⚡</div><div><div class="t1">Résultat rapide</div><div class="t2">Analyse en moins de 7 jours</div></div></div>
+  </div>
+</div>
+
+<!-- STOP-BANG -->
+<section class="stopbang" id="stopbang">
+  <div class="container">
+    <div class="stopbang-header">
+      <div class="section-eyebrow">Questionnaire STOP-BANG</div>
+      <div class="section-title">Évaluez votre risque d'apnée du sommeil</div>
+      <p class="section-sub">8 questions validées cliniquement pour estimer votre risque. Gratuit, anonyme, résultat immédiat.</p>
+    </div>
+    <div class="quiz-box">
+      <div class="quiz-progress"><div class="quiz-progress-fill" id="quizProgress" style="width:0%"></div></div>
+      <div class="quiz-body" id="quizBody">
+        <!-- Steps generated by JS -->
+      </div>
+      <div class="quiz-result" id="quizResult">
+        <div class="result-gauge" id="resultGauge">
+          <div class="gauge-score" id="gaugeScore"></div>
+          <div class="gauge-label">/ 8</div>
+        </div>
+        <div class="result-title-text" id="resultTitleText"></div>
+        <p class="result-msg" id="resultMsg"></p>
+        <div>
+          <button class="btn-quiz-reset" onclick="resetQuiz()">Recommencer</button>
+          <button class="btn-quiz-cta" onclick="openLogin()">Connexion partenaire →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how" id="how">
+  <div class="container how-inner">
+    <div>
+      <div class="section-eyebrow">Comment ça marche</div>
+      <div class="section-title">De la prescription à l'analyse, sans se déplacer</div>
+      <p class="section-sub" style="margin-bottom:36px">Un parcours simple, coordonné en temps réel par notre plateforme numérique.</p>
+      <div class="how-steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h4>Votre médecin prescrit</h4>
+            <p>Il remplit une prescription en 2 minutes depuis son espace sécurisé. Un boîtier est automatiquement réservé.</p>
+            <span class="step-tag">👨‍⚕️ Interface médecin</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h4>Livraison à votre domicile</h4>
+            <p>Un technicien livre et installe le boîtier d'enregistrement chez vous, le soir même ou le lendemain.</p>
+            <span class="step-tag">🚚 Tournée optimisée</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h4>Enregistrement de votre nuit</h4>
+            <p>Vous dormez normalement chez vous. Le boîtier enregistre vos données respiratoires pendant la nuit.</p>
+            <span class="step-tag">😴 À domicile</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <h4>Récupération &amp; analyse</h4>
+            <p>Le lendemain matin, le boîtier est récupéré. Les données sont analysées et les résultats transmis à votre médecin sous 7 jours.</p>
+            <span class="step-tag">📊 Résultats sécurisés</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="how-timeline">
+        <div class="tl-item">
+          <div class="tl-icon">🩺</div>
+          <div class="tl-text"><div class="tl-title">Interface Médecin</div><div class="tl-sub">Prescription · Dossier · Suivi long terme</div></div>
+          <div class="tl-arrow">→</div>
+        </div>
+        <div class="tl-connector"></div>
+        <div class="tl-item">
+          <div class="tl-icon">🚚</div>
+          <div class="tl-text"><div class="tl-title">Interface Livreur</div><div class="tl-sub">Tournées · Scan QR · Navigation maps</div></div>
+          <div class="tl-arrow">→</div>
+        </div>
+        <div class="tl-connector"></div>
+        <div class="tl-item">
+          <div class="tl-icon">😴</div>
+          <div class="tl-text"><div class="tl-title">Examen à domicile</div><div class="tl-sub">1 nuit · Confort · Sans hospitalisation</div></div>
+          <div class="tl-arrow">→</div>
+        </div>
+        <div class="tl-connector"></div>
+        <div class="tl-item">
+          <div class="tl-icon">🧹</div>
+          <div class="tl-text"><div class="tl-title">Interface Assistante</div><div class="tl-sub">Nettoyage · Upload · Remise en stock</div></div>
+          <div class="tl-arrow">→</div>
+        </div>
+        <div class="tl-connector"></div>
+        <div class="tl-item">
+          <div class="tl-icon">⚙️</div>
+          <div class="tl-text"><div class="tl-title">Interface Admin</div><div class="tl-sub">Carte live · Alertes · Revenus · Comptes</div></div>
+          <div class="tl-arrow">→</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <div class="container">
+    <div class="features-header">
+      <div class="section-eyebrow">La plateforme</div>
+      <div class="section-title">Tout ce qui rend SomnoHub différent</div>
+      <p class="section-sub">Une technologie conçue pour les structures médico-techniques qui gèrent la polygraphie à domicile.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feat-card">
+        <div class="feat-icon">🩺</div>
+        <h3>Prescription en 2 minutes</h3>
+        <p>Le médecin prescrit avec nom, téléphone, adresse et score STOP-BANG. Le boîtier est assigné automatiquement.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">📦</div>
+        <h3>Logistique automatisée</h3>
+        <p>Tournées matin et soir générées automatiquement. Le livreur scanne les QR codes pour valider chaque étape en temps réel.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🗺️</div>
+        <h3>Suivi temps réel</h3>
+        <p>Chaque boîtier est suivi sur carte interactive. L'admin voit le statut de chaque appareil et reçoit des alertes automatiques.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">💬</div>
+        <h3>SMS automatiques</h3>
+        <p>Le patient reçoit un SMS à chaque étape clé. Rappels à 3 mois, 6 mois et 1 an après l'examen, sans intervention manuelle.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">📊</div>
+        <h3>Tableau de bord revenus</h3>
+        <p>Revenus par médecin, graphique sur 30 jours, projection mensuelle, comparaison mois précédent. Vue financière complète.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">🔒</div>
+        <h3>Sécurité & conformité</h3>
+        <p>Hébergement OVHcloud certifié HDS en France. Données chiffrées AES-256, authentification JWT, RGPD conforme.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section class="stats-section">
+  <div class="container">
+    <div class="section-eyebrow" style="background:rgba(255,255,255,.15);color:var(--accent-light)">En chiffres</div>
+    <div class="section-title" style="color:var(--white)">L'apnée du sommeil, un enjeu de santé publique</div>
+    <p class="section-sub" style="color:rgba(255,255,255,.6);margin:0 auto 52px">Sous-diagnostiquée, l'apnée du sommeil touche des millions de Français. SomnoHub rend le diagnostic accessible.</p>
+    <div class="stats-grid">
+      <div class="stat-item"><div class="val">4%</div><div class="lbl">de la population adulte touchée par l'apnée obstructive</div></div>
+      <div class="stat-item"><div class="val">80%</div><div class="lbl">des cas non diagnostiqués à ce jour en France</div></div>
+      <div class="stat-item"><div class="val">1 nuit</div><div class="lbl">suffit pour obtenir un diagnostic précis</div></div>
+      <div class="stat-item"><div class="val">100%</div><div class="lbl">des boîtiers traçables en temps réel sur la plateforme</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- TEMOIGNAGES -->
+<section class="temoignages">
+  <div class="container">
+    <div class="temo-header">
+      <div class="section-eyebrow">Témoignages</div>
+      <div class="section-title">Ce qu'ils en disent</div>
+      <p class="section-sub">Médecins et patients qui ont adopté SomnoHub pour leurs examens de polygraphie.</p>
+    </div>
+    <div class="temo-grid">
+      <div class="temo-card">
+        <div class="temo-stars">★★★★★</div>
+        <p class="temo-text">« Très simple d'utilisation, j'ai pu prescrire et suivre mes patients en quelques clics. Le tableau de bord est clair, les alertes automatiques m'évitent de relancer manuellement. »</p>
+        <div class="temo-author">
+          <div class="temo-avatar">DM</div>
+          <div><div class="temo-name">Dr. Marc Dupont</div><div class="temo-role">Pneumologue — Paris 15e</div></div>
+        </div>
+      </div>
+      <div class="temo-card">
+        <div class="temo-stars">★★★★★</div>
+        <p class="temo-text">« Franchement je n'imaginais pas que l'examen pouvait se faire chez moi. La livraison était rapide, l'appareil simple à utiliser, et j'ai eu mes résultats en moins d'une semaine. »</p>
+        <div class="temo-author">
+          <div class="temo-avatar">CL</div>
+          <div><div class="temo-name">Christine Lefebvre</div><div class="temo-role">Patiente — Bordeaux</div></div>
+        </div>
+      </div>
+      <div class="temo-card">
+        <div class="temo-stars">★★★★★</div>
+        <p class="temo-text">« Nous gérons plus de 60 examens par mois. SomnoHub a divisé notre charge administrative par trois. La gestion des tournées et la traçabilité des boîtiers sont parfaitement intégrées. »</p>
+        <div class="temo-author">
+          <div class="temo-avatar">SR</div>
+          <div><div class="temo-name">Sophie Renaud</div><div class="temo-role">Directrice — Centre du Sommeil Lyon</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- INTERFACES -->
+<section class="interfaces" id="interfaces">
+  <div class="container">
+    <div class="interfaces-header">
+      <div class="section-eyebrow">4 interfaces dédiées</div>
+      <div class="section-title">Chaque rôle, son outil</div>
+      <p class="section-sub">Interfaces conçues spécifiquement pour chaque profil — web pour les médecins et l'admin, mobile PWA pour le livreur et l'assistante.</p>
+    </div>
+    <div class="if-grid">
+      <div class="if-card medecin">
+        <div class="if-icon">🩺</div>
+        <div class="if-role">Médecin</div>
+        <div class="if-title">Prescriptions & Suivi</div>
+        <div class="if-desc">Prescription en 2 min, dossier complet, historique horodaté, suivi à 3/6/12 mois, score STOP-BANG intégré.</div>
+      </div>
+      <div class="if-card livreur">
+        <div class="if-icon">🚚</div>
+        <div class="if-role">Livreur</div>
+        <div class="if-title">Tournées mobiles</div>
+        <div class="if-desc">App installable sur mobile. Calendrier, scan QR caméra, navigation Google Maps directe, gros boutons tactiles.</div>
+      </div>
+      <div class="if-card assistante">
+        <div class="if-icon">🧹</div>
+        <div class="if-role">Assistante</div>
+        <div class="if-title">Scan & Remise en stock</div>
+        <div class="if-desc">Page unique ultra-simple sur smartphone. Un geste : scanner le boîtier nettoyé pour le remettre disponible.</div>
+      </div>
+      <div class="if-card admin">
+        <div class="if-icon">⚙️</div>
+        <div class="if-role">Administrateur</div>
+        <div class="if-title">Dashboard complet</div>
+        <div class="if-desc">Carte live des boîtiers, alertes automatiques, revenus par médecin avec graphiques, gestion des comptes.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq" id="faq">
+  <div class="container">
+    <div class="faq-header">
+      <div class="section-eyebrow">Questions fréquentes</div>
+      <div class="section-title">Tout ce que vous devez savoir</div>
+      <p class="section-sub">Réponses aux questions les plus posées sur l'examen et notre service.</p>
+    </div>
+    <div class="faq-list" id="faqList">
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span class="faq-q-text">Qu'est-ce que la polygraphie ventilatoire à domicile ?</span>
+          <span class="faq-chevron">▼</span>
+        </div>
+        <div class="faq-a"><p>La polygraphie ventilatoire est un examen médical qui enregistre vos paramètres respiratoires pendant le sommeil (flux aérien, ronflements, saturation en oxygène, fréquence cardiaque, position). Contrairement à une polysomnographie complète, elle est réalisable à domicile avec un boîtier léger et sans hospitalisation.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span class="faq-q-text">L'examen est-il remboursé par la Sécurité Sociale ?</span>
+          <span class="faq-chevron">▼</span>
+        </div>
+        <div class="faq-a"><p>La polygraphie ventilatoire prescrite par un médecin est prise en charge par l'Assurance Maladie sous certaines conditions. Le remboursement dépend de votre situation médicale, de votre régime et de votre complémentaire santé. Votre médecin prescripteur pourra vous préciser les conditions exactes de prise en charge.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span class="faq-q-text">Comment se déroule la livraison du boîtier ?</span>
+          <span class="faq-chevron">▼</span>
+        </div>
+        <div class="faq-a"><p>Un technicien se déplace à votre domicile en soirée pour déposer et installer le boîtier. Il vous explique comment le porter pendant la nuit. Le lendemain matin, il revient récupérer l'appareil. Vous n'avez aucun déplacement à effectuer.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span class="faq-q-text">Combien de temps avant d'obtenir les résultats ?</span>
+          <span class="faq-chevron">▼</span>
+        </div>
+        <div class="faq-a"><p>Les données enregistrées sont analysées par nos spécialistes certifiés. Les résultats sont transmis à votre médecin prescripteur en moyenne sous 5 à 7 jours ouvrés après récupération du boîtier. Votre médecin vous contacte ensuite pour vous commenter les résultats.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span class="faq-q-text">Puis-je bouger pendant la nuit avec le boîtier ?</span>
+          <span class="faq-chevron">▼</span>
+        </div>
+        <div class="faq-a"><p>Oui, tout à fait. Le boîtier est conçu pour être discret et peu contraignant. Vous pouvez vous retourner normalement dans votre lit. L'enregistrement n'est pas invalidé par les mouvements nocturnes habituels.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span class="faq-q-text">Quelle est la zone géographique couverte ?</span>
+          <span class="faq-chevron">▼</span>
+        </div>
+        <div class="faq-a"><p>Nous intervenons actuellement en Île-de-France et dans les grandes métropoles régionales. La zone de couverture évolue régulièrement. Contactez-nous pour vérifier la disponibilité du service dans votre secteur.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span class="faq-q-text">Quel délai pour obtenir un rendez-vous ?</span>
+          <span class="faq-chevron">▼</span>
+        </div>
+        <div class="faq-a"><p>Une fois votre prescription reçue, nous planifions la livraison dans un délai de 48 à 72 heures en standard. Une option express (24h) est disponible selon les disponibilités de nos équipes.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span class="faq-q-text">Mes données médicales sont-elles sécurisées ?</span>
+          <span class="faq-chevron">▼</span>
+        </div>
+        <div class="faq-a"><p>Oui. SomnoHub est hébergé sur une infrastructure certifiée HDS (Hébergeur de Données de Santé) en France chez OVHcloud. Les données sont chiffrées AES-256, les accès sont authentifiés par JWT, et nous sommes conformes au RGPD. Les données sont automatiquement archivées après 3 mois.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta" id="contact">
+  <div class="container">
+    <div class="cta-box">
+      <h2>Rejoignez le réseau SomnoHub</h2>
+      <p>Vous êtes un cabinet médical, un laboratoire ou un centre du sommeil ? Déployez la plateforme pour vos patients en quelques jours.</p>
+      <div class="cta-actions">
+        <button class="btn-cta-primary" onclick="openLogin()">Connexion partenaire →</button>
+        <button class="btn-cta-ghost" onclick="document.getElementById('stopbang').scrollIntoView({behavior:'smooth'})">Évaluer mon risque</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="logo">Somni<span>Link</span></div>
+      <p>Plateforme de gestion logistique pour la polygraphie ventilatoire à domicile. Du diagnostic à l'analyse, coordonné en temps réel.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Service</h4>
+      <a href="#stopbang">Évaluer mon risque</a>
+      <a href="#how">Comment ça marche</a>
+      <a href="#features">La plateforme</a>
+      <a href="#interfaces">Interfaces</a>
+    </div>
+    <div class="footer-col">
+      <h4>Conformité</h4>
+      <a href="#">Hébergement HDS</a>
+      <a href="#">Politique RGPD</a>
+      <a href="#">Mentions légales</a>
+      <a href="#">CGU</a>
+    </div>
+    <div class="footer-col">
+      <h4>Contact</h4>
+      <a href="mailto:contact@somnohub.fr">contact@somnohub.fr</a>
+      <a href="#">Support technique</a>
+      <a href="#" onclick="openLogin()">Espace partenaire</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div>© 2026 SomnoHub — Tous droits réservés</div>
+    <div class="footer-badges">
+      <span class="footer-badge">🏥 HDS Certifié</span>
+      <span class="footer-badge">🇫🇷 Hébergé en France</span>
+      <span class="footer-badge">🔒 RGPD Conforme</span>
+    </div>
+  </div>
+</footer>
+
+<!-- MODAL CONNEXION -->
+<div class="modal-overlay" id="loginModal" onclick="handleOverlay(event)">
+  <div class="modal-box">
+    <div class="modal-top">
+      <div class="modal-logo">Somni<span>Link</span></div>
+      <div class="modal-subtitle">Espace partenaires — Connexion sécurisée</div>
+      <button class="modal-close" onclick="closeLogin()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="login-error" id="loginError"></div>
+      <form onsubmit="doLogin(event)">
+        <div class="form-group">
+          <label>Adresse e-mail</label>
+          <input type="email" id="loginEmail" class="form-control" placeholder="votre@email.fr" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label>Mot de passe</label>
+          <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn-login" id="loginBtn">Se connecter</button>
+      </form>
+      <div class="demo-chips">
+        <div class="demo-label">Comptes de démonstration</div>
+        <div class="demo-grid">
+          <div class="demo-chip" onclick="fillDemo('admin@somnohub.fr','Admin123!')"><div class="chip-icon">⚙️</div><div class="chip-name">Admin</div><div class="chip-email">admin@somnohub.fr</div></div>
+          <div class="demo-chip" onclick="fillDemo('dr.martin@somnohub.fr','Medecin123!')"><div class="chip-icon">🩺</div><div class="chip-name">Médecin</div><div class="chip-email">dr.martin@somnohub.fr</div></div>
+          <div class="demo-chip" onclick="fillDemo('livreur@somnohub.fr','Livreur123!')"><div class="chip-icon">🚚</div><div class="chip-name">Livreur</div><div class="chip-email">livreur@somnohub.fr</div></div>
+          <div class="demo-chip" onclick="fillDemo('assistante@somnohub.fr','Assist123!')"><div class="chip-icon">🧹</div><div class="chip-name">Assistante</div><div class="chip-email">assistante@somnohub.fr</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── REDIRECT SI DÉJÀ CONNECTÉ ──
+const _t = localStorage.getItem('sl_token'), _u = localStorage.getItem('sl_user');
+if (_t && _u) { try { const u = JSON.parse(_u); const r={admin:'/admin',medecin:'/medecin',livreur:'/livreur',assistante:'/assistante'}; if(r[u.role]) window.location.href=r[u.role]; } catch(e){} }
+
+// ── NAVBAR SCROLL ──
+window.addEventListener('scroll', () => document.getElementById('navbar').classList.toggle('scrolled', scrollY > 40));
+
+// ── MOBILE MENU ──
+function toggleMenu() { document.getElementById('mobileMenu').classList.toggle('open'); }
+function closeMenu() { document.getElementById('mobileMenu').classList.remove('open'); }
+
+// ── LOGIN MODAL ──
+function openLogin() { closeMenu(); document.getElementById('loginModal').classList.add('open'); setTimeout(()=>document.getElementById('loginEmail').focus(),300); }
+function closeLogin() { document.getElementById('loginModal').classList.remove('open'); }
+function handleOverlay(e) { if(e.target===e.currentTarget) closeLogin(); }
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeLogin(); });
+function fillDemo(email, pwd) { document.getElementById('loginEmail').value=email; document.getElementById('loginPassword').value=pwd; }
+
+async function doLogin(e) {
+  e.preventDefault();
+  const btn=document.getElementById('loginBtn'), err=document.getElementById('loginError');
+  btn.disabled=true; btn.textContent='Connexion...'; err.style.display='none';
+  try {
+    const res = await fetch('/api/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ email:document.getElementById('loginEmail').value, password:document.getElementById('loginPassword').value }) });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'Identifiants incorrects');
+    localStorage.setItem('sl_token', data.token);
+    localStorage.setItem('sl_user', JSON.stringify(data.user));
+    const r={admin:'/admin',medecin:'/medecin',livreur:'/livreur',assistante:'/assistante'};
+    window.location.href = r[data.user.role] || '/';
+  } catch(ex) {
+    err.textContent=ex.message; err.style.display='block';
+    btn.disabled=false; btn.textContent='Se connecter';
+  }
+}
+
+// ── FAQ ACCORDION ──
+function toggleFaq(btn) {
+  const item = btn.closest('.faq-item');
+  const isOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
+  if(!isOpen) item.classList.add('open');
+}
+
+// ── STOP-BANG QUIZ ──
+const QUESTIONS = [
+  { letter:'S', text:'Ronflez-vous fort (assez pour être entendu à travers une porte fermée) ?', opts:['Oui','Non'] },
+  { letter:'T', text:'Vous sentez-vous souvent fatigué(e), épuisé(e) ou somnolent(e) pendant la journée ?', opts:['Oui','Non'] },
+  { letter:'O', text:'A-t-on déjà observé que vous cessiez de respirer pendant votre sommeil ?', opts:['Oui','Non'] },
+  { letter:'P', text:'Avez-vous ou êtes-vous traité(e) pour une hypertension artérielle ?', opts:['Oui','Non'] },
+  { letter:'B', text:'Votre indice de masse corporelle (IMC) est-il supérieur à 35 ?', opts:['Oui','Non'] },
+  { letter:'A', text:'Avez-vous plus de 50 ans ?', opts:['Oui','Non'] },
+  { letter:'N', text:'Votre tour de cou est-il supérieur à 40 cm ?', opts:['Oui','Non'] },
+  { letter:'G', text:'Êtes-vous de sexe masculin ?', opts:['Oui','Non'] },
+];
+
+let answers = new Array(8).fill(null);
+let currentStep = 0;
+
+function buildQuiz() {
+  const body = document.getElementById('quizBody');
+  body.innerHTML = QUESTIONS.map((q, i) => `
+    <div class="quiz-step ${i===0?'active':''}" id="step-${i}">
+      <div class="quiz-q-num">Question ${i+1}/8 — Critère ${q.letter}</div>
+      <div class="quiz-q-text">${q.text}</div>
+      <div class="quiz-options">
+        ${q.opts.map(o => `<button class="quiz-opt" onclick="selectAnswer(${i},'${o}',this)">${o}</button>`).join('')}
+      </div>
+      <div class="quiz-nav">
+        <button class="btn-quiz-back" onclick="prevStep()" ${i===0?'style="visibility:hidden"':''}>← Retour</button>
+        <button class="btn-quiz-next" id="next-${i}" onclick="nextStep()" disabled>
+          ${i<7?'Suivant →':'Voir mon résultat →'}
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectAnswer(idx, val, btn) {
+  answers[idx] = val === 'Oui' ? 1 : 0;
+  btn.closest('.quiz-options').querySelectorAll('.quiz-opt').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById(`next-${idx}`).disabled = false;
+}
+
+function nextStep() {
+  if(currentStep < 7) {
+    document.getElementById(`step-${currentStep}`).classList.remove('active');
+    currentStep++;
+    document.getElementById(`step-${currentStep}`).classList.add('active');
+    updateProgress();
+  } else {
+    showResult();
+  }
+}
+
+function prevStep() {
+  if(currentStep > 0) {
+    document.getElementById(`step-${currentStep}`).classList.remove('active');
+    currentStep--;
+    document.getElementById(`step-${currentStep}`).classList.add('active');
+    updateProgress();
+  }
+}
+
+function updateProgress() {
+  document.getElementById('quizProgress').style.width = `${(currentStep/8)*100}%`;
+}
+
+function showResult() {
+  const score = answers.reduce((a,b) => a + b, 0);
+  document.getElementById('quizBody').style.display = 'none';
+  document.getElementById('quizProgress').style.width = '100%';
+  const res = document.getElementById('quizResult');
+  res.classList.add('show');
+  const gauge = document.getElementById('resultGauge');
+  const gaugeScore = document.getElementById('gaugeScore');
+  const titleEl = document.getElementById('resultTitleText');
+  const msgEl = document.getElementById('resultMsg');
+  gaugeScore.textContent = score;
+
+  if(score <= 2) {
+    gauge.className = 'result-gauge gauge-low';
+    titleEl.textContent = 'Risque faible d\'apnée du sommeil';
+    msgEl.textContent = 'Votre score suggère un risque faible. Si vous ressentez néanmoins des troubles du sommeil ou une fatigue persistante, parlez-en à votre médecin.';
+  } else if(score <= 4) {
+    gauge.className = 'result-gauge gauge-mid';
+    titleEl.textContent = 'Risque intermédiaire — Consultation recommandée';
+    msgEl.textContent = 'Votre score indique un risque intermédiaire. Une consultation médicale et éventuellement un examen de polygraphie vous permettront d\'obtenir un diagnostic précis.';
+  } else {
+    gauge.className = 'result-gauge gauge-high';
+    titleEl.textContent = 'Risque élevé — Examen fortement recommandé';
+    msgEl.textContent = 'Votre score est élevé. Une polygraphie ventilatoire est fortement recommandée pour diagnostiquer ou exclure une apnée du sommeil. Consultez votre médecin rapidement.';
+  }
+}
+
+function resetQuiz() {
+  answers = new Array(8).fill(null);
+  currentStep = 0;
+  document.getElementById('quizResult').classList.remove('show');
+  document.getElementById('quizBody').style.display = '';
+  document.getElementById('quizProgress').style.width = '0%';
+  buildQuiz();
+}
+
+// Init
+buildQuiz();
+</script>
+</body>
+</html>

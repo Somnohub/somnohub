@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SomnoHub Livreur">
+  <meta name="theme-color" content="#1a3d2b">
+  <link rel="manifest" href="/manifest-livreur.json">
+  <link rel="apple-touch-icon" href="/icons/icon-192.svg">
+  <title>SomnoHub — Livreur</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #1a3d2b; --primary-light: #2d6a4f;
+      --accent: #52b788; --accent-light: #b7e4c7;
+      --bg: #f0f4f2; --white: #fff;
+      --text: #1c2b22; --text-mid: #4a5e53; --text-light: #7a9186;
+      --border: #d4e0d9;
+      --shadow: 0 2px 12px rgba(26,61,43,.10);
+      --shadow-lg: 0 8px 32px rgba(26,61,43,.14);
+      --radius: 16px;
+    }
+    * { -webkit-tap-highlight-color: transparent; }
+    html { font-size: 16px; }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      min-height: 100dvh;
+      overscroll-behavior: none;
+    }
+
+    /* ── APP SHELL ── */
+    .app {
+      display: flex; flex-direction: column;
+      min-height: 100vh; min-height: 100dvh;
+      max-width: 500px; margin: 0 auto;
+      background: var(--bg);
+      position: relative;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      background: var(--primary);
+      color: var(--white);
+      padding: env(safe-area-inset-top, 0) 0 0;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .header-inner {
+      padding: 14px 18px 10px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .header-brand { font-size: 1.15rem; font-weight: 800; letter-spacing: -.3px; }
+    .header-brand span { color: var(--accent-light); }
+    .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+    .header-name { font-size: .82rem; opacity: .85; font-weight: 500; }
+    .btn-logout {
+      background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2);
+      color: var(--white); padding: 4px 10px; border-radius: 7px;
+      font-size: .72rem; font-weight: 600; cursor: pointer;
+    }
+
+    /* ── DATE NAVIGATOR ── */
+    .date-nav {
+      background: var(--primary);
+      padding: 0 0 14px;
+    }
+    .date-nav-header {
+      padding: 0 18px 10px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .date-nav-label { font-size: .78rem; color: rgba(255,255,255,.6); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+    .date-nav-today {
+      font-size: .75rem; color: var(--accent-light);
+      font-weight: 600; cursor: pointer;
+      background: rgba(82,183,136,.2); border: 1px solid rgba(82,183,136,.3);
+      padding: 3px 10px; border-radius: 10px;
+    }
+    .date-strip {
+      display: flex; gap: 8px;
+      overflow-x: auto; padding: 0 18px;
+      scrollbar-width: none;
+      scroll-snap-type: x mandatory;
+    }
+    .date-strip::-webkit-scrollbar { display: none; }
+    .date-chip {
+      flex-shrink: 0;
+      width: 58px;
+      background: rgba(255,255,255,.1);
+      border: 1.5px solid rgba(255,255,255,.12);
+      border-radius: 14px;
+      padding: 10px 6px 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: all .18s;
+      scroll-snap-align: start;
+      position: relative;
+    }
+    .date-chip:hover { background: rgba(255,255,255,.18); }
+    .date-chip.active {
+      background: var(--white); border-color: var(--white);
+    }
+    .date-chip.active .chip-dow { color: var(--primary); }
+    .date-chip.active .chip-day { color: var(--primary); }
+    .date-chip.has-tournee::after {
+      content: '';
+      position: absolute; bottom: 7px; left: 50%; transform: translateX(-50%);
+      width: 5px; height: 5px; border-radius: 50%;
+      background: var(--accent-light);
+    }
+    .date-chip.active.has-tournee::after { background: var(--accent); }
+    .date-chip.has-tournee.all-done::after { background: #4caf50; }
+    .chip-dow { font-size: .65rem; font-weight: 700; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 5px; }
+    .chip-day { font-size: 1.1rem; font-weight: 700; color: rgba(255,255,255,.9); line-height: 1; }
+    .chip-count {
+      font-size: .58rem; font-weight: 700;
+      color: rgba(255,255,255,.5);
+      margin-top: 4px;
+    }
+    .date-chip.active .chip-count { color: var(--text-light); }
+    .date-chip.active.has-tournee .chip-count { color: var(--primary); }
+
+    /* ── TABS MATIN/SOIR ── */
+    .tour-tabs {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 10px; padding: 14px 18px;
+      background: var(--bg);
+    }
+    .tour-tab {
+      background: var(--white); border: 2px solid var(--border);
+      border-radius: var(--radius); padding: 12px 10px;
+      text-align: center; cursor: pointer; transition: all .18s;
+    }
+    .tour-tab.active {
+      background: var(--primary); border-color: var(--primary); color: var(--white);
+    }
+    .tour-tab .tab-icon { font-size: 1.3rem; display: block; margin-bottom: 4px; }
+    .tour-tab .tab-label { font-size: .78rem; font-weight: 700; display: block; color: var(--text-mid); }
+    .tour-tab.active .tab-label { color: var(--white); }
+    .tour-tab .tab-badge {
+      display: inline-block; margin-top: 4px;
+      background: var(--bg); color: var(--text-mid);
+      border-radius: 10px; padding: 1px 8px; font-size: .68rem; font-weight: 700;
+    }
+    .tour-tab.active .tab-badge { background: rgba(255,255,255,.2); color: var(--white); }
+    .tour-tab .tab-badge.has-items { background: #fff3e0; color: #e65100; }
+    .tour-tab.active .tab-badge.has-items { background: rgba(255,152,0,.3); color: #fff; }
+
+    /* ── MAIN ── */
+    .main { flex: 1; padding: 0 14px 100px; display: flex; flex-direction: column; gap: 10px; }
+
+    /* ── DATE HEADER ── */
+    .day-title {
+      padding: 14px 4px 6px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .day-title-text { font-size: .88rem; font-weight: 700; color: var(--primary); }
+    .day-title-sub { font-size: .75rem; color: var(--text-light); }
+
+    /* ── SEUIL BANNER ── */
+    .seuil-banner {
+      background: #fff8e1; border: 1.5px solid #ffe082;
+      border-radius: var(--radius); padding: 14px 16px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .seuil-icon { font-size: 1.4rem; flex-shrink: 0; }
+    .seuil-text .seuil-title { font-size: .85rem; font-weight: 700; color: #e65100; }
+    .seuil-text .seuil-sub { font-size: .78rem; color: #bf360c; margin-top: 2px; }
+    .seuil-prog {
+      height: 6px; background: #ffe082; border-radius: 3px; margin-top: 8px; overflow: hidden;
+    }
+    .seuil-prog-fill { height: 100%; background: #ff9800; border-radius: 3px; transition: width .3s; }
+
+    /* ── STOP CARD ── */
+    .stop-card {
+      background: var(--white);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      border: 1.5px solid var(--border);
+      transition: opacity .2s;
+    }
+    .stop-card.done { opacity: .5; }
+
+    .card-top {
+      padding: 15px 16px 11px;
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+    }
+    .card-top-left { display: flex; align-items: flex-start; gap: 11px; flex: 1; min-width: 0; }
+    .stop-num {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: var(--primary); color: var(--white);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .78rem; font-weight: 800; flex-shrink: 0; margin-top: 1px;
+    }
+    .stop-patient { min-width: 0; }
+    .stop-name { font-size: 1rem; font-weight: 700; color: var(--primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .stop-boitier { font-size: .78rem; color: var(--text-light); font-weight: 500; margin-top: 2px; }
+    .action-pill {
+      padding: 5px 12px; border-radius: 20px;
+      font-size: .75rem; font-weight: 800; flex-shrink: 0; letter-spacing: .2px;
+    }
+    .pill-livrer { background: #e3f2fd; color: #1565C0; }
+    .pill-recuperer { background: #fff3e0; color: #E65100; }
+    .pill-done { background: #e8f5e9; color: #2e7d32; }
+
+    .card-address {
+      padding: 8px 16px 11px 57px;
+      font-size: .85rem; color: var(--text-mid); line-height: 1.45;
+      display: flex; align-items: flex-start; gap: 6px;
+    }
+    .card-address-icon { font-size: .9rem; flex-shrink: 0; margin-top: 1px; }
+
+    .card-actions {
+      padding: 0 14px 14px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    }
+    .btn-nav {
+      background: #e8f0fd; color: #1a56db;
+      border: none; border-radius: 12px;
+      padding: 14px 10px; font-size: .85rem; font-weight: 700;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+      transition: all .15s; font-family: inherit;
+    }
+    .btn-nav:active { transform: scale(.96); background: #c7d9fb; }
+    .btn-scan-card {
+      background: var(--primary); color: var(--white);
+      border: none; border-radius: 12px;
+      padding: 14px 10px; font-size: .85rem; font-weight: 700;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+      transition: all .15s; font-family: inherit;
+    }
+    .btn-scan-card:active { transform: scale(.96); opacity: .9; }
+    .btn-scan-card:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-probleme {
+      grid-column: 1 / -1; background: transparent;
+      border: 1.5px solid var(--border); color: var(--text-light);
+      border-radius: 10px; padding: 9px; font-size: .78rem; font-weight: 500;
+      cursor: pointer; font-family: inherit;
+    }
+    .btn-probleme:active { background: #fdecea; border-color: #e57373; color: #c62828; }
+
+    /* ── EMPTY ── */
+    .empty-day {
+      background: var(--white); border-radius: 18px;
+      border: 2px dashed var(--border);
+      text-align: center; padding: 40px 20px;
+    }
+    .empty-day .e-icon { font-size: 2.5rem; margin-bottom: 10px; }
+    .empty-day .e-title { font-size: .95rem; font-weight: 700; color: var(--text-mid); }
+    .empty-day .e-sub { font-size: .82rem; color: var(--text-light); margin-top: 6px; }
+
+    /* ── STATS BAR ── */
+    .stats-bar {
+      background: var(--white); border-radius: 14px;
+      border: 1px solid var(--border);
+      display: flex; overflow: hidden;
+    }
+    .stats-bar-item { flex: 1; padding: 12px 8px; text-align: center; border-right: 1px solid var(--border); }
+    .stats-bar-item:last-child { border: none; }
+    .stats-val { font-size: 1.3rem; font-weight: 800; color: var(--primary); }
+    .stats-lbl { font-size: .65rem; color: var(--text-light); font-weight: 600; text-transform: uppercase; letter-spacing: .3px; margin-top: 2px; }
+
+    /* ── SCANNER FULLSCREEN ── */
+    .scanner-screen {
+      position: fixed; inset: 0;
+      background: #000; z-index: 200;
+      display: flex; flex-direction: column;
+      padding-top: env(safe-area-inset-top, 0);
+    }
+    .scanner-screen.hidden { display: none; }
+    .scanner-header {
+      background: var(--primary); padding: 14px 18px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .scanner-header-title { color: var(--white); font-size: .95rem; font-weight: 700; }
+    .scanner-header-sub { color: rgba(255,255,255,.6); font-size: .75rem; margin-top: 2px; }
+    .btn-scanner-close {
+      background: rgba(255,255,255,.15); border: none; color: var(--white);
+      padding: 9px 16px; border-radius: 10px; font-size: .85rem; font-weight: 700; cursor: pointer; font-family: inherit;
+    }
+    .scanner-viewport { flex: 1; position: relative; overflow: hidden; }
+    #qr-reader { width: 100%; height: 100%; }
+    #qr-reader video { width: 100% !important; height: 100% !important; object-fit: cover; }
+    #qr-reader canvas { display: none !important; }
+    .scanner-frame-overlay {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      pointer-events: none;
+    }
+    .scan-frame {
+      width: 220px; height: 220px;
+      border: 3px solid var(--accent);
+      border-radius: 20px;
+      box-shadow: 0 0 0 4000px rgba(0,0,0,.55);
+      position: relative;
+    }
+    .scan-frame::before, .scan-frame::after {
+      content: ''; position: absolute;
+      width: 24px; height: 24px;
+      border-color: var(--accent); border-style: solid;
+    }
+    .scan-frame::before { top: -3px; left: -3px; border-width: 4px 0 0 4px; border-radius: 4px 0 0 4px; }
+    .scan-frame::after { bottom: -3px; right: -3px; border-width: 0 4px 4px 0; border-radius: 0 0 4px 4px; }
+    .scan-hint {
+      position: absolute; bottom: 20px; left: 0; right: 0;
+      text-align: center; color: var(--white);
+      font-size: .82rem; font-weight: 500;
+      background: rgba(0,0,0,.5); padding: 8px 20px;
+    }
+    .scanner-manual-bar {
+      background: var(--white); padding: 14px 18px;
+      padding-bottom: calc(14px + env(safe-area-inset-bottom, 0));
+      display: flex; gap: 10px; align-items: center;
+    }
+    .scanner-manual-bar input {
+      flex: 1; padding: 12px 14px;
+      border: 1.5px solid var(--border); border-radius: 12px;
+      font-size: .9rem; font-family: monospace; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1px; outline: none;
+    }
+    .scanner-manual-bar input:focus { border-color: var(--accent); }
+    .btn-manual-ok {
+      background: var(--primary); color: var(--white);
+      border: none; border-radius: 12px;
+      padding: 12px 20px; font-size: .88rem; font-weight: 700;
+      cursor: pointer; font-family: inherit; white-space: nowrap;
+    }
+
+    /* ── RESULT SHEET ── */
+    .result-sheet {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      max-width: 500px; margin: 0 auto;
+      background: var(--white);
+      border-radius: 24px 24px 0 0;
+      padding: 24px 24px calc(24px + env(safe-area-inset-bottom, 0));
+      box-shadow: 0 -8px 40px rgba(0,0,0,.18);
+      z-index: 300;
+      transform: translateY(110%);
+      transition: transform .35s cubic-bezier(.34,1.56,.64,1);
+    }
+    .result-sheet.show { transform: translateY(0); }
+    .result-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+    .result-icon { font-size: 3rem; text-align: center; margin-bottom: 10px; }
+    .result-title { font-size: 1.05rem; font-weight: 700; text-align: center; }
+    .result-sub { font-size: .85rem; color: var(--text-light); text-align: center; margin-top: 6px; }
+    .result-sheet.ok { background: #f0fff8; }
+    .result-sheet.ok .result-title { color: #1b5e20; }
+    .result-sheet.err { background: #fff0f0; }
+    .result-sheet.err .result-title { color: #b71c1c; }
+    .btn-result-close {
+      width: 100%; margin-top: 20px;
+      background: var(--primary); color: var(--white);
+      border: none; border-radius: 14px;
+      padding: 16px; font-size: .95rem; font-weight: 700;
+      cursor: pointer; font-family: inherit;
+    }
+
+    /* ── BOTTOM NAV ── */
+    .bottom-bar {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 500px;
+      background: var(--white);
+      border-top: 1px solid var(--border);
+      padding: 10px 20px calc(10px + env(safe-area-inset-bottom, 0));
+      display: flex; align-items: center; justify-content: center;
+      z-index: 40;
+    }
+    .btn-scan-fab {
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      color: var(--white); border: none;
+      padding: 14px 32px; border-radius: 50px;
+      font-size: .95rem; font-weight: 700;
+      cursor: pointer; font-family: inherit;
+      display: flex; align-items: center; gap: 10px;
+      box-shadow: 0 4px 18px rgba(26,61,43,.3);
+      transition: all .18s;
+    }
+    .btn-scan-fab:active { transform: scale(.95); }
+
+    @media (min-width: 501px) {
+      .app { border-left: 1px solid var(--border); border-right: 1px solid var(--border); box-shadow: 0 0 60px rgba(0,0,0,.08); }
+      .scanner-screen, .result-sheet, .bottom-bar { max-width: 500px; left: 50%; transform: translateX(-50%); }
+      .result-sheet.show { transform: translateX(-50%) translateY(0); }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-brand">Somni<span>Link</span> <span style="font-size:.75rem;opacity:.6;font-weight:500">Livreur</span></div>
+      <div class="header-right">
+        <div class="header-name" id="livreurName"></div>
+        <button class="btn-logout" onclick="logout()">Déconnexion</button>
+      </div>
+    </div>
+
+    <!-- DATE STRIP -->
+    <div class="date-nav">
+      <div class="date-nav-header">
+        <span class="date-nav-label">Calendrier des tournées</span>
+        <span class="date-nav-today" onclick="goToday()">Aujourd'hui</span>
+      </div>
+      <div class="date-strip" id="dateStrip"></div>
+    </div>
+  </header>
+
+  <!-- TABS -->
+  <div class="tour-tabs">
+    <div class="tour-tab active" id="tabMatin" onclick="switchType('matin')">
+      <span class="tab-icon">🌅</span>
+      <span class="tab-label">MATIN 7h–9h</span>
+      <span class="tab-badge" id="badgeMatin">0</span>
+    </div>
+    <div class="tour-tab" id="tabSoir" onclick="switchType('soir')">
+      <span class="tab-icon">🌆</span>
+      <span class="tab-label">SOIR 17h–19h</span>
+      <span class="tab-badge" id="badgeSoir">0</span>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <main class="main" id="mainContent">
+    <div style="text-align:center;padding:40px">
+      <div style="width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto"></div>
+    </div>
+  </main>
+</div>
+
+<!-- SCANNER FULLSCREEN -->
+<div class="scanner-screen hidden" id="scannerScreen">
+  <div class="scanner-header">
+    <div>
+      <div class="scanner-header-title" id="scannerTitle">Scanner le boîtier</div>
+      <div class="scanner-header-sub" id="scannerSub">Pointez la caméra sur le QR code</div>
+    </div>
+    <button class="btn-scanner-close" onclick="closeScanner()">✕ Fermer</button>
+  </div>
+  <div class="scanner-viewport">
+    <div id="qr-reader"></div>
+    <div class="scanner-frame-overlay">
+      <div class="scan-frame"></div>
+    </div>
+    <div class="scan-hint">Placez le QR code dans le cadre</div>
+  </div>
+  <div class="scanner-manual-bar">
+    <input type="text" id="manualInput" placeholder="Ex: SL-B01" maxlength="12">
+    <button class="btn-manual-ok" onclick="confirmManual()">Valider</button>
+  </div>
+</div>
+
+<!-- RESULT SHEET -->
+<div class="result-sheet" id="resultSheet">
+  <div class="result-handle"></div>
+  <div class="result-icon" id="resultIcon"></div>
+  <div class="result-title" id="resultTitle"></div>
+  <div class="result-sub" id="resultSub"></div>
+  <button class="btn-result-close" onclick="closeResult()">Continuer</button>
+</div>
+
+<!-- BOTTOM BAR -->
+<div class="bottom-bar">
+  <button class="btn-scan-fab" onclick="openScannerDirect()">
+    <span style="font-size:1.2rem">📷</span> Scanner un boîtier
+  </button>
+</div>
+
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
+<script>
+const API = '';
+const token = localStorage.getItem('sl_token');
+const user = JSON.parse(localStorage.getItem('sl_user') || 'null');
+if (!token || !user || user.role !== 'livreur') window.location.href = '/';
+document.getElementById('livreurName').textContent = `${user.prenom} ${user.nom}`;
+
+function authHeaders() {
+  return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+}
+function logout() {
+  localStorage.removeItem('sl_token');
+  localStorage.removeItem('sl_user');
+  window.location.href = '/';
+}
+
+// ── STATE ──────────────────────────────────────────────
+let selectedDate = new Date().toISOString().split('T')[0];
+let selectedType = 'matin';
+let joursTournees = [];
+let stopsCache = {};
+let currentStopId = null;
+let html5QrCode = null;
+
+// ── DATE STRIP ─────────────────────────────────────────
+async function loadJoursTournees() {
+  try {
+    const res = await fetch(`${API}/api/livreur/jours-tournees`, { headers: authHeaders() });
+    joursTournees = await res.json();
+  } catch(e) {}
+  renderDateStrip();
+}
+
+function renderDateStrip() {
+  const strip = document.getElementById('dateStrip');
+  const jours = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+  const mois = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+
+  // Générer 21 jours : aujourd'hui -3 jusqu'à +17
+  const today = new Date();
+  const chips = [];
+  for (let i = -3; i <= 17; i++) {
+    const d = new Date(today); d.setDate(today.getDate() + i);
+    const dStr = d.toISOString().split('T')[0];
+    const jourInfo = joursTournees.find(j => j.date === dStr);
+    const hasTournee = !!jourInfo;
+    const allDone = hasTournee && jourInfo.total_attente === 0;
+    const isToday = i === 0;
+    const isSelected = dStr === selectedDate;
+
+    chips.push({ dStr, d, jourInfo, hasTournee, allDone, isToday, isSelected, dow: jours[d.getDay()], day: d.getDate(), mo: mois[d.getMonth()] });
+  }
+
+  strip.innerHTML = chips.map(c => `
+    <div class="date-chip ${c.isSelected ? 'active' : ''} ${c.hasTournee ? 'has-tournee' : ''} ${c.allDone ? 'all-done' : ''}"
+         onclick="selectDate('${c.dStr}')" id="chip-${c.dStr}">
+      <div class="chip-dow">${c.isToday ? 'Auj.' : c.dow}</div>
+      <div class="chip-day">${c.day}</div>
+      <div class="chip-count">${c.hasTournee ? c.jourInfo.total + ' stop' + (c.jourInfo.total > 1 ? 's' : '') : c.mo}</div>
+    </div>
+  `).join('');
+
+  // Scroll vers aujourd'hui
+  setTimeout(() => {
+    const todayChip = document.getElementById(`chip-${today.toISOString().split('T')[0]}`);
+    if (todayChip) todayChip.scrollIntoView({ inline: 'center', behavior: 'smooth' });
+  }, 100);
+}
+
+function selectDate(dStr) {
+  selectedDate = dStr;
+  renderDateStrip();
+  loadStops();
+}
+
+function goToday() {
+  selectedDate = new Date().toISOString().split('T')[0];
+  renderDateStrip();
+  loadStops();
+  const todayChip = document.getElementById(`chip-${selectedDate}`);
+  if (todayChip) todayChip.scrollIntoView({ inline: 'center', behavior: 'smooth' });
+}
+
+function switchType(type) {
+  selectedType = type;
+  document.getElementById('tabMatin').classList.toggle('active', type === 'matin');
+  document.getElementById('tabSoir').classList.toggle('active', type === 'soir');
+  renderStops();
+}
+
+// ── STOPS ──────────────────────────────────────────────
+async function loadStops() {
+  document.getElementById('mainContent').innerHTML = `
+    <div style="text-align:center;padding:40px">
+      <div style="width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto"></div>
+    </div>`;
+
+  try {
+    const res = await fetch(`${API}/api/livreur/tournees?date=${selectedDate}`, { headers: authHeaders() });
+    const stops = await res.json();
+    stopsCache[selectedDate] = stops;
+
+    const matin = stops.filter(s => s.type === 'matin');
+    const soir = stops.filter(s => s.type === 'soir');
+
+    // Badges
+    const nbMatinAttente = matin.filter(s => s.statut !== 'complete').length;
+    const nbSoirAttente = soir.filter(s => s.statut !== 'complete').length;
+    const bmBadge = document.getElementById('badgeMatin');
+    const bsBadge = document.getElementById('badgeSoir');
+    bmBadge.textContent = nbMatinAttente || matin.length;
+    bsBadge.textContent = nbSoirAttente || soir.length;
+    bmBadge.className = `tab-badge${nbMatinAttente > 0 ? ' has-items' : ''}`;
+    bsBadge.className = `tab-badge${nbSoirAttente > 0 ? ' has-items' : ''}`;
+
+    renderStops();
+  } catch(e) {
+    document.getElementById('mainContent').innerHTML = `<div style="text-align:center;padding:40px;color:var(--text-light)">Erreur de chargement</div>`;
+  }
+}
+
+function renderStops() {
+  const stops = (stopsCache[selectedDate] || []).filter(s => s.type === selectedType);
+  const main = document.getElementById('mainContent');
+
+  // Formater la date lisible
+  const d = new Date(selectedDate + 'T12:00:00');
+  const dateLabel = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  const isToday = selectedDate === new Date().toISOString().split('T')[0];
+
+  const pending = stops.filter(s => s.statut !== 'complete');
+  const done = stops.filter(s => s.statut === 'complete');
+
+  if (stops.length === 0) {
+    const msg = selectedType === 'matin' ? 'récupération prévue' : 'livraison prévue';
+    main.innerHTML = `
+      <div class="day-title">
+        <span class="day-title-text">${isToday ? "Aujourd'hui" : dateLabel}</span>
+        <span class="day-title-sub">${selectedType === 'matin' ? '7h–9h' : '17h–19h'}</span>
+      </div>
+      <div class="empty-day">
+        <div class="e-icon">${selectedType === 'matin' ? '🌅' : '🌆'}</div>
+        <div class="e-title">Aucune ${msg}</div>
+        <div class="e-sub">Tournée non déclenchée pour ce créneau.<br>Minimum 20 courses requises.</div>
+      </div>`;
+    return;
+  }
+
+  const statsHtml = `
+    <div class="stats-bar">
+      <div class="stats-bar-item"><div class="stats-val">${stops.length}</div><div class="stats-lbl">Total</div></div>
+      <div class="stats-bar-item"><div class="stats-val" style="color:var(--accent)">${pending.length}</div><div class="stats-lbl">En attente</div></div>
+      <div class="stats-bar-item"><div class="stats-val" style="color:#40916c">${done.length}</div><div class="stats-lbl">Fait</div></div>
+    </div>`;
+
+  const cardsHtml = stops.map((s, i) => {
+    const isDone = s.statut === 'complete';
+    const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(s.patient_adresse)}`;
+    return `
+      <div class="stop-card ${isDone ? 'done' : ''}" id="stop-${s.id}">
+        <div class="card-top">
+          <div class="card-top-left">
+            <div class="stop-num">${i + 1}</div>
+            <div class="stop-patient">
+              <div class="stop-name">${s.patient_prenom} ${s.patient_nom}</div>
+              <div class="stop-boitier">📦 ${s.boitier_numero || 'Non assigné'} · 📞 ${s.patient_telephone}</div>
+            </div>
+          </div>
+          ${isDone
+            ? `<span class="action-pill pill-done">✓ Fait</span>`
+            : `<span class="action-pill ${s.action === 'livrer' ? 'pill-livrer' : 'pill-recuperer'}">${s.action === 'livrer' ? '📦 LIVRER' : '🔙 RÉCUP.'}</span>`}
+        </div>
+        <div class="card-address">
+          <span class="card-address-icon">📍</span>
+          ${s.patient_adresse}
+        </div>
+        ${!isDone ? `
+        <div class="card-actions">
+          <a href="${mapsUrl}" target="_blank" class="btn-nav">🗺️ Navigation</a>
+          <button class="btn-scan-card" onclick="openScanner(${s.id}, '${s.boitier_numero || ''}', '${s.action}')">
+            📷 Scanner
+          </button>
+          <button class="btn-probleme" onclick="signalerProbleme(${s.id})">⚠️ Signaler un problème</button>
+        </div>` : ''}
+      </div>`;
+  }).join('');
+
+  main.innerHTML = `
+    <div class="day-title">
+      <span class="day-title-text">${isToday ? "Aujourd'hui" : dateLabel}</span>
+      <span class="day-title-sub">${selectedType === 'matin' ? '7h–9h' : '17h–19h'}</span>
+    </div>
+    ${statsHtml}
+    ${cardsHtml}`;
+}
+
+// ── SCANNER ────────────────────────────────────────────
+function openScanner(stopId, boitierNumero, action) {
+  currentStopId = stopId;
+  const label = action === 'livrer' ? 'Livraison — Scanner le boîtier' : 'Récupération — Scanner le boîtier';
+  const sub = action === 'livrer'
+    ? `Scannez ${boitierNumero} avant le dépôt chez le patient`
+    : `Scannez ${boitierNumero} que vous récupérez`;
+  document.getElementById('scannerTitle').textContent = label;
+  document.getElementById('scannerSub').textContent = sub;
+  document.getElementById('manualInput').value = boitierNumero || '';
+  document.getElementById('scannerScreen').classList.remove('hidden');
+  startCamera();
+}
+
+function openScannerDirect() {
+  currentStopId = null;
+  document.getElementById('scannerTitle').textContent = 'Scanner un boîtier';
+  document.getElementById('scannerSub').textContent = 'Scan libre — statut mis à jour automatiquement';
+  document.getElementById('manualInput').value = '';
+  document.getElementById('scannerScreen').classList.remove('hidden');
+  startCamera();
+}
+
+function startCamera() {
+  const el = document.getElementById('qr-reader');
+  el.innerHTML = '';
+  if (html5QrCode) { html5QrCode.stop().catch(() => {}); }
+  html5QrCode = new Html5Qrcode('qr-reader');
+  html5QrCode.start(
+    { facingMode: 'environment' },
+    { fps: 12, qrbox: { width: 200, height: 200 }, aspectRatio: window.innerHeight / window.innerWidth },
+    (decoded) => { stopCamera(); confirmScan(decoded.trim().toUpperCase()); },
+    () => {}
+  ).catch(() => {
+    el.innerHTML = `<div style="color:#fff;text-align:center;padding:60px 20px;font-size:.9rem;line-height:1.6">
+      📷 Caméra non disponible<br><small style="opacity:.6">Utilisez la saisie manuelle ci-dessous</small></div>`;
+  });
+}
+
+function stopCamera() {
+  if (html5QrCode) { html5QrCode.stop().catch(() => {}); html5QrCode = null; }
+}
+
+function closeScanner() {
+  stopCamera();
+  document.getElementById('scannerScreen').classList.add('hidden');
+  currentStopId = null;
+}
+
+function confirmManual() {
+  const val = document.getElementById('manualInput').value.trim().toUpperCase();
+  if (!val) return;
+  stopCamera();
+  confirmScan(val);
+}
+
+document.getElementById('manualInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') confirmManual();
+});
+
+async function confirmScan(boitierNumero) {
+  document.getElementById('scannerScreen').classList.add('hidden');
+  try {
+    const res = await fetch(`${API}/api/livreur/scan`, {
+      method: 'POST', headers: authHeaders(),
+      body: JSON.stringify({ boitier_numero: boitierNumero, stop_id: currentStopId })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showResult('ok', '✅', data.message, `Boîtier : ${boitierNumero}`);
+      await loadJoursTournees();
+      await loadStops();
+    } else {
+      showResult('err', '❌', data.error || 'Erreur', `Boîtier : ${boitierNumero}`);
+    }
+  } catch(e) {
+    showResult('err', '❌', 'Erreur réseau', 'Vérifiez votre connexion internet');
+  }
+}
+
+async function signalerProbleme(stopId) {
+  if (!confirm('Signaler ce stop comme problématique ?')) return;
+  await fetch(`${API}/api/livreur/stops/${stopId}/echec`, { method: 'PUT', headers: authHeaders() });
+  await loadStops();
+}
+
+function showResult(type, icon, title, sub) {
+  const sheet = document.getElementById('resultSheet');
+  sheet.className = `result-sheet ${type}`;
+  document.getElementById('resultIcon').textContent = icon;
+  document.getElementById('resultTitle').textContent = title;
+  document.getElementById('resultSub').textContent = sub;
+  sheet.classList.add('show');
+  if (type === 'ok') setTimeout(closeResult, 3500);
+}
+function closeResult() {
+  document.getElementById('resultSheet').classList.remove('show');
+}
+
+// ── INIT ───────────────────────────────────────────────
+(async () => {
+  await loadJoursTournees();
+  await loadStops();
+})();
+
+// Rafraîchir à chaque fois que l'app revient au premier plan
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) { loadJoursTournees(); loadStops(); }
+});
+</script>
+</body>
+</html>

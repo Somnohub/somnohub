@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SomnoHub — Médecin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/somnohub.css">
+  <style>
+    /* Layout */
+    .app { display: flex; flex-direction: column; min-height: 100vh; }
+
+    /* Header */
+    .header {
+      background: var(--primary);
+      color: var(--white);
+      padding: 0 28px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,.2);
+    }
+    .header-brand { font-size: 1.3rem; font-weight: 800; letter-spacing: -0.5px; }
+    .header-brand span { color: var(--accent-light); }
+    .header-user { display: flex; align-items: center; gap: 16px; }
+    .header-user-name { font-size: .9rem; font-weight: 500; opacity: .9; }
+    .btn-logout {
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.2);
+      color: var(--white);
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: .82rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .18s;
+    }
+    .btn-logout:hover { background: rgba(255,255,255,.22); }
+
+    /* Tabs */
+    .tabs {
+      background: var(--white);
+      border-bottom: 1.5px solid var(--border);
+      padding: 0 28px;
+      display: flex;
+      gap: 4px;
+    }
+    .tab-btn {
+      padding: 14px 20px;
+      border: none;
+      background: none;
+      font-size: .9rem;
+      font-weight: 600;
+      color: var(--text-light);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -1.5px;
+      transition: all .18s;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--accent); }
+    .tab-btn:hover:not(.active) { color: var(--text-mid); }
+    .tab-badge {
+      background: var(--hors-service);
+      color: var(--white);
+      border-radius: 10px;
+      padding: 1px 7px;
+      font-size: .72rem;
+      font-weight: 700;
+    }
+
+    /* Main */
+    .main { flex: 1; padding: 28px; max-width: 1100px; margin: 0 auto; width: 100%; }
+
+    /* Section header */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .section-title { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
+    .section-count { font-size: .85rem; color: var(--text-light); font-weight: 500; }
+
+    /* Search bar */
+    .search-bar {
+      position: relative;
+      width: 280px;
+    }
+    .search-bar input {
+      width: 100%;
+      padding: 10px 14px 10px 36px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: .875rem;
+      outline: none;
+      background: var(--white);
+    }
+    .search-bar input:focus { border-color: var(--accent); }
+    .search-icon {
+      position: absolute;
+      left: 11px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-light);
+      font-size: .9rem;
+    }
+
+    /* Patient list */
+    .patient-list { display: flex; flex-direction: column; gap: 10px; }
+    .patient-card {
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      cursor: pointer;
+      transition: all .18s;
+    }
+    .patient-card:hover { border-color: var(--accent); box-shadow: var(--shadow); transform: translateY(-1px); }
+    .patient-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: var(--white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: .95rem;
+      flex-shrink: 0;
+    }
+    .patient-info { flex: 1; min-width: 0; }
+    .patient-name { font-weight: 600; font-size: .95rem; color: var(--text); }
+    .patient-meta { font-size: .8rem; color: var(--text-light); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .patient-right { text-align: right; flex-shrink: 0; }
+    .patient-date { font-size: .75rem; color: var(--text-light); margin-top: 6px; }
+    .score-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: .72rem;
+      font-weight: 700;
+    }
+    .score-low { background: #e8f5e9; color: #388e3c; }
+    .score-mid { background: #fff3e0; color: #f57c00; }
+    .score-high { background: #fdecea; color: #c62828; }
+
+    /* Suivi tab */
+    .suivi-filters {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .filter-btn {
+      padding: 8px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      background: var(--white);
+      font-size: .82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .18s;
+      color: var(--text-mid);
+    }
+    .filter-btn.active { background: var(--primary); border-color: var(--primary); color: var(--white); }
+    .filter-btn:hover:not(.active) { border-color: var(--accent); color: var(--primary); }
+    .suivi-card {
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 10px;
+    }
+    .suivi-card.en-retard { border-color: var(--hors-service); background: #fff8f8; }
+    .suivi-card.echeance { border-color: var(--maintenance); background: #fffbf4; }
+    .suivi-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+    .suivi-tag {
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: .72rem;
+      font-weight: 700;
+    }
+    .tag-retard { background: #fdecea; color: var(--hors-service); }
+    .tag-proche { background: #fff3e0; color: var(--maintenance); }
+    .tag-ok { background: #e8f5e9; color: var(--disponible); }
+
+    /* Dossier patient panel */
+    .dossier-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.4);
+      z-index: 200;
+      display: none;
+      backdrop-filter: blur(2px);
+    }
+    .dossier-panel {
+      position: fixed;
+      right: 0; top: 0; bottom: 0;
+      width: 520px;
+      background: var(--white);
+      box-shadow: -8px 0 32px rgba(0,0,0,.15);
+      z-index: 201;
+      transform: translateX(100%);
+      transition: transform .3s ease;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    .dossier-panel.open { transform: translateX(0); }
+    .dossier-overlay.open { display: block; }
+    .dossier-header {
+      padding: 24px;
+      background: var(--primary);
+      color: var(--white);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+    .dossier-patient-name { font-size: 1.3rem; font-weight: 700; }
+    .dossier-patient-meta { font-size: .85rem; opacity: .8; margin-top: 4px; }
+    .dossier-close {
+      background: rgba(255,255,255,.15);
+      border: none;
+      color: var(--white);
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      font-size: 1.2rem;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .dossier-body { padding: 24px; flex: 1; }
+    .dossier-section { margin-bottom: 24px; }
+    .dossier-section-title {
+      font-size: .75rem;
+      font-weight: 700;
+      color: var(--text-light);
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .dossier-section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .info-item { }
+    .info-label { font-size: .75rem; color: var(--text-light); font-weight: 500; }
+    .info-value { font-size: .9rem; font-weight: 600; color: var(--text); margin-top: 2px; }
+
+    /* Timeline */
+    .timeline { position: relative; }
+    .timeline-item {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 16px;
+      position: relative;
+    }
+    .timeline-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+      margin-top: 5px;
+      position: relative;
+      z-index: 1;
+    }
+    .timeline-item:not(:last-child) .timeline-dot::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 12px;
+      transform: translateX(-50%);
+      width: 2px;
+      height: calc(100% + 8px);
+      background: var(--border);
+    }
+    .timeline-content { flex: 1; }
+    .timeline-statut { font-size: .85rem; font-weight: 600; color: var(--primary); }
+    .timeline-note { font-size: .8rem; color: var(--text-mid); margin-top: 2px; }
+    .timeline-date { font-size: .75rem; color: var(--text-light); margin-top: 3px; }
+
+    /* Prescription form */
+    .stop-bang-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .score-display {
+      text-align: center;
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: var(--primary);
+      margin: 8px 0;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-light);
+    }
+    .empty-state .empty-icon { font-size: 3rem; margin-bottom: 12px; }
+    .empty-state p { font-size: .95rem; }
+
+    @media (max-width: 768px) {
+      .main { padding: 16px; }
+      .header { padding: 0 16px; }
+      .tabs { padding: 0 16px; overflow-x: auto; }
+      .dossier-panel { width: 100%; }
+      .form-row { grid-template-columns: 1fr; }
+      .search-bar { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-brand">Somni<span>Link</span></div>
+    <div class="header-user">
+      <span class="header-user-name" id="userName"></span>
+      <button class="btn-logout" onclick="logout()">Déconnexion</button>
+    </div>
+  </header>
+
+  <!-- Tabs -->
+  <nav class="tabs">
+    <button class="tab-btn active" onclick="switchTab('prescriptions', this)">
+      🩺 Mes patients <span id="countPrescriptions" class="tab-badge d-none"></span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('suivi', this)">
+      📅 Suivi long terme <span id="countSuivi" class="tab-badge d-none"></span>
+    </button>
+  </nav>
+
+  <main class="main">
+
+    <!-- ── Tab Prescriptions ── -->
+    <div id="tab-prescriptions">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Mes patients</div>
+          <div class="section-count" id="patientCount">Chargement...</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <div class="search-bar">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchInput" placeholder="Rechercher un patient..." oninput="filterPatients()">
+          </div>
+          <button class="btn btn-primary" onclick="openModal('prescriptionModal')">
+            + Nouvelle prescription
+          </button>
+        </div>
+      </div>
+      <div id="patientList" class="patient-list">
+        <div class="empty-state"><div class="empty-icon">⏳</div><p>Chargement des patients...</p></div>
+      </div>
+    </div>
+
+    <!-- ── Tab Suivi ── -->
+    <div id="tab-suivi" style="display:none">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Suivi long terme</div>
+          <div class="section-count">Patients en consultation d'annonce avec suivi actif</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="loadSuivi()">🔄 Actualiser</button>
+      </div>
+      <div class="suivi-filters">
+        <button class="filter-btn active" onclick="filterSuivi('tous', this)">Tous</button>
+        <button class="filter-btn" onclick="filterSuivi('3mois', this)">3 mois</button>
+        <button class="filter-btn" onclick="filterSuivi('6mois', this)">6 mois</button>
+        <button class="filter-btn" onclick="filterSuivi('1an', this)">1 an</button>
+        <button class="filter-btn" onclick="filterSuivi('retard', this)">⚠️ En retard</button>
+      </div>
+      <div id="suiviList"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── Modal Prescription ── -->
+<div class="modal-overlay d-none" id="prescriptionModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Nouvelle prescription</h3>
+      <button class="modal-close" onclick="closeModal('prescriptionModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="prescAlert" class="alert-box alert-error"></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nom *</label>
+          <input type="text" id="pNom" class="form-control" placeholder="Dupont">
+        </div>
+        <div class="form-group">
+          <label>Prénom *</label>
+          <input type="text" id="pPrenom" class="form-control" placeholder="Jean">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Téléphone *</label>
+        <input type="tel" id="pTel" class="form-control" placeholder="06 12 34 56 78">
+      </div>
+      <div class="form-group">
+        <label>Adresse *</label>
+        <input type="text" id="pAdresse" class="form-control" placeholder="15 rue de la Paix, 75001 Paris" id="addressInput">
+      </div>
+      <div class="form-group">
+        <label>Score STOP-BANG *
+          <span style="font-weight:400;color:var(--text-light);font-size:.8rem;margin-left:6px;">
+            (0 = pas de risque, 8 = risque maximal)
+          </span>
+        </label>
+        <select id="pScore" class="form-control" onchange="updateScoreDisplay()">
+          <option value="0">0 — Aucun facteur de risque</option>
+          <option value="1">1 — Risque faible</option>
+          <option value="2">2 — Risque faible</option>
+          <option value="3">3 — Risque intermédiaire</option>
+          <option value="4">4 — Risque intermédiaire</option>
+          <option value="5">5 — Risque élevé</option>
+          <option value="6">6 — Risque élevé</option>
+          <option value="7">7 — Risque très élevé</option>
+          <option value="8">8 — Risque maximal</option>
+        </select>
+        <div class="score-display" id="scoreDisplay">0</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('prescriptionModal')">Annuler</button>
+      <button class="btn btn-primary" id="prescBtn" onclick="createPrescription()">
+        ✓ Valider la prescription
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Dossier patient ── -->
+<div class="dossier-overlay" id="dossierOverlay" onclick="closeDossier()"></div>
+<div class="dossier-panel" id="dossierPanel">
+  <div class="dossier-header" id="dossierHeader"></div>
+  <div class="dossier-body" id="dossierBody"></div>
+</div>
+
+<!-- Toast -->
+<div id="toast-container"></div>
+
+<script>
+  const API = '';
+  let allPatients = [];
+  let suiviData = [];
+  let suiviFilter = 'tous';
+
+  // ── Auth ───────────────────────────────────────────────
+  const token = localStorage.getItem('sl_token');
+  const user = JSON.parse(localStorage.getItem('sl_user') || 'null');
+  if (!token || !user || user.role !== 'medecin') window.location.href = '/';
+  document.getElementById('userName').textContent = `Dr. ${user.prenom} ${user.nom}`;
+
+  function authHeaders() {
+    return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+  }
+
+  function logout() {
+    localStorage.removeItem('sl_token');
+    localStorage.removeItem('sl_user');
+    window.location.href = '/';
+  }
+
+  // ── Tabs ──────────────────────────────────────────────
+  function switchTab(tab, btn) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-prescriptions').style.display = tab === 'prescriptions' ? '' : 'none';
+    document.getElementById('tab-suivi').style.display = tab === 'suivi' ? '' : 'none';
+    if (tab === 'suivi') loadSuivi();
+  }
+
+  // ── Patients ──────────────────────────────────────────
+  async function loadPatients() {
+    try {
+      const res = await fetch(`${API}/api/medecin/patients`, { headers: authHeaders() });
+      if (res.status === 401) { logout(); return; }
+      allPatients = await res.json();
+      renderPatients(allPatients);
+    } catch (e) {
+      showToast('Erreur de chargement', 'error');
+    }
+  }
+
+  function filterPatients() {
+    const q = document.getElementById('searchInput').value.toLowerCase();
+    const filtered = allPatients.filter(p =>
+      `${p.nom} ${p.prenom} ${p.adresse} ${p.telephone}`.toLowerCase().includes(q)
+    );
+    renderPatients(filtered);
+  }
+
+  function renderPatients(patients) {
+    const el = document.getElementById('patientList');
+    document.getElementById('patientCount').textContent = `${patients.length} patient${patients.length > 1 ? 's' : ''}`;
+    const badge = document.getElementById('countPrescriptions');
+    badge.textContent = allPatients.length;
+    badge.classList.toggle('d-none', allPatients.length === 0);
+
+    if (patients.length === 0) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon">👤</div><p>Aucun patient trouvé</p></div>`;
+      return;
+    }
+
+    el.innerHTML = patients.map(p => `
+      <div class="patient-card" onclick="openDossier(${p.id})">
+        <div class="patient-avatar">${p.prenom[0]}${p.nom[0]}</div>
+        <div class="patient-info">
+          <div class="patient-name">${p.prenom} ${p.nom}</div>
+          <div class="patient-meta">📍 ${p.adresse}</div>
+          <div class="patient-meta">📞 ${p.telephone}${p.boitier_numero ? ` &nbsp;·&nbsp; 📦 ${p.boitier_numero}` : ''}</div>
+        </div>
+        <div class="patient-right">
+          <span class="badge ${statutBadgeClass(p.statut)}">${statutLabel(p.statut)}</span>
+          <div class="patient-date">${formatDate(p.updated_at)}</div>
+          <div class="mt-8">
+            <span class="score-badge ${scoreClass(p.score_stop_bang)}">STOP-BANG ${p.score_stop_bang}/8</span>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // ── Suivi ─────────────────────────────────────────────
+  async function loadSuivi() {
+    document.getElementById('suiviList').innerHTML = '<div class="empty-state"><div class="spinner"></div></div>';
+    try {
+      const res = await fetch(`${API}/api/medecin/suivi`, { headers: authHeaders() });
+      suiviData = await res.json();
+      const enRetard = suiviData.filter(p => p.en_retard_3mois || p.en_retard_6mois || p.en_retard_1an);
+      const badge = document.getElementById('countSuivi');
+      badge.textContent = enRetard.length;
+      badge.classList.toggle('d-none', enRetard.length === 0);
+      renderSuivi();
+    } catch (e) {
+      showToast('Erreur suivi', 'error');
+    }
+  }
+
+  function filterSuivi(f, btn) {
+    suiviFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderSuivi();
+  }
+
+  function renderSuivi() {
+    let data = suiviData;
+    if (suiviFilter === '3mois') data = data.filter(p => p.echeance_3mois || p.en_retard_3mois);
+    else if (suiviFilter === '6mois') data = data.filter(p => p.echeance_6mois || p.en_retard_6mois);
+    else if (suiviFilter === '1an') data = data.filter(p => p.echeance_1an || p.en_retard_1an);
+    else if (suiviFilter === 'retard') data = data.filter(p => p.en_retard_3mois || p.en_retard_6mois || p.en_retard_1an);
+
+    const el = document.getElementById('suiviList');
+    if (data.length === 0) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon">✅</div><p>Aucun patient dans cette catégorie</p></div>`;
+      return;
+    }
+
+    el.innerHTML = data.map(p => {
+      const tags = [];
+      if (p.en_retard_3mois) tags.push(`<span class="suivi-tag tag-retard">⚠️ 3 mois dépassé</span>`);
+      else if (p.echeance_3mois) tags.push(`<span class="suivi-tag tag-proche">⏰ 3 mois dans 15j (${p.suivi_3mois_date})</span>`);
+      if (p.en_retard_6mois) tags.push(`<span class="suivi-tag tag-retard">⚠️ 6 mois dépassé</span>`);
+      else if (p.echeance_6mois) tags.push(`<span class="suivi-tag tag-proche">⏰ 6 mois dans 15j (${p.suivi_6mois_date})</span>`);
+      if (p.en_retard_1an) tags.push(`<span class="suivi-tag tag-retard">⚠️ 1 an dépassé</span>`);
+      else if (p.echeance_1an) tags.push(`<span class="suivi-tag tag-proche">⏰ 1 an dans 15j (${p.suivi_1an_date})</span>`);
+      if (tags.length === 0) tags.push(`<span class="suivi-tag tag-ok">✓ À jour</span>`);
+
+      const isRetard = p.en_retard_3mois || p.en_retard_6mois || p.en_retard_1an;
+      const isEcheance = p.echeance_3mois || p.echeance_6mois || p.echeance_1an;
+
+      return `
+        <div class="suivi-card ${isRetard ? 'en-retard' : isEcheance ? 'echeance' : ''}" onclick="openDossier(${p.id})">
+          <div class="patient-avatar">${p.prenom[0]}${p.nom[0]}</div>
+          <div class="patient-info">
+            <div class="patient-name">${p.prenom} ${p.nom}</div>
+            <div class="patient-meta">📞 ${p.telephone}</div>
+            <div class="suivi-tags mt-8">${tags.join('')}</div>
+          </div>
+          <div class="patient-right">
+            <div style="font-size:.75rem;color:var(--text-light)">Résultat le</div>
+            <div style="font-weight:600;font-size:.85rem">${p.date_resultat ? p.date_resultat.split('T')[0] : '—'}</div>
+            <div class="mt-8"><span class="score-badge ${scoreClass(p.score_stop_bang)}">STOP-BANG ${p.score_stop_bang}/8</span></div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // ── Dossier patient ───────────────────────────────────
+  async function openDossier(id) {
+    document.getElementById('dossierOverlay').classList.add('open');
+    document.getElementById('dossierPanel').classList.add('open');
+    document.getElementById('dossierBody').innerHTML = '<div class="empty-state"><div class="spinner"></div></div>';
+
+    try {
+      const res = await fetch(`${API}/api/medecin/patients/${id}`, { headers: authHeaders() });
+      const p = await res.json();
+      renderDossier(p);
+    } catch (e) {
+      showToast('Erreur chargement dossier', 'error');
+    }
+  }
+
+  function renderDossier(p) {
+    document.getElementById('dossierHeader').innerHTML = `
+      <div>
+        <div class="dossier-patient-name">${p.prenom} ${p.nom}</div>
+        <div class="dossier-patient-meta">📞 ${p.telephone} &nbsp;·&nbsp; <span class="badge ${statutBadgeClass(p.statut)}" style="font-size:.75rem">${statutLabel(p.statut)}</span></div>
+      </div>
+      <button class="dossier-close" onclick="closeDossier()">✕</button>
+    `;
+
+    const canAnnonce = p.statut === 'resultat_disponible';
+
+    document.getElementById('dossierBody').innerHTML = `
+      <div class="dossier-section">
+        <div class="dossier-section-title">Informations</div>
+        <div class="info-grid">
+          <div class="info-item"><div class="info-label">Adresse</div><div class="info-value" style="font-size:.82rem">${p.adresse}</div></div>
+          <div class="info-item"><div class="info-label">Score STOP-BANG</div><div class="info-value"><span class="score-badge ${scoreClass(p.score_stop_bang)}">${p.score_stop_bang}/8</span></div></div>
+          <div class="info-item"><div class="info-label">Boîtier</div><div class="info-value">${p.boitier_numero || '—'}</div></div>
+          <div class="info-item"><div class="info-label">Prescription</div><div class="info-value">${formatDate(p.created_at)}</div></div>
+          ${p.date_resultat ? `<div class="info-item"><div class="info-label">Résultat disponible</div><div class="info-value">${formatDate(p.date_resultat)}</div></div>` : ''}
+        </div>
+      </div>
+
+      ${canAnnonce ? `
+      <div class="dossier-section">
+        <div class="dossier-section-title">Action médecin</div>
+        <button class="btn btn-primary btn-full" onclick="marquerConsultation(${p.id})">
+          ✓ Marquer consultation d'annonce réalisée
+        </button>
+      </div>` : ''}
+
+      <div class="dossier-section">
+        <div class="dossier-section-title">Historique</div>
+        <div class="timeline">
+          ${(p.historique || []).map(h => `
+            <div class="timeline-item">
+              <div class="timeline-dot"></div>
+              <div class="timeline-content">
+                <div class="timeline-statut">${statutLabel(h.statut)}</div>
+                ${h.note ? `<div class="timeline-note">${h.note}</div>` : ''}
+                <div class="timeline-date">${formatDatetime(h.created_at)}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      ${(p.smsLogs || []).length > 0 ? `
+      <div class="dossier-section">
+        <div class="dossier-section-title">SMS envoyés</div>
+        ${p.smsLogs.map(s => `
+          <div style="padding:10px;background:var(--bg);border-radius:8px;margin-bottom:8px;">
+            <div style="font-size:.75rem;font-weight:600;color:var(--text-mid)">${smsTypeLabel(s.type)} — <span style="color:var(--text-light)">${formatDate(s.created_at)}</span></div>
+            <div style="font-size:.82rem;color:var(--text);margin-top:4px">${s.message}</div>
+          </div>
+        `).join('')}
+      </div>` : ''}
+    `;
+  }
+
+  function closeDossier() {
+    document.getElementById('dossierOverlay').classList.remove('open');
+    document.getElementById('dossierPanel').classList.remove('open');
+  }
+
+  async function marquerConsultation(id) {
+    const res = await fetch(`${API}/api/medecin/patients/${id}/statut`, {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify({ statut: 'consultation_annonce', note: 'Consultation d\'annonce réalisée par le médecin' })
+    });
+    if (res.ok) {
+      showToast('Consultation enregistrée', 'success');
+      closeDossier();
+      loadPatients();
+    }
+  }
+
+  // ── Prescription ──────────────────────────────────────
+  function updateScoreDisplay() {
+    const v = parseInt(document.getElementById('pScore').value);
+    const el = document.getElementById('scoreDisplay');
+    el.textContent = v;
+    el.style.color = v >= 5 ? 'var(--hors-service)' : v >= 3 ? 'var(--maintenance)' : 'var(--disponible)';
+  }
+
+  async function createPrescription() {
+    const btn = document.getElementById('prescBtn');
+    const alertEl = document.getElementById('prescAlert');
+    const nom = document.getElementById('pNom').value.trim();
+    const prenom = document.getElementById('pPrenom').value.trim();
+    const telephone = document.getElementById('pTel').value.trim();
+    const adresse = document.getElementById('pAdresse').value.trim();
+    const score = parseInt(document.getElementById('pScore').value);
+
+    if (!nom || !prenom || !telephone || !adresse) {
+      alertEl.textContent = 'Tous les champs sont obligatoires';
+      alertEl.style.display = 'block';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Enregistrement...';
+    alertEl.style.display = 'none';
+
+    try {
+      const res = await fetch(`${API}/api/medecin/patients`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ nom, prenom, telephone, adresse, score_stop_bang: score })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      closeModal('prescriptionModal');
+      ['pNom','pPrenom','pTel','pAdresse'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('pScore').value = '0';
+      updateScoreDisplay();
+      showToast(`Prescription créée pour ${prenom} ${nom}`, 'success');
+      loadPatients();
+    } catch (e) {
+      alertEl.textContent = e.message;
+      alertEl.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '✓ Valider la prescription';
+    }
+  }
+
+  // ── Helpers ───────────────────────────────────────────
+  function openModal(id) { document.getElementById(id).classList.remove('d-none'); }
+  function closeModal(id) { document.getElementById(id).classList.add('d-none'); }
+
+  function statutLabel(s) {
+    const labels = {
+      prescrit: 'Examen prescrit',
+      livraison_prevue: 'Livraison prévue',
+      livraison_effectuee: 'Livraison effectuée',
+      examen_en_cours: 'Examen en cours',
+      examen_termine: 'Examen terminé',
+      resultat_disponible: 'Résultat disponible',
+      consultation_annonce: 'Consultation d\'annonce'
+    };
+    return labels[s] || s;
+  }
+
+  function statutBadgeClass(s) {
+    const classes = {
+      prescrit: 'badge-prescrit',
+      livraison_prevue: 'badge-livraison-prevue',
+      livraison_effectuee: 'badge-livraison-effectuee',
+      examen_en_cours: 'badge-examen-en-cours',
+      examen_termine: 'badge-examen-termine',
+      resultat_disponible: 'badge-resultat-disponible',
+      consultation_annonce: 'badge-consultation-annonce'
+    };
+    return classes[s] || 'badge-prescrit';
+  }
+
+  function scoreClass(n) {
+    if (n >= 5) return 'score-high';
+    if (n >= 3) return 'score-mid';
+    return 'score-low';
+  }
+
+  function smsTypeLabel(t) {
+    const l = { prescription: 'Prescription', rappel_recuperation: 'Rappel récupération', suivi_3mois: 'Suivi 3 mois', suivi_6mois: 'Suivi 6 mois', suivi_1an: 'Suivi 1 an' };
+    return l[t] || t;
+  }
+
+  function formatDate(d) {
+    if (!d) return '—';
+    return new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  function formatDatetime(d) {
+    if (!d) return '—';
+    return new Date(d).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+  }
+
+  function showToast(msg, type = 'info') {
+    const c = document.getElementById('toast-container');
+    const t = document.createElement('div');
+    t.className = `toast toast-${type}`;
+    t.textContent = msg;
+    c.appendChild(t);
+    setTimeout(() => t.remove(), 3500);
+  }
+
+  // ── Init ──────────────────────────────────────────────
+  loadPatients();
+  updateScoreDisplay();
+</script>
+</body>
+</html>

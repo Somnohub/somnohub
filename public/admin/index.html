@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SomnoHub — Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/somnohub.css">
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+
+  <style>
+    body { overflow: hidden; }
+
+    /* ── Layout ── */
+    .app { display: flex; height: 100vh; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 220px;
+      background: var(--primary);
+      color: var(--white);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+    .sidebar-brand {
+      padding: 22px 20px 18px;
+      border-bottom: 1px solid rgba(255,255,255,.1);
+    }
+    .sidebar-brand .logo { font-size: 1.4rem; font-weight: 800; }
+    .sidebar-brand .logo span { color: var(--accent-light); }
+    .sidebar-brand .sub { font-size: .72rem; opacity: .6; margin-top: 2px; }
+
+    .sidebar-user {
+      padding: 14px 20px;
+      border-bottom: 1px solid rgba(255,255,255,.1);
+      font-size: .82rem;
+      opacity: .8;
+    }
+    .sidebar-user strong { display: block; font-size: .88rem; opacity: 1; }
+
+    .sidebar-nav { flex: 1; padding: 12px 0; overflow-y: auto; }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 20px;
+      cursor: pointer;
+      transition: all .16s;
+      font-size: .88rem;
+      font-weight: 500;
+      border-left: 3px solid transparent;
+      color: rgba(255,255,255,.75);
+      position: relative;
+    }
+    .nav-item:hover { background: rgba(255,255,255,.08); color: var(--white); }
+    .nav-item.active {
+      background: rgba(255,255,255,.12);
+      color: var(--white);
+      border-left-color: var(--accent);
+    }
+    .nav-icon { font-size: 1.1rem; width: 22px; text-align: center; }
+    .nav-badge {
+      position: absolute;
+      right: 14px;
+      background: var(--hors-service);
+      color: var(--white);
+      border-radius: 10px;
+      padding: 1px 7px;
+      font-size: .7rem;
+      font-weight: 700;
+    }
+
+    .sidebar-footer {
+      padding: 14px 20px;
+      border-top: 1px solid rgba(255,255,255,.1);
+    }
+    .btn-logout {
+      width: 100%;
+      background: rgba(255,255,255,.1);
+      border: 1px solid rgba(255,255,255,.15);
+      color: var(--white);
+      padding: 9px;
+      border-radius: 8px;
+      font-size: .82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .16s;
+    }
+    .btn-logout:hover { background: rgba(255,255,255,.2); }
+
+    /* ── Content ── */
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+    }
+    .content-header {
+      background: var(--white);
+      padding: 18px 28px;
+      border-bottom: 1.5px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .content-header h1 { font-size: 1.15rem; font-weight: 700; color: var(--primary); }
+    .content-header .header-actions { display: flex; gap: 10px; align-items: center; }
+
+    .content-body { padding: 24px 28px; flex: 1; }
+
+    /* ── Tabs visibilité ── */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* ── Carte section ── */
+    #map { height: calc(100vh - 180px); border-radius: var(--radius); overflow: hidden; }
+    .map-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: .82rem;
+      font-weight: 500;
+      color: var(--text-mid);
+    }
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .map-stats {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .map-stat {
+      background: var(--white);
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+    .map-stat .val { font-size: 1.4rem; font-weight: 800; }
+    .map-stat .lbl { font-size: .72rem; color: var(--text-light); font-weight: 500; margin-top: 2px; }
+
+    /* ── Boîtiers section ── */
+    .boitiers-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .statut-filter {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .filter-chip {
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1.5px solid var(--border);
+      background: var(--white);
+      font-size: .78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .15s;
+      color: var(--text-mid);
+    }
+    .filter-chip.active, .filter-chip:hover { background: var(--primary); border-color: var(--primary); color: var(--white); }
+
+    /* ── Alertes ── */
+    .alerte-item {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      border: 1px solid var(--border);
+      transition: all .15s;
+    }
+    .alerte-item.non-lu { border-left: 4px solid var(--hors-service); background: #fff8f8; }
+    .alerte-icon { font-size: 1.4rem; flex-shrink: 0; }
+    .alerte-body { flex: 1; }
+    .alerte-message { font-size: .88rem; font-weight: 600; color: var(--text); }
+    .alerte-meta { font-size: .78rem; color: var(--text-light); margin-top: 4px; }
+    .alerte-type-badge {
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: .72rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .alerte-actions { flex-shrink: 0; }
+    .btn-marquer-lu {
+      background: none;
+      border: 1.5px solid var(--border);
+      color: var(--text-light);
+      padding: 5px 12px;
+      border-radius: 8px;
+      font-size: .78rem;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all .15s;
+    }
+    .btn-marquer-lu:hover { border-color: var(--accent); color: var(--primary); }
+
+    /* ── Revenus ── */
+    .revenus-kpis { margin-bottom: 24px; }
+    .chart-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 22px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+    .chart-card h3 { font-size: .9rem; font-weight: 700; color: var(--primary); margin-bottom: 16px; }
+    .chart-wrap { position: relative; height: 240px; }
+
+    /* ── Comptes ── */
+    .medecin-row td:last-child { white-space: nowrap; }
+    .actif-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: .75rem;
+      font-weight: 600;
+    }
+    .actif-oui { background: #e8f5e9; color: var(--disponible); }
+    .actif-non { background: #fdecea; color: var(--hors-service); }
+
+    /* ── Modal QR ── */
+    .qr-preview { text-align: center; padding: 20px 0; }
+    .qr-preview img { max-width: 200px; border: 8px solid var(--white); box-shadow: var(--shadow); border-radius: 8px; }
+    .qr-numero { font-family: monospace; font-size: 1.2rem; font-weight: 800; color: var(--primary); margin-top: 12px; }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .sidebar { width: 60px; }
+      .sidebar-brand .logo, .sidebar-brand .sub, .sidebar-user, .nav-item span:not(.nav-icon) { display: none; }
+      .nav-item { justify-content: center; padding: 14px; }
+      .nav-badge { top: 8px; right: 8px; }
+      .content-body { padding: 16px; }
+      .map-stats { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 600px) {
+      body { overflow: auto; }
+      .app { flex-direction: column; height: auto; }
+      .sidebar { width: 100%; flex-direction: row; flex-shrink: 0; }
+      .sidebar-nav { display: flex; flex-direction: row; padding: 0; overflow-x: auto; }
+      .nav-item { flex-direction: column; gap: 2px; padding: 10px 14px; font-size: .7rem; border-left: none; border-bottom: 3px solid transparent; }
+      .nav-item.active { border-bottom-color: var(--accent); border-left: none; }
+      #map { height: 60vw; min-height: 240px; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── Sidebar ── -->
+  <nav class="sidebar">
+    <div class="sidebar-brand">
+      <div class="logo">Somni<span>Link</span></div>
+      <div class="sub">Administration</div>
+    </div>
+    <div class="sidebar-user">
+      <strong id="adminName">Admin</strong>
+      Administrateur
+    </div>
+    <div class="sidebar-nav">
+      <div class="nav-item active" onclick="showSection('carte', this)">
+        <span class="nav-icon">🗺️</span><span>Carte</span>
+      </div>
+      <div class="nav-item" onclick="showSection('boitiers', this)">
+        <span class="nav-icon">📦</span><span>Boîtiers</span>
+      </div>
+      <div class="nav-item" onclick="showSection('alertes', this)">
+        <span class="nav-icon">🔔</span><span>Alertes</span>
+        <span class="nav-badge d-none" id="alertBadge">0</span>
+      </div>
+      <div class="nav-item" onclick="showSection('revenus', this)">
+        <span class="nav-icon">💰</span><span>Revenus</span>
+      </div>
+      <div class="nav-item" onclick="showSection('comptes', this)">
+        <span class="nav-icon">👥</span><span>Comptes</span>
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <button class="btn-logout" onclick="logout()">↩ Déconnexion</button>
+    </div>
+  </nav>
+
+  <!-- ── Content ── -->
+  <div class="content">
+    <div class="content-header">
+      <h1 id="contentTitle">Carte — Tracking boîtiers</h1>
+      <div class="header-actions" id="headerActions">
+        <button class="btn btn-secondary btn-sm" onclick="refreshCurrent()">🔄 Actualiser</button>
+      </div>
+    </div>
+    <div class="content-body">
+
+      <!-- ── CARTE ── -->
+      <div class="tab-content active" id="section-carte">
+        <div class="map-stats" id="mapStats"></div>
+        <div class="map-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#40916c"></div>Disponible</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#2196F3"></div>Chez le patient</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#FF9800"></div>En maintenance</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#9C27B0"></div>En réserve</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#E63946"></div>Hors service</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#00BCD4"></div>Assigné</div>
+        </div>
+        <div id="map"></div>
+      </div>
+
+      <!-- ── BOÎTIERS ── -->
+      <div class="tab-content" id="section-boitiers">
+        <div class="boitiers-top">
+          <div class="statut-filter" id="boitierFilter">
+            <div class="filter-chip active" onclick="filterBoitiers('tous', this)">Tous</div>
+            <div class="filter-chip" onclick="filterBoitiers('disponible', this)">Disponibles</div>
+            <div class="filter-chip" onclick="filterBoitiers('chez_patient', this)">Chez patient</div>
+            <div class="filter-chip" onclick="filterBoitiers('maintenance', this)">Maintenance</div>
+            <div class="filter-chip" onclick="filterBoitiers('reserve', this)">Réserve</div>
+            <div class="filter-chip" onclick="filterBoitiers('hors_service', this)">Hors service</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="openModal('addBoitierModal')">+ Ajouter boîtier</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Numéro</th>
+                <th>Statut</th>
+                <th>Tracker GPS</th>
+                <th>Dernière action</th>
+                <th>Patient</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="boitiersBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── ALERTES ── -->
+      <div class="tab-content" id="section-alertes">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+          <div style="font-size:.9rem;color:var(--text-light)" id="alertesCount"></div>
+          <button class="btn btn-secondary btn-sm" onclick="toutMarquerLu()">✓ Tout marquer comme lu</button>
+        </div>
+        <div id="alertesList"></div>
+      </div>
+
+      <!-- ── REVENUS ── -->
+      <div class="tab-content" id="section-revenus">
+        <div class="revenus-kpis">
+          <div class="kpi-grid" id="revenusKpis"></div>
+        </div>
+        <div class="chart-card">
+          <h3>📊 Revenus par jour — 30 derniers jours</h3>
+          <div class="chart-wrap"><canvas id="chartJour"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>👨‍⚕️ Revenus par médecin — mois en cours</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Médecin</th><th>Examens</th><th>Revenus mois</th></tr></thead>
+              <tbody id="revenusMedecinBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── COMPTES ── -->
+      <div class="tab-content" id="section-comptes">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+          <button class="btn btn-primary btn-sm" onclick="openModal('addMedecinModal')">+ Créer un compte médecin</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Médecin</th>
+                <th>Email</th>
+                <th>Prescriptions</th>
+                <th>Dernière connexion</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="medecinsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal Ajouter boîtier ── -->
+<div class="modal-overlay d-none" id="addBoitierModal">
+  <div class="modal-box" style="max-width:420px">
+    <div class="modal-header">
+      <h3>Ajouter un boîtier</h3>
+      <button class="modal-close" onclick="closeModal('addBoitierModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="addBoitierAlert" class="alert-box alert-error"></div>
+      <div class="form-group">
+        <label>Numéro du boîtier *</label>
+        <input type="text" id="newBoitierNum" class="form-control" placeholder="SL-B11" style="font-family:monospace;font-weight:700;letter-spacing:1px;text-transform:uppercase">
+      </div>
+      <div class="form-group">
+        <label>Identifiant Tracker GPS</label>
+        <input type="text" id="newBoitierTracker" class="form-control" placeholder="TRACKER-11">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('addBoitierModal')">Annuler</button>
+      <button class="btn btn-primary" onclick="addBoitier()">Créer le boîtier</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal QR Code ── -->
+<div class="modal-overlay d-none" id="qrModal">
+  <div class="modal-box" style="max-width:340px">
+    <div class="modal-header">
+      <h3>QR Code boîtier</h3>
+      <button class="modal-close" onclick="closeModal('qrModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="qr-preview">
+        <img id="qrImage" src="" alt="QR Code">
+        <div class="qr-numero" id="qrNumero"></div>
+        <p class="text-muted mt-8">Imprimez ce QR code et collez-le sur le boîtier</p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('qrModal')">Fermer</button>
+      <button class="btn btn-primary" onclick="printQR()">🖨️ Imprimer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal Modifier statut boîtier ── -->
+<div class="modal-overlay d-none" id="editBoitierModal">
+  <div class="modal-box" style="max-width:380px">
+    <div class="modal-header">
+      <h3>Modifier le statut</h3>
+      <button class="modal-close" onclick="closeModal('editBoitierModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="text-muted mb-16">Boîtier : <strong id="editBoitierNum"></strong></p>
+      <div class="form-group">
+        <label>Nouveau statut</label>
+        <select id="editBoitierStatut" class="form-control">
+          <option value="disponible">Disponible</option>
+          <option value="assigne">Assigné</option>
+          <option value="chez_patient">Chez le patient</option>
+          <option value="maintenance">En maintenance</option>
+          <option value="reserve">En réserve</option>
+          <option value="hors_service">Hors service</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('editBoitierModal')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveBoitierStatut()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal Créer médecin ── -->
+<div class="modal-overlay d-none" id="addMedecinModal">
+  <div class="modal-box" style="max-width:460px">
+    <div class="modal-header">
+      <h3>Créer un compte médecin</h3>
+      <button class="modal-close" onclick="closeModal('addMedecinModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="addMedecinAlert" class="alert-box alert-error"></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nom *</label>
+          <input type="text" id="mNom" class="form-control" placeholder="Martin">
+        </div>
+        <div class="form-group">
+          <label>Prénom *</label>
+          <input type="text" id="mPrenom" class="form-control" placeholder="Sophie">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Email *</label>
+        <input type="email" id="mEmail" class="form-control" placeholder="dr.martin@clinique.fr">
+      </div>
+      <div class="form-group">
+        <label>Mot de passe temporaire *</label>
+        <input type="text" id="mPassword" class="form-control" placeholder="Medecin123!">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('addMedecinModal')">Annuler</button>
+      <button class="btn btn-primary" onclick="addMedecin()">Créer le compte</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+const API = '';
+const token = localStorage.getItem('sl_token');
+const user = JSON.parse(localStorage.getItem('sl_user') || 'null');
+if (!token || !user || user.role !== 'admin') window.location.href = '/';
+document.getElementById('adminName').textContent = `${user.prenom} ${user.nom}`;
+
+function authHeaders() {
+  return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+}
+function logout() {
+  localStorage.removeItem('sl_token');
+  localStorage.removeItem('sl_user');
+  window.location.href = '/';
+}
+
+// ── Navigation ────────────────────────────────────────────
+let currentSection = 'carte';
+const titles = {
+  carte: 'Carte — Tracking boîtiers en temps réel',
+  boitiers: 'Gestion des boîtiers',
+  alertes: 'Alertes automatiques',
+  revenus: 'Tableau de bord revenus',
+  comptes: 'Gestion des comptes médecins'
+};
+
+function showSection(section, el) {
+  currentSection = section;
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById('section-' + section).classList.add('active');
+  document.getElementById('contentTitle').textContent = titles[section];
+
+  if (section === 'carte') loadCarte();
+  else if (section === 'boitiers') loadBoitiers();
+  else if (section === 'alertes') loadAlertes();
+  else if (section === 'revenus') loadRevenus();
+  else if (section === 'comptes') loadComptes();
+}
+
+function refreshCurrent() { showSection(currentSection, document.querySelector('.nav-item.active')); }
+
+// ── Carte ─────────────────────────────────────────────────
+let map = null;
+let mapMarkers = [];
+
+const statutColors = {
+  disponible: '#40916c',
+  chez_patient: '#2196F3',
+  maintenance: '#FF9800',
+  reserve: '#9C27B0',
+  hors_service: '#E63946',
+  assigne: '#00BCD4'
+};
+
+function initMap() {
+  if (map) return;
+  map = L.map('map').setView([48.8566, 2.3522], 12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors',
+    maxZoom: 18
+  }).addTo(map);
+}
+
+async function loadCarte() {
+  initMap();
+  try {
+    const [resB, dashRes] = await Promise.all([
+      fetch(`${API}/api/admin/boitiers`, { headers: authHeaders() }),
+      fetch(`${API}/api/admin/dashboard`, { headers: authHeaders() })
+    ]);
+    const boitiers = await resB.json();
+    const dash = await dashRes.json();
+
+    // Stats bar
+    const counts = {};
+    boitiers.forEach(b => { counts[b.statut] = (counts[b.statut] || 0) + 1; });
+    document.getElementById('mapStats').innerHTML = [
+      { key: 'disponible', label: 'Disponibles', color: '#40916c' },
+      { key: 'chez_patient', label: 'Chez patient', color: '#2196F3' },
+      { key: 'maintenance', label: 'Maintenance', color: '#FF9800' },
+      { key: 'reserve', label: 'Réserve', color: '#9C27B0' },
+      { key: 'hors_service', label: 'Hors service', color: '#E63946' }
+    ].map(s => `
+      <div class="map-stat">
+        <div class="val" style="color:${s.color}">${counts[s.key] || 0}</div>
+        <div class="lbl">${s.label}</div>
+      </div>`).join('');
+
+    // Alert badge
+    const nonLues = dash.alertes_non_lues || 0;
+    const badge = document.getElementById('alertBadge');
+    badge.textContent = nonLues;
+    badge.classList.toggle('d-none', nonLues === 0);
+
+    // Markers
+    mapMarkers.forEach(m => m.remove());
+    mapMarkers = [];
+    const bounds = [];
+
+    boitiers.forEach(b => {
+      const color = statutColors[b.statut] || '#888';
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="40" viewBox="0 0 32 40">
+        <path d="M16 0C7.2 0 0 7.2 0 16c0 11.3 14.4 24 16 24S32 27.3 32 16C32 7.2 24.8 0 16 0z" fill="${color}"/>
+        <circle cx="16" cy="16" r="7" fill="white"/>
+        <text x="16" y="20" text-anchor="middle" font-size="9" font-weight="bold" fill="${color}">${b.numero.replace('SL-', '')}</text>
+      </svg>`;
+      const icon = L.divIcon({ html: svg, className: '', iconSize: [32, 40], iconAnchor: [16, 40], popupAnchor: [0, -40] });
+      const lat = b.lat || 48.8566;
+      const lng = b.lng || 2.3522;
+      const marker = L.marker([lat, lng], { icon }).addTo(map);
+      marker.bindPopup(`
+        <div style="font-family:Inter,sans-serif;min-width:160px">
+          <strong style="font-size:.95rem;color:#1a3d2b">${b.numero}</strong><br>
+          <span style="font-size:.8rem;color:#555">${statutLabel(b.statut)}</span><br>
+          ${b.patient_nom ? `<span style="font-size:.8rem">👤 ${b.patient_prenom} ${b.patient_nom}</span><br>` : ''}
+          <span style="font-size:.75rem;color:#999">${b.tracker_gps || 'Sans tracker'}</span>
+        </div>
+      `);
+      mapMarkers.push(marker);
+      bounds.push([lat, lng]);
+    });
+
+    if (bounds.length > 0) map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+    setTimeout(() => map.invalidateSize(), 100);
+  } catch (e) {
+    showToast('Erreur chargement carte', 'error');
+  }
+}
+
+// ── Boîtiers ──────────────────────────────────────────────
+let allBoitiers = [];
+let boitierFilterActif = 'tous';
+let currentEditBoitierId = null;
+
+async function loadBoitiers() {
+  try {
+    const res = await fetch(`${API}/api/admin/boitiers`, { headers: authHeaders() });
+    allBoitiers = await res.json();
+    renderBoitiers();
+  } catch (e) { showToast('Erreur', 'error'); }
+}
+
+function filterBoitiers(statut, el) {
+  boitierFilterActif = statut;
+  document.querySelectorAll('#boitierFilter .filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderBoitiers();
+}
+
+function renderBoitiers() {
+  const data = boitierFilterActif === 'tous' ? allBoitiers : allBoitiers.filter(b => b.statut === boitierFilterActif);
+  const tbody = document.getElementById('boitiersBody');
+  tbody.innerHTML = data.map(b => `
+    <tr>
+      <td><strong style="font-family:monospace;font-size:.9rem;color:var(--primary)">${b.numero}</strong></td>
+      <td><span class="badge ${boitierBadgeClass(b.statut)}">${statutLabel(b.statut)}</span></td>
+      <td style="font-size:.8rem;color:var(--text-light)">${b.tracker_gps || '—'}</td>
+      <td style="font-size:.8rem">${formatDatetime(b.derniere_action)}</td>
+      <td style="font-size:.82rem">${b.patient_nom ? `${b.patient_prenom} ${b.patient_nom}` : '—'}</td>
+      <td>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-secondary btn-sm" onclick="openQR(${b.id}, '${b.numero}')" title="QR Code">📱</button>
+          <button class="btn btn-outline btn-sm" onclick="openEditBoitier(${b.id}, '${b.numero}', '${b.statut}')" title="Modifier">✏️</button>
+        </div>
+      </td>
+    </tr>
+  `).join('') || `<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-light)">Aucun boîtier</td></tr>`;
+}
+
+function openQR(id, numero) {
+  document.getElementById('qrImage').src = `/api/admin/boitiers/${id}/qrcode?token=${token}`;
+  document.getElementById('qrNumero').textContent = numero;
+  openModal('qrModal');
+}
+
+function printQR() {
+  const img = document.getElementById('qrImage').src;
+  const num = document.getElementById('qrNumero').textContent;
+  const w = window.open('', '_blank');
+  w.document.write(`<html><body style="text-align:center;font-family:Inter,sans-serif;padding:40px">
+    <img src="${img}" style="width:200px"><br>
+    <strong style="font-size:1.4rem;letter-spacing:2px">${num}</strong>
+    <script>window.onload=()=>window.print()<\/script>
+  </body></html>`);
+}
+
+function openEditBoitier(id, numero, statut) {
+  currentEditBoitierId = id;
+  document.getElementById('editBoitierNum').textContent = numero;
+  document.getElementById('editBoitierStatut').value = statut;
+  openModal('editBoitierModal');
+}
+
+async function saveBoitierStatut() {
+  const statut = document.getElementById('editBoitierStatut').value;
+  const res = await fetch(`${API}/api/admin/boitiers/${currentEditBoitierId}`, {
+    method: 'PUT', headers: authHeaders(),
+    body: JSON.stringify({ statut })
+  });
+  if (res.ok) {
+    closeModal('editBoitierModal');
+    showToast('Statut mis à jour', 'success');
+    loadBoitiers();
+  }
+}
+
+async function addBoitier() {
+  const num = document.getElementById('newBoitierNum').value.trim().toUpperCase();
+  const tracker = document.getElementById('newBoitierTracker').value.trim();
+  const alertEl = document.getElementById('addBoitierAlert');
+  if (!num) { alertEl.textContent = 'Numéro requis'; alertEl.style.display = 'block'; return; }
+  alertEl.style.display = 'none';
+  const res = await fetch(`${API}/api/admin/boitiers`, {
+    method: 'POST', headers: authHeaders(),
+    body: JSON.stringify({ numero: num, tracker_gps: tracker || null })
+  });
+  const data = await res.json();
+  if (res.ok) {
+    closeModal('addBoitierModal');
+    document.getElementById('newBoitierNum').value = '';
+    document.getElementById('newBoitierTracker').value = '';
+    showToast(`Boîtier ${num} créé`, 'success');
+    loadBoitiers();
+  } else {
+    alertEl.textContent = data.error;
+    alertEl.style.display = 'block';
+  }
+}
+
+// ── Alertes ───────────────────────────────────────────────
+async function loadAlertes() {
+  try {
+    const res = await fetch(`${API}/api/admin/alertes`, { headers: authHeaders() });
+    const { alertes, non_lues } = await res.json();
+    const badge = document.getElementById('alertBadge');
+    badge.textContent = non_lues;
+    badge.classList.toggle('d-none', non_lues === 0);
+    document.getElementById('alertesCount').textContent = `${alertes.length} alerte${alertes.length > 1 ? 's' : ''} — ${non_lues} non lue${non_lues > 1 ? 's' : ''}`;
+    const el = document.getElementById('alertesList');
+    if (alertes.length === 0) {
+      el.innerHTML = `<div style="text-align:center;padding:48px;color:var(--text-light)"><div style="font-size:2.5rem;margin-bottom:10px">✅</div>Aucune alerte</div>`;
+      return;
+    }
+    el.innerHTML = alertes.map(a => `
+      <div class="alerte-item ${a.lu ? '' : 'non-lu'}">
+        <div class="alerte-icon">${alerteIcon(a.type)}</div>
+        <div class="alerte-body">
+          <div class="alerte-message">${a.message}</div>
+          <div class="alerte-meta">${formatDatetime(a.created_at)}${a.boitier_numero ? ` · Boîtier ${a.boitier_numero}` : ''}${a.patient_nom ? ` · ${a.patient_prenom} ${a.patient_nom}` : ''}</div>
+        </div>
+        ${!a.lu ? `<div class="alerte-actions"><button class="btn-marquer-lu" onclick="marquerLu(${a.id}, this)">✓ Lu</button></div>` : ''}
+      </div>`).join('');
+  } catch (e) { showToast('Erreur', 'error'); }
+}
+
+async function marquerLu(id, btn) {
+  await fetch(`${API}/api/admin/alertes/${id}/lu`, { method: 'PUT', headers: authHeaders() });
+  btn.closest('.alerte-item').classList.remove('non-lu');
+  btn.closest('.alerte-actions').remove();
+  loadAlertes();
+}
+
+async function toutMarquerLu() {
+  await fetch(`${API}/api/admin/alertes/tout-lire`, { method: 'PUT', headers: authHeaders() });
+  showToast('Toutes les alertes marquées comme lues', 'success');
+  loadAlertes();
+}
+
+// ── Revenus ───────────────────────────────────────────────
+let chartJour = null;
+
+async function loadRevenus() {
+  try {
+    const res = await fetch(`${API}/api/admin/revenus`, { headers: authHeaders() });
+    const data = await res.json();
+
+    const moisNom = new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    const varPct = data.mois_precedent.total > 0
+      ? Math.round(((data.mois_actuel.total || 0) - data.mois_precedent.total) / data.mois_precedent.total * 100)
+      : null;
+
+    document.getElementById('revenusKpis').innerHTML = `
+      <div class="kpi-card">
+        <div class="kpi-label">Revenus ${moisNom}</div>
+        <div class="kpi-value">${formatEuro(data.mois_actuel.total || 0)}</div>
+        <div class="kpi-sub">${data.mois_actuel.nb || 0} examen${(data.mois_actuel.nb || 0) > 1 ? 's' : ''}${varPct !== null ? ` · ${varPct > 0 ? '+' : ''}${varPct}% vs mois dernier` : ''}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Projection fin de mois</div>
+        <div class="kpi-value" style="color:var(--accent)">${formatEuro(data.projection_fin_mois)}</div>
+        <div class="kpi-sub">Basée sur le rythme actuel</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Mois précédent</div>
+        <div class="kpi-value">${formatEuro(data.mois_precedent.total || 0)}</div>
+        <div class="kpi-sub">${data.mois_precedent.nb || 0} examen${(data.mois_precedent.nb || 0) > 1 ? 's' : ''}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Total général</div>
+        <div class="kpi-value">${formatEuro(data.total_general.total || 0)}</div>
+        <div class="kpi-sub">${data.total_general.nb || 0} examens au total</div>
+      </div>`;
+
+    // Graphe par jour
+    const labels30 = [];
+    const vals30 = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(Date.now() - i * 86400000);
+      const dStr = d.toISOString().split('T')[0];
+      const found = data.par_jour.find(r => r.date === dStr);
+      labels30.push(d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }));
+      vals30.push(found ? found.total : 0);
+    }
+
+    if (chartJour) chartJour.destroy();
+    const ctx = document.getElementById('chartJour').getContext('2d');
+    chartJour = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels30,
+        datasets: [{
+          label: 'Revenus (€)',
+          data: vals30,
+          backgroundColor: 'rgba(82,183,136,0.7)',
+          borderColor: '#40916c',
+          borderWidth: 1.5,
+          borderRadius: 4,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: v => v + '€',
+              font: { size: 11 }
+            },
+            grid: { color: 'rgba(0,0,0,.06)' }
+          },
+          x: { ticks: { font: { size: 10 }, maxRotation: 45 }, grid: { display: false } }
+        }
+      }
+    });
+
+    // Table par médecin
+    document.getElementById('revenusMedecinBody').innerHTML = data.par_medecin.map(m => `
+      <tr>
+        <td><strong>Dr. ${m.prenom} ${m.nom}</strong><br><span class="text-muted">${m.email}</span></td>
+        <td>${m.nb_examens}</td>
+        <td><strong>${formatEuro(m.total_mois)}</strong></td>
+      </tr>`).join('') || `<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--text-light)">Aucun revenu ce mois</td></tr>`;
+  } catch (e) { showToast('Erreur', 'error'); }
+}
+
+// ── Comptes ───────────────────────────────────────────────
+let allMedecins = [];
+
+async function loadComptes() {
+  try {
+    const res = await fetch(`${API}/api/admin/medecins`, { headers: authHeaders() });
+    allMedecins = await res.json();
+    renderMedecins();
+  } catch (e) { showToast('Erreur', 'error'); }
+}
+
+function renderMedecins() {
+  document.getElementById('medecinsBody').innerHTML = allMedecins.map(m => `
+    <tr class="medecin-row">
+      <td><strong>Dr. ${m.prenom} ${m.nom}</strong></td>
+      <td style="font-size:.83rem">${m.email}</td>
+      <td style="text-align:center">${m.nb_prescriptions}</td>
+      <td style="font-size:.8rem;color:var(--text-light)">${m.derniere_connexion ? formatDatetime(m.derniere_connexion) : 'Jamais'}</td>
+      <td><span class="actif-badge ${m.actif ? 'actif-oui' : 'actif-non'}">${m.actif ? '● Actif' : '● Inactif'}</span></td>
+      <td>
+        <div style="display:flex;gap:6px">
+          <button class="btn ${m.actif ? 'btn-danger' : 'btn-success'} btn-sm" onclick="toggleMedecin(${m.id}, ${m.actif})">
+            ${m.actif ? 'Désactiver' : 'Activer'}
+          </button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+async function toggleMedecin(id, actif) {
+  const action = actif ? 'désactiver' : 'activer';
+  if (!confirm(`Voulez-vous ${action} ce compte médecin ?`)) return;
+  await fetch(`${API}/api/admin/medecins/${id}`, {
+    method: 'PUT', headers: authHeaders(),
+    body: JSON.stringify({ actif: !actif })
+  });
+  showToast(`Compte ${actif ? 'désactivé' : 'activé'}`, 'success');
+  loadComptes();
+}
+
+async function addMedecin() {
+  const nom = document.getElementById('mNom').value.trim();
+  const prenom = document.getElementById('mPrenom').value.trim();
+  const email = document.getElementById('mEmail').value.trim();
+  const password = document.getElementById('mPassword').value;
+  const alertEl = document.getElementById('addMedecinAlert');
+  alertEl.style.display = 'none';
+  if (!nom || !prenom || !email || !password) {
+    alertEl.textContent = 'Tous les champs sont requis';
+    alertEl.style.display = 'block'; return;
+  }
+  const res = await fetch(`${API}/api/admin/medecins`, {
+    method: 'POST', headers: authHeaders(),
+    body: JSON.stringify({ nom, prenom, email, password })
+  });
+  const data = await res.json();
+  if (res.ok) {
+    closeModal('addMedecinModal');
+    ['mNom','mPrenom','mEmail','mPassword'].forEach(id => document.getElementById(id).value = '');
+    showToast(`Dr. ${prenom} ${nom} créé`, 'success');
+    loadComptes();
+  } else {
+    alertEl.textContent = data.error;
+    alertEl.style.display = 'block';
+  }
+}
+
+// ── QR Code auth via header (image src workaround) ────────
+// The QR endpoint requires auth — we'll use a token in query string for img src
+const origFetch = window.fetch.bind(window);
+// For the qr image we pass token in URL
+document.getElementById('qrImage').addEventListener('error', function() {
+  this.src = '';
+  this.alt = 'Erreur chargement QR';
+});
+
+function openQR(id, numero) {
+  // Use fetch to get blob URL instead of direct src (auth header workaround)
+  origFetch(`${API}/api/admin/boitiers/${id}/qrcode`, { headers: authHeaders() })
+    .then(r => r.blob())
+    .then(blob => {
+      document.getElementById('qrImage').src = URL.createObjectURL(blob);
+      document.getElementById('qrNumero').textContent = numero;
+      openModal('qrModal');
+    });
+}
+
+// ── Helpers ───────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.remove('d-none'); }
+function closeModal(id) { document.getElementById(id).classList.add('d-none'); }
+
+function statutLabel(s) {
+  const l = { disponible:'Disponible', assigne:'Assigné', chez_patient:'Chez le patient',
+    maintenance:'En maintenance', reserve:'En réserve', hors_service:'Hors service' };
+  return l[s] || s;
+}
+function boitierBadgeClass(s) {
+  const c = { disponible:'badge-disponible', assigne:'badge-assigne', chez_patient:'badge-chez-patient',
+    maintenance:'badge-maintenance', reserve:'badge-reserve', hors_service:'badge-hors-service' };
+  return c[s] || '';
+}
+function alerteIcon(t) {
+  const i = { stock_critique:'📦', boitier_immobile:'⏰', maintenance_longue:'🔧',
+    boitier_hors_zone:'📍', sms_sans_reponse:'📵', boitier_non_recupere:'⚠️' };
+  return i[t] || '🔔';
+}
+function formatEuro(n) {
+  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n || 0);
+}
+function formatDatetime(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleString('fr-FR', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+}
+function showToast(msg, type = 'info') {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+// ── Init ──────────────────────────────────────────────────
+loadCarte();
+
+// Rafraîchissement automatique des alertes toutes les 60s
+setInterval(async () => {
+  try {
+    const res = await origFetch(`${API}/api/admin/alertes`, { headers: authHeaders() });
+    const { non_lues } = await res.json();
+    const badge = document.getElementById('alertBadge');
+    badge.textContent = non_lues;
+    badge.classList.toggle('d-none', non_lues === 0);
+  } catch (e) {}
+}, 60000);
+</script>
+</body>
+</html>
