@@ -139,18 +139,16 @@ function seedData(db) {
 
   console.log('Initialisation des données de démonstration...');
 
-  const hash = (pwd) => bcrypt.hashSync(pwd, 10);
-
   // Comptes utilisateurs
   const insertUser = db.prepare(`
     INSERT INTO users (nom, prenom, email, password_hash, role) VALUES (?, ?, ?, ?, ?)
   `);
 
-  const adminId = insertUser.run('Admin', 'SomnoHub', 'admin@somnohub.fr', hash('Admin123!'), 'admin').lastInsertRowid;
-  const med1Id = insertUser.run('Martin', 'Sophie', 'dr.martin@somnohub.fr', hash('Medecin123!'), 'medecin').lastInsertRowid;
-  const med2Id = insertUser.run('Dupont', 'Pierre', 'dr.dupont@somnohub.fr', hash('Medecin123!'), 'medecin').lastInsertRowid;
-  const livreurId = insertUser.run('Leblanc', 'Marc', 'livreur@somnohub.fr', hash('Livreur123!'), 'livreur').lastInsertRowid;
-  insertUser.run('Rousseau', 'Claire', 'assistante@somnohub.fr', hash('Assist123!'), 'assistante');
+  const adminId = insertUser.run('Admin', 'SomnoHub', 'admin@somnohub.fr', '$2a$10$RH.zoOLbdbxvU2pMrtJyZ.5O9SK94eEQzvdK8DglZP11mLGe4M0lS', 'admin').lastInsertRowid;
+  const med1Id = insertUser.run('Martin', 'Sophie', 'dr.martin@somnohub.fr', '$2a$10$5xZcqK.JGP6MtOmnqdR21ur2fdxJuocf/xE6gZnnQri5oL.fjhEuO', 'medecin').lastInsertRowid;
+  const med2Id = insertUser.run('Dupont', 'Pierre', 'dr.dupont@somnohub.fr', '$2a$10$i4RHbDJ1PriW7UfuIECvZuX2zP5FC/WGU/qWqVfBN3uSb17kWRuK2', 'medecin').lastInsertRowid;
+  const livreurId = insertUser.run('Leblanc', 'Marc', 'livreur@somnohub.fr', '$2a$10$4WSmXiYAU1GKmIl.huvKGemi7HgRFV0EFhtWOraVTQq3PPmw/0Db2', 'livreur').lastInsertRowid;
+  insertUser.run('Rousseau', 'Claire', 'assistante@somnohub.fr', '$2a$10$v3zmRu.8liumWWZANBndHuhc/7EJUPwI5cAFY6qulb0clh81CgUaO', 'assistante');
 
   // Boîtiers
   const insertBoitier = db.prepare(`
