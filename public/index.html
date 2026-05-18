@@ -48,6 +48,12 @@
       border: none; cursor: pointer; transition: all .2s !important;
     }
     .btn-connexion:hover { background: var(--primary-light) !important; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(26,61,43,.25); }
+    .btn-pro-nav {
+      font-size: .78rem !important; font-weight: 600; color: var(--text-light) !important;
+      border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px;
+      text-decoration: none; transition: all .2s;
+    }
+    .btn-pro-nav:hover { border-color: var(--accent); color: var(--primary) !important; background: var(--bg); }
     .nav-burger { display: none; background: none; border: none; cursor: pointer; padding: 8px; }
     .nav-burger span { display: block; width: 22px; height: 2px; background: var(--primary); margin: 5px 0; border-radius: 2px; transition: all .3s; }
     .mobile-menu {
@@ -595,6 +601,45 @@
       padding: 4px 12px; border-radius: 20px; font-size: .7rem; color: rgba(255,255,255,.45);
     }
 
+    /* ── POPUP ACCUEIL ── */
+    .popup-accueil {
+      position: fixed; inset: 0; z-index: 600;
+      background: rgba(10,22,15,.7); backdrop-filter: blur(12px);
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+      opacity: 0; pointer-events: none; transition: opacity .35s;
+    }
+    .popup-accueil.show { opacity: 1; pointer-events: all; }
+    .popup-accueil-box {
+      background: var(--white); border-radius: 24px; padding: 48px 40px;
+      max-width: 480px; width: 100%; text-align: center;
+      box-shadow: 0 32px 80px rgba(0,0,0,.25);
+      transform: translateY(20px); transition: transform .35s;
+    }
+    .popup-accueil.show .popup-accueil-box { transform: translateY(0); }
+    .popup-logo { font-size: 1.3rem; font-weight: 800; color: var(--primary); margin-bottom: 24px; }
+    .popup-logo span { color: var(--accent); }
+    .popup-accueil-box h2 {
+      font-size: 1.25rem; font-weight: 800; color: var(--primary);
+      line-height: 1.3; margin-bottom: 10px; letter-spacing: -.3px;
+    }
+    .popup-accueil-box p { font-size: .88rem; color: var(--text-light); line-height: 1.6; margin-bottom: 32px; }
+    .popup-choices { display: flex; flex-direction: column; gap: 12px; }
+    .popup-btn-patient {
+      background: var(--primary); color: var(--white);
+      padding: 15px 24px; border-radius: 12px; font-size: .95rem; font-weight: 700;
+      border: none; cursor: pointer; font-family: inherit; transition: all .2s;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+    }
+    .popup-btn-patient:hover { background: var(--primary-light); transform: translateY(-1px); }
+    .popup-btn-pro {
+      background: var(--bg); color: var(--primary);
+      padding: 15px 24px; border-radius: 12px; font-size: .95rem; font-weight: 700;
+      border: 1.5px solid var(--border); cursor: pointer; font-family: inherit; transition: all .2s;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+    }
+    .popup-btn-pro:hover { border-color: var(--primary); background: #edf5f0; transform: translateY(-1px); }
+    .popup-skip { margin-top: 16px; font-size: .75rem; color: var(--text-light); cursor: pointer; text-decoration: underline; }
+
     /* ── MODAL CONNEXION ── */
     .modal-overlay {
       position: fixed; inset: 0;
@@ -697,7 +742,8 @@
     <a href="#stopbang">Test STOP-BANG</a>
     <a href="#teleconsult">Téléconsultation</a>
     <a href="#faq">FAQ</a>
-    <button class="btn-connexion" onclick="openLogin()">Espace pro →</button>
+    <a href="#pro" class="btn-pro-nav">Professionnels de santé</a>
+    <button class="btn-connexion" onclick="openLogin()">Connexion →</button>
   </div>
   <button class="nav-burger" onclick="toggleMenu()" id="burgerBtn"><span></span><span></span><span></span></button>
 </nav>
@@ -1300,6 +1346,24 @@
   </div>
 </footer>
 
+<!-- POPUP ACCUEIL -->
+<div class="popup-accueil" id="popupAccueil">
+  <div class="popup-accueil-box">
+    <div class="popup-logo">Somno<span>Hub</span></div>
+    <h2>Bienvenue sur SomnoHub</h2>
+    <p>Pour vous orienter vers les informations les plus adaptées, dites-nous qui vous êtes.</p>
+    <div class="popup-choices">
+      <button class="popup-btn-patient" onclick="popupChoixPatient()">
+        😴 Je suis patient — je cherche de l'aide pour mon sommeil
+      </button>
+      <button class="popup-btn-pro" onclick="popupChoixPro()">
+        🩺 Je suis professionnel de santé
+      </button>
+    </div>
+    <div class="popup-skip" onclick="popupChoixPatient()">Passer cette étape</div>
+  </div>
+</div>
+
 <!-- MODAL CONNEXION -->
 <div class="modal-overlay" id="loginModal" onclick="handleOverlay(event)">
   <div class="modal-box">
@@ -1335,6 +1399,22 @@
 </div>
 
 <script>
+// ── POPUP ACCUEIL ──
+(function() {
+  if (!sessionStorage.getItem('sh_accueil_vu')) {
+    setTimeout(() => document.getElementById('popupAccueil').classList.add('show'), 600);
+  }
+})();
+function popupChoixPatient() {
+  document.getElementById('popupAccueil').classList.remove('show');
+  sessionStorage.setItem('sh_accueil_vu', '1');
+}
+function popupChoixPro() {
+  document.getElementById('popupAccueil').classList.remove('show');
+  sessionStorage.setItem('sh_accueil_vu', '1');
+  setTimeout(() => document.getElementById('pro').scrollIntoView({behavior:'smooth'}), 300);
+}
+
 // ── MODAL PRO ──
 function openProModal() { document.getElementById('proModal').classList.add('open'); }
 function closeProModal() { document.getElementById('proModal').classList.remove('open'); }
