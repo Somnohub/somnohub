@@ -35,7 +35,7 @@
         "url": "https://somnohub.fr",
         "description": "SomnoHub propose le dépistage de l'apnée du sommeil à domicile via polygraphie ventilatoire en Île-de-France.",
         "medicalSpecialty": "Sleep Medicine",
-        "email": "contact@somnohub.fr",
+        "email": "admin@somnohub.fr",
         "areaServed": { "@type": "AdministrativeArea", "name": "Île-de-France" },
         "address": {
           "@type": "PostalAddress",
@@ -61,7 +61,7 @@
           {
             "@type": "Question",
             "name": "Dans quelle zone géographique intervenez-vous ?",
-            "acceptedAnswer": { "@type": "Answer", "text": "Nous intervenons actuellement à Paris et en Île-de-France. Si vous êtes en dehors de cette zone, contactez-nous à contact@somnohub.fr — nous vous tiendrons informé de l'extension de notre couverture." }
+            "acceptedAnswer": { "@type": "Answer", "text": "Nous intervenons actuellement à Paris et en Île-de-France. Si vous êtes en dehors de cette zone, contactez-nous à admin@somnohub.fr — nous vous tiendrons informé de l'extension de notre couverture." }
           },
           {
             "@type": "Question",
@@ -1217,7 +1217,7 @@
           <span class="faq-q-text">Dans quelle zone géographique intervenez-vous ?</span>
           <span class="faq-chevron">▼</span>
         </div>
-        <div class="faq-a"><p>Nous intervenons actuellement à Paris et en Île-de-France. Si vous êtes en dehors de cette zone, contactez-nous à contact@somnohub.fr — nous vous tiendrons informé de l'extension de notre couverture.</p></div>
+        <div class="faq-a"><p>Nous intervenons actuellement à Paris et en Île-de-France. Si vous êtes en dehors de cette zone, contactez-nous à admin@somnohub.fr — nous vous tiendrons informé de l'extension de notre couverture.</p></div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
@@ -1396,7 +1396,7 @@
     </div>
     <div class="footer-col">
       <h4>Contact</h4>
-      <a href="mailto:contact@somnohub.fr">contact@somnohub.fr</a>
+      <a href="mailto:admin@somnohub.fr">admin@somnohub.fr</a>
       <a href="#">Support technique</a>
       <a href="#" onclick="openLogin()">Espace partenaire</a>
     </div>
@@ -1493,7 +1493,7 @@ function submitProForm() {
   if(!nom || !spec || !email) { alert('Veuillez remplir les champs obligatoires.'); return; }
   const subject = encodeURIComponent(`Demande partenariat médecin — ${nom} (${spec})`);
   const body = encodeURIComponent(`Nom : ${nom}\nSpécialité : ${spec}\nEmail : ${email}\nTéléphone : ${tel}\n\n${msg}`);
-  window.location.href = `mailto:contact@somnohub.fr?subject=${subject}&body=${body}`;
+  window.location.href = `mailto:admin@somnohub.fr?subject=${subject}&body=${body}`;
   document.getElementById('proFormWrap').style.display = 'none';
   document.getElementById('proSuccess').style.display = 'block';
 }
