@@ -480,6 +480,100 @@
     }
     .btn-cta-ghost:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.5); }
 
+    /* ── ESPACE PROFESSIONNELS ── */
+    .pro-section {
+      background: #f0f4f2;
+      border-top: 1px solid var(--border);
+      padding: 72px 5%;
+    }
+    .pro-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center;
+    }
+    .pro-tag {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: rgba(26,61,43,.08); border: 1px solid rgba(26,61,43,.15);
+      color: var(--primary); padding: 5px 13px; border-radius: 20px;
+      font-size: .72rem; font-weight: 700; letter-spacing: .5px;
+      text-transform: uppercase; margin-bottom: 18px;
+    }
+    .pro-section h2 {
+      font-size: clamp(1.4rem, 2.5vw, 1.9rem); font-weight: 800;
+      color: var(--primary); line-height: 1.2; letter-spacing: -.5px; margin-bottom: 14px;
+    }
+    .pro-section .pro-sub {
+      font-size: .95rem; color: var(--text-mid); line-height: 1.75; margin-bottom: 28px;
+    }
+    .pro-targets {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 32px;
+    }
+    .pro-target {
+      background: var(--white); border: 1.5px solid var(--border);
+      border-radius: 20px; padding: 5px 14px;
+      font-size: .78rem; font-weight: 600; color: var(--text-mid);
+    }
+    .btn-pro {
+      background: var(--primary); color: var(--white);
+      padding: 13px 28px; border-radius: 11px; font-size: .92rem; font-weight: 700;
+      border: none; cursor: pointer; transition: all .2s; font-family: inherit;
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-pro:hover { background: var(--primary-light); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(26,61,43,.2); }
+    .pro-avantages { display: flex; flex-direction: column; gap: 16px; }
+    .pro-avantage {
+      background: var(--white); border-radius: 14px; padding: 18px 22px;
+      border: 1.5px solid var(--border); display: flex; gap: 16px; align-items: flex-start;
+      transition: border-color .2s;
+    }
+    .pro-avantage:hover { border-color: var(--accent); }
+    .pro-av-icon {
+      width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
+    }
+    .pro-av-text strong { display: block; font-size: .9rem; font-weight: 700; color: var(--primary); margin-bottom: 3px; }
+    .pro-av-text span { font-size: .82rem; color: var(--text-light); line-height: 1.5; }
+
+    /* Modal contact pro */
+    .modal-pro-overlay {
+      position: fixed; inset: 0; background: rgba(10,22,15,.65);
+      backdrop-filter: blur(10px); z-index: 500;
+      display: none; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-pro-overlay.open { display: flex; }
+    .modal-pro-box {
+      background: var(--white); border-radius: 20px; padding: 36px;
+      width: 100%; max-width: 480px; position: relative;
+    }
+    .modal-pro-box h3 { font-size: 1.2rem; font-weight: 800; color: var(--primary); margin-bottom: 6px; }
+    .modal-pro-box p { font-size: .85rem; color: var(--text-light); margin-bottom: 24px; line-height: 1.6; }
+    .modal-pro-close {
+      position: absolute; top: 16px; right: 16px;
+      background: var(--bg); border: none; border-radius: 50%;
+      width: 32px; height: 32px; cursor: pointer; font-size: .9rem; color: var(--text-mid);
+    }
+    .pro-form-group { margin-bottom: 14px; }
+    .pro-form-group label { display: block; font-size: .8rem; font-weight: 600; color: var(--text-mid); margin-bottom: 5px; }
+    .pro-form-group input, .pro-form-group select, .pro-form-group textarea {
+      width: 100%; padding: 10px 14px; border-radius: 9px;
+      border: 1.5px solid var(--border); font-family: inherit; font-size: .88rem;
+      color: var(--text); background: var(--bg); transition: border-color .2s;
+    }
+    .pro-form-group input:focus, .pro-form-group select:focus, .pro-form-group textarea:focus {
+      outline: none; border-color: var(--accent);
+    }
+    .pro-form-group textarea { resize: vertical; min-height: 80px; }
+    .btn-pro-submit {
+      width: 100%; background: var(--primary); color: var(--white);
+      padding: 13px; border-radius: 10px; font-size: .92rem; font-weight: 700;
+      border: none; cursor: pointer; font-family: inherit; margin-top: 6px; transition: background .2s;
+    }
+    .btn-pro-submit:hover { background: var(--primary-light); }
+    .pro-form-success { text-align: center; padding: 20px 0; display: none; }
+    .pro-form-success .ok-icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .pro-form-success h4 { font-size: 1rem; font-weight: 800; color: var(--primary); margin-bottom: 8px; }
+    .pro-form-success p { font-size: .85rem; color: var(--text-light); }
+
     /* ── FOOTER ── */
     footer { background: var(--primary); color: rgba(255,255,255,.6); padding: 56px 5% 32px; }
     .footer-inner { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 44px; max-width: 1200px; margin: 0 auto 44px; }
@@ -1074,6 +1168,100 @@
   </div>
 </section>
 
+<!-- ESPACE PROFESSIONNELS DE SANTÉ -->
+<section class="pro-section" id="pro">
+  <div class="pro-inner">
+    <div>
+      <div class="pro-tag">Professionnels de santé</div>
+      <h2>Offrez la polygraphie à domicile à vos patients, sans contrainte</h2>
+      <p class="pro-sub">SomnoHub prend en charge toute la logistique. Vous vous concentrez sur ce qui compte : vos patients et votre pratique médicale.</p>
+      <div class="pro-targets">
+        <span class="pro-target">Pneumologues</span>
+        <span class="pro-target">Médecins généralistes</span>
+        <span class="pro-target">Cardiologues</span>
+        <span class="pro-target">ORL</span>
+        <span class="pro-target">DU Médecine du sommeil</span>
+      </div>
+      <button class="btn-pro" onclick="openProModal()">Rejoindre le réseau →</button>
+      <p style="font-size:.78rem;color:var(--text-light);margin-top:12px">Un simple échange suffit pour démarrer.</p>
+    </div>
+    <div class="pro-avantages">
+      <div class="pro-avantage">
+        <div class="pro-av-icon">📋</div>
+        <div class="pro-av-text">
+          <strong>Prescription en quelques clics</strong>
+          <span>Renseignez simplement les coordonnées de votre patient depuis votre espace partenaire. SomnoHub s'occupe du reste.</span>
+        </div>
+      </div>
+      <div class="pro-avantage">
+        <div class="pro-av-icon">🚚</div>
+        <div class="pro-av-text">
+          <strong>Zéro contrainte logistique</strong>
+          <span>Livraison, installation via QR code, récupération du matériel — tout est géré par nos équipes. Vous n'avez rien à organiser.</span>
+        </div>
+      </div>
+      <div class="pro-avantage">
+        <div class="pro-av-icon">📊</div>
+        <div class="pro-av-text">
+          <strong>Résultats transmis sous 3 jours</strong>
+          <span>Le compte-rendu de polygraphie ventilatoire, dont vous êtes signataire, est disponible directement dans votre espace.</span>
+        </div>
+      </div>
+      <div class="pro-avantage">
+        <div class="pro-av-icon">💼</div>
+        <div class="pro-av-text">
+          <strong>Une collaboration valorisante</strong>
+          <span>Aucun investissement matériel, aucun coût d'accès. Prescrivez autant d'examens que vous le souhaitez, à votre rythme.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MODAL CONTACT PRO -->
+<div class="modal-pro-overlay" id="proModal" onclick="handleProOverlay(event)">
+  <div class="modal-pro-box">
+    <button class="modal-pro-close" onclick="closeProModal()">✕</button>
+    <h3>Rejoindre le réseau SomnoHub</h3>
+    <p>Laissez-nous vos coordonnées — nous vous recontactons rapidement pour un premier échange.</p>
+    <div id="proFormWrap">
+      <div class="pro-form-group">
+        <label>Nom & Prénom *</label>
+        <input type="text" id="proNom" placeholder="Dr. Martin Sophie">
+      </div>
+      <div class="pro-form-group">
+        <label>Spécialité *</label>
+        <select id="proSpec">
+          <option value="">Choisissez votre spécialité</option>
+          <option>Pneumologue</option>
+          <option>Médecin généraliste</option>
+          <option>Cardiologue</option>
+          <option>ORL</option>
+          <option>Autre</option>
+        </select>
+      </div>
+      <div class="pro-form-group">
+        <label>Email professionnel *</label>
+        <input type="email" id="proEmail" placeholder="dr.martin@cabinet.fr">
+      </div>
+      <div class="pro-form-group">
+        <label>Téléphone</label>
+        <input type="tel" id="proTel" placeholder="06 00 00 00 00">
+      </div>
+      <div class="pro-form-group">
+        <label>Message (optionnel)</label>
+        <textarea id="proMsg" placeholder="Votre zone géographique, questions éventuelles…"></textarea>
+      </div>
+      <button class="btn-pro-submit" onclick="submitProForm()">Envoyer ma demande →</button>
+    </div>
+    <div class="pro-form-success" id="proSuccess">
+      <div class="ok-icon">✅</div>
+      <h4>Demande envoyée !</h4>
+      <p>Nous vous recontactons sous 48h pour organiser un premier échange.</p>
+    </div>
+  </div>
+</div>
+
 <!-- FOOTER -->
 <footer>
   <div class="footer-inner">
@@ -1090,10 +1278,10 @@
     </div>
     <div class="footer-col">
       <h4>Conformité</h4>
-      <a href="#">Hébergement HDS</a>
       <a href="#">Politique RGPD</a>
       <a href="#">Mentions légales</a>
       <a href="#">CGU</a>
+      <a href="#pro" style="margin-top:10px;opacity:.6;font-size:.74rem">Espace professionnels de santé</a>
     </div>
     <div class="footer-col">
       <h4>Contact</h4>
@@ -1147,6 +1335,25 @@
 </div>
 
 <script>
+// ── MODAL PRO ──
+function openProModal() { document.getElementById('proModal').classList.add('open'); }
+function closeProModal() { document.getElementById('proModal').classList.remove('open'); }
+function handleProOverlay(e) { if(e.target===e.currentTarget) closeProModal(); }
+
+function submitProForm() {
+  const nom = document.getElementById('proNom').value.trim();
+  const spec = document.getElementById('proSpec').value;
+  const email = document.getElementById('proEmail').value.trim();
+  const tel = document.getElementById('proTel').value.trim();
+  const msg = document.getElementById('proMsg').value.trim();
+  if(!nom || !spec || !email) { alert('Veuillez remplir les champs obligatoires.'); return; }
+  const subject = encodeURIComponent(`Demande partenariat médecin — ${nom} (${spec})`);
+  const body = encodeURIComponent(`Nom : ${nom}\nSpécialité : ${spec}\nEmail : ${email}\nTéléphone : ${tel}\n\n${msg}`);
+  window.location.href = `mailto:contact@somnohub.fr?subject=${subject}&body=${body}`;
+  document.getElementById('proFormWrap').style.display = 'none';
+  document.getElementById('proSuccess').style.display = 'block';
+}
+
 // ── REDIRECT SI DÉJÀ CONNECTÉ ──
 const _t = localStorage.getItem('sl_token'), _u = localStorage.getItem('sl_user');
 if (_t && _u) { try { const u = JSON.parse(_u); const r={admin:'/admin',medecin:'/medecin',livreur:'/livreur',assistante:'/assistante'}; if(r[u.role]) window.location.href=r[u.role]; } catch(e){} }
