@@ -131,10 +131,10 @@
       border: 2px solid rgba(255,255,255,.15);
       aspect-ratio: 9/16;
     }
-    .hero-video-wrap iframe {
+    .hero-video-wrap video {
       position: absolute; inset: 0;
       width: 100%; height: 100%;
-      border: none;
+      object-fit: cover;
     }
     .hero-video-badge {
       position: absolute; bottom: -16px; left: 50%; transform: translateX(-50%);
@@ -758,9 +758,7 @@
     </div>
     <div class="hero-visual">
       <div class="hero-video-wrap">
-        <iframe src="https://www.youtube.com/embed/g_Lfbqvxx6o?rel=0&modestbranding=1"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowfullscreen></iframe>
+        <video src="/Ronflement.mp4" autoplay muted loop playsinline></video>
       </div>
       <div class="hero-video-badge">
         <span class="dot"></span>
