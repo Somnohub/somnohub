@@ -121,45 +121,29 @@
     .hero-stat .lbl { font-size: .78rem; color: rgba(255,255,255,.55); margin-top: 4px; font-weight: 500; }
 
     /* Hero right visual */
-    .hero-visual { position: relative; }
-    .hero-phone {
-      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.14);
-      border-radius: 28px; padding: 22px; backdrop-filter: blur(12px);
-      box-shadow: 0 24px 60px rgba(0,0,0,.3);
+    .hero-visual { position: relative; display: flex; justify-content: center; align-items: center; }
+    .hero-video-wrap {
+      position: relative;
+      width: 280px;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 32px 80px rgba(0,0,0,.4);
+      border: 2px solid rgba(255,255,255,.15);
+      aspect-ratio: 9/16;
     }
-    .phone-header {
-      display: flex; align-items: center; justify-content: space-between;
-      border-bottom: 1px solid rgba(255,255,255,.1); padding-bottom: 14px; margin-bottom: 16px;
+    .hero-video-wrap iframe {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      border: none;
     }
-    .phone-logo { font-size: .88rem; font-weight: 800; color: var(--white); }
-    .phone-logo span { color: var(--accent-light); }
-    .phone-date { font-size: .72rem; color: rgba(255,255,255,.45); }
-    .patient-row {
-      display: flex; align-items: center; gap: 12px; padding: 10px 0;
-      border-bottom: 1px solid rgba(255,255,255,.06);
+    .hero-video-badge {
+      position: absolute; bottom: -16px; left: 50%; transform: translateX(-50%);
+      background: var(--white); border-radius: 20px; padding: 8px 18px;
+      box-shadow: 0 8px 28px rgba(0,0,0,.18); display: flex; align-items: center; gap: 8px;
+      white-space: nowrap;
     }
-    .patient-row:last-child { border: none; }
-    .patient-avatar {
-      width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
-      display: flex; align-items: center; justify-content: center;
-      font-size: .85rem; font-weight: 700; color: var(--white);
-    }
-    .patient-name { font-size: .84rem; color: rgba(255,255,255,.85); font-weight: 600; flex: 1; }
-    .patient-badge { padding: 4px 10px; border-radius: 12px; font-size: .68rem; font-weight: 700; white-space: nowrap; }
-    .badge-blue { background: rgba(33,150,243,.25); color: #90caf9; }
-    .badge-orange { background: rgba(255,152,0,.25); color: #ffcc80; }
-    .badge-green { background: rgba(76,175,80,.25); color: #a5d6a7; }
-    .badge-grey { background: rgba(144,164,174,.2); color: rgba(255,255,255,.5); }
-
-    /* Floating badge */
-    .hero-float {
-      position: absolute; top: -20px; right: -20px;
-      background: var(--white); border-radius: 16px; padding: 14px 18px;
-      box-shadow: 0 12px 36px rgba(0,0,0,.18); display: flex; align-items: center; gap: 10px;
-    }
-    .float-icon { font-size: 1.4rem; }
-    .float-text .t1 { font-size: .75rem; font-weight: 700; color: var(--primary); }
-    .float-text .t2 { font-size: .68rem; color: var(--text-light); margin-top: 1px; }
+    .hero-video-badge .dot { width: 8px; height: 8px; border-radius: 50%; background: #4caf50; animation: pulse 2s infinite; }
+    .hero-video-badge span { font-size: .78rem; font-weight: 700; color: var(--primary); }
 
     /* ── STRIP AVANTAGES ── */
     .strip {
@@ -773,37 +757,14 @@
       </div>
     </div>
     <div class="hero-visual">
-      <div style="position:relative">
-        <div class="hero-float">
-          <div class="float-icon">✅</div>
-          <div class="float-text"><div class="t1">Boîtier livré</div><div class="t2">Martin B. — aujourd'hui 18h30</div></div>
-        </div>
-        <div class="hero-phone">
-          <div class="phone-header">
-            <div class="phone-logo">Somno<span>Hub</span></div>
-            <div class="phone-date">Mon parcours</div>
-          </div>
-          <div class="patient-row">
-            <div class="patient-avatar" style="background:#2e7d32">✓</div>
-            <div class="patient-name">Test STOP-BANG</div>
-            <div class="patient-badge badge-green">Complété</div>
-          </div>
-          <div class="patient-row">
-            <div class="patient-avatar" style="background:#1565c0">🩺</div>
-            <div class="patient-name">Téléconsultation</div>
-            <div class="patient-badge badge-blue">RDV pris</div>
-          </div>
-          <div class="patient-row">
-            <div class="patient-avatar" style="background:#e65100">📦</div>
-            <div class="patient-name">Boîtier livré</div>
-            <div class="patient-badge badge-orange">Ce soir 19h</div>
-          </div>
-          <div class="patient-row">
-            <div class="patient-avatar" style="background:#546e7a">AP</div>
-            <div class="patient-name">Anne Petit</div>
-            <div class="patient-badge badge-grey">Prescrit</div>
-          </div>
-        </div>
+      <div class="hero-video-wrap">
+        <iframe src="https://www.youtube.com/embed/g_Lfbqvxx6o?rel=0&modestbranding=1"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen></iframe>
+      </div>
+      <div class="hero-video-badge">
+        <span class="dot"></span>
+        <span>Découvrez comment ça marche</span>
       </div>
     </div>
   </div>
