@@ -341,24 +341,82 @@
     .temo-name { font-size: .88rem; font-weight: 700; color: var(--primary); }
     .temo-role { font-size: .75rem; color: var(--text-light); margin-top: 1px; }
 
-    /* ── INTERFACES ── */
-    .interfaces { background: var(--bg); }
-    .interfaces-header { text-align: center; margin-bottom: 48px; }
-    .interfaces-header .section-sub { margin: 0 auto; }
-    .if-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
-    .if-card {
-      border-radius: 18px; padding: 28px; text-align: center;
-      border: 2px solid transparent; transition: all .25s;
+    /* ── APNÉE DU SOMMEIL ── */
+    .apnee { background: var(--white); }
+    .apnee-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: start; }
+    .apnee-symptoms { }
+    .symptom-list { display: flex; flex-direction: column; gap: 14px; margin-top: 28px; }
+    .symptom-item {
+      display: flex; align-items: flex-start; gap: 14px;
+      background: var(--bg); border-radius: 14px; padding: 16px 18px;
+      border: 1.5px solid var(--border);
     }
-    .if-card.medecin { background: #edf5f0; border-color: #c5ddd0; }
-    .if-card.livreur { background: #e3f1fd; border-color: #b3d4f0; }
-    .if-card.assistante { background: #fff4e1; border-color: #ffd69a; }
-    .if-card.admin { background: #f4e6f7; border-color: #d7b3e8; }
-    .if-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,.1); }
-    .if-icon { font-size: 2.2rem; margin-bottom: 12px; }
-    .if-role { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--text-light); margin-bottom: 7px; }
-    .if-title { font-size: .98rem; font-weight: 700; color: var(--primary); margin-bottom: 8px; }
-    .if-desc { font-size: .8rem; color: var(--text-light); line-height: 1.55; }
+    .symptom-icon { font-size: 1.4rem; flex-shrink: 0; margin-top: 1px; }
+    .symptom-text strong { display: block; font-size: .9rem; font-weight: 700; color: var(--primary); margin-bottom: 3px; }
+    .symptom-text span { font-size: .82rem; color: var(--text-light); line-height: 1.5; }
+    .risks-box {
+      background: linear-gradient(135deg, #fff4e1, #fff9f0);
+      border: 2px solid #ffd69a; border-radius: 20px; padding: 28px;
+    }
+    .risks-box h3 { font-size: 1rem; font-weight: 800; color: #a05c00; margin-bottom: 18px; }
+    .risk-list { display: flex; flex-direction: column; gap: 10px; }
+    .risk-item { display: flex; align-items: center; gap: 10px; font-size: .88rem; color: #7a4500; font-weight: 500; }
+    .risk-item::before { content: '⚠️'; font-size: .9rem; flex-shrink: 0; }
+    .info-box {
+      background: linear-gradient(135deg, #edf5f0, #f0f9f4);
+      border: 2px solid #c5ddd0; border-radius: 20px; padding: 28px; margin-top: 20px;
+    }
+    .info-box h3 { font-size: 1rem; font-weight: 800; color: var(--primary); margin-bottom: 18px; }
+    .info-stat { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+    .info-stat:last-child { margin-bottom: 0; }
+    .info-stat .big { font-size: 1.8rem; font-weight: 900; color: var(--accent); line-height: 1; flex-shrink: 0; }
+    .info-stat .desc { font-size: .82rem; color: var(--text-mid); line-height: 1.5; }
+
+    /* ── TELECONSULTATION ── */
+    .teleconsult { background: var(--bg); }
+    .teleconsult-box {
+      background: linear-gradient(135deg, var(--primary) 0%, #1e5c3a 100%);
+      border-radius: 28px; padding: 60px 48px;
+      max-width: 960px; margin: 0 auto;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center;
+    }
+    .tc-left .tc-eyebrow {
+      display: inline-block; background: rgba(82,183,136,.25); color: var(--accent-light);
+      padding: 5px 14px; border-radius: 20px; font-size: .72rem; font-weight: 700;
+      letter-spacing: .6px; text-transform: uppercase; margin-bottom: 16px;
+    }
+    .tc-left h2 { font-size: 1.75rem; font-weight: 800; color: var(--white); line-height: 1.2; margin-bottom: 16px; letter-spacing: -.5px; }
+    .tc-left p { color: rgba(255,255,255,.7); font-size: .92rem; line-height: 1.7; margin-bottom: 28px; }
+    .btn-tc {
+      background: var(--accent); color: var(--primary);
+      padding: 14px 28px; border-radius: 12px; font-size: .95rem; font-weight: 700;
+      border: none; cursor: pointer; transition: all .2s; display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-tc:hover { background: #64c896; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(82,183,136,.4); }
+    .tc-right { display: flex; flex-direction: column; gap: 14px; }
+    .tc-step {
+      background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15);
+      border-radius: 14px; padding: 16px 20px; display: flex; align-items: center; gap: 14px;
+    }
+    .tc-step-num {
+      width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+      background: var(--accent); color: var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .82rem; font-weight: 800;
+    }
+    .tc-step-text strong { display: block; font-size: .88rem; font-weight: 700; color: var(--white); }
+    .tc-step-text span { font-size: .78rem; color: rgba(255,255,255,.55); }
+    .tc-partner { margin-top: 8px; display: flex; align-items: center; gap: 8px; }
+    .tc-partner span { font-size: .78rem; color: rgba(255,255,255,.45); }
+    .tc-partner-badge {
+      background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
+      padding: 4px 12px; border-radius: 20px; font-size: .75rem; font-weight: 700; color: rgba(255,255,255,.7);
+    }
+
+    /* ── ENGAGEMENTS (remplace Features) ── */
+    .engagements { background: var(--bg); }
+    .engagements-header { text-align: center; margin-bottom: 52px; }
+    .engagements-header .section-sub { margin: 0 auto; }
 
     /* ── FAQ ── */
     .faq { background: var(--white); }
@@ -521,6 +579,8 @@
       .strip-inner { grid-template-columns: 1fr 1fr; gap: 16px; }
       .cta-box { padding: 44px 24px; }
       .footer-inner { grid-template-columns: 1fr; gap: 28px; }
+      .apnee-inner { grid-template-columns: 1fr; gap: 36px; }
+      .teleconsult-box { grid-template-columns: 1fr; padding: 40px 28px; gap: 32px; }
     }
     @media (max-width: 520px) {
       .hero-stats { gap: 20px; }
@@ -535,41 +595,41 @@
 <!-- NAVBAR -->
 <nav class="navbar" id="navbar">
   <a href="#" class="nav-logo">
-    <div class="nav-logo-text">Somni<span>Link</span></div>
+    <div class="nav-logo-text">Somno<span>Hub</span></div>
     <span class="nav-logo-badge">Médical</span>
   </a>
   <div class="nav-links">
-    <a href="#stopbang">Évaluation</a>
-    <a href="#how">Comment ça marche</a>
+    <a href="#apnee">L'apnée du sommeil</a>
+    <a href="#stopbang">Test STOP-BANG</a>
+    <a href="#teleconsult">Téléconsultation</a>
     <a href="#faq">FAQ</a>
-    <a href="#contact">Contact</a>
-    <button class="btn-connexion" onclick="openLogin()">Connexion partenaire →</button>
+    <button class="btn-connexion" onclick="openLogin()">Espace pro →</button>
   </div>
   <button class="nav-burger" onclick="toggleMenu()" id="burgerBtn"><span></span><span></span><span></span></button>
 </nav>
 <div class="mobile-menu" id="mobileMenu">
-  <a href="#stopbang" onclick="closeMenu()">Évaluation du risque</a>
-  <a href="#how" onclick="closeMenu()">Comment ça marche</a>
+  <a href="#apnee" onclick="closeMenu()">L'apnée du sommeil</a>
+  <a href="#stopbang" onclick="closeMenu()">Test STOP-BANG</a>
+  <a href="#teleconsult" onclick="closeMenu()">Téléconsultation</a>
   <a href="#faq" onclick="closeMenu()">FAQ</a>
-  <a href="#contact" onclick="closeMenu()">Contact</a>
-  <a href="#" onclick="closeMenu(); openLogin();">🔐 Connexion partenaire</a>
+  <a href="#" onclick="closeMenu(); openLogin();">🔐 Espace pro</a>
 </div>
 
 <!-- HERO -->
 <section class="hero" id="hero">
   <div class="hero-inner">
     <div class="hero-left">
-      <div class="hero-tag"><span class="dot"></span> Polygraphie ventilatoire à domicile</div>
-      <h1>Diagnostiquer l'apnée du sommeil,<br><em>depuis chez vous</em></h1>
-      <p class="hero-desc">SomnoHub coordonne votre examen du sommeil de A à Z — livraison du boîtier à votre domicile, enregistrement nocturne, analyse par des spécialistes certifiés.</p>
+      <div class="hero-tag"><span class="dot"></span> Dépistage de l'apnée du sommeil</div>
+      <h1>Vous ronflez ? Vous vous réveillez <em>épuisé</em> chaque matin ?</h1>
+      <p class="hero-desc">L'apnée du sommeil touche 3 millions de Français — dont 80 % ne sont pas diagnostiqués. Un simple test à domicile peut changer votre qualité de vie.</p>
       <div class="hero-actions">
-        <button class="btn-hero-primary" onclick="document.getElementById('stopbang').scrollIntoView({behavior:'smooth'})">Évaluer mon risque →</button>
-        <a href="#how" class="btn-hero-ghost">▶ Comment ça marche</a>
+        <button class="btn-hero-primary" onclick="document.getElementById('stopbang').scrollIntoView({behavior:'smooth'})">Faire le test gratuit →</button>
+        <a href="#apnee" class="btn-hero-ghost">▶ En savoir plus</a>
       </div>
       <div class="hero-stats">
-        <div class="hero-stat"><div class="val">1 nuit</div><div class="lbl">pour un résultat complet</div></div>
-        <div class="hero-stat"><div class="val">100%</div><div class="lbl">à domicile</div></div>
-        <div class="hero-stat"><div class="val">HDS</div><div class="lbl">certifié santé</div></div>
+        <div class="hero-stat"><div class="val">1 nuit</div><div class="lbl">pour un diagnostic précis</div></div>
+        <div class="hero-stat"><div class="val">100%</div><div class="lbl">à domicile, sans déplacement</div></div>
+        <div class="hero-stat"><div class="val">Remboursé</div><div class="lbl">par l'Assurance Maladie</div></div>
       </div>
     </div>
     <div class="hero-visual">
@@ -580,23 +640,23 @@
         </div>
         <div class="hero-phone">
           <div class="phone-header">
-            <div class="phone-logo">Somni<span>Link</span></div>
-            <div class="phone-date">Mes patients</div>
+            <div class="phone-logo">Somno<span>Hub</span></div>
+            <div class="phone-date">Mon parcours</div>
           </div>
           <div class="patient-row">
-            <div class="patient-avatar" style="background:#1565c0">MB</div>
-            <div class="patient-name">Martin Bernard</div>
-            <div class="patient-badge badge-blue">Livraison prévue</div>
+            <div class="patient-avatar" style="background:#2e7d32">✓</div>
+            <div class="patient-name">Test STOP-BANG</div>
+            <div class="patient-badge badge-green">Complété</div>
           </div>
           <div class="patient-row">
-            <div class="patient-avatar" style="background:#e65100">SL</div>
-            <div class="patient-name">Sophie Leroy</div>
-            <div class="patient-badge badge-orange">Examen en cours</div>
+            <div class="patient-avatar" style="background:#1565c0">🩺</div>
+            <div class="patient-name">Téléconsultation</div>
+            <div class="patient-badge badge-blue">RDV pris</div>
           </div>
           <div class="patient-row">
-            <div class="patient-avatar" style="background:#2e7d32">JL</div>
-            <div class="patient-name">Jean Laurent</div>
-            <div class="patient-badge badge-green">Résultat dispo</div>
+            <div class="patient-avatar" style="background:#e65100">📦</div>
+            <div class="patient-name">Boîtier livré</div>
+            <div class="patient-badge badge-orange">Ce soir 19h</div>
           </div>
           <div class="patient-row">
             <div class="patient-avatar" style="background:#546e7a">AP</div>
@@ -618,6 +678,65 @@
     <div class="strip-item"><div class="strip-icon">⚡</div><div><div class="t1">Résultat rapide</div><div class="t2">Analyse en moins de 7 jours</div></div></div>
   </div>
 </div>
+
+<!-- APNÉE DU SOMMEIL -->
+<section class="apnee" id="apnee">
+  <div class="container">
+    <div class="apnee-inner">
+      <div class="apnee-symptoms">
+        <div class="section-eyebrow">Comprendre la pathologie</div>
+        <div class="section-title">L'apnée du sommeil, c'est quoi ?</div>
+        <p class="section-sub" style="margin-bottom:28px">L'apnée du sommeil (SAOS) est un trouble respiratoire nocturne : votre gorge se bloque pendant quelques secondes, des dizaines — parfois des centaines — de fois par nuit. Votre cerveau se réveille brièvement à chaque fois, sans que vous vous en souviez.</p>
+        <div class="symptom-list">
+          <div class="symptom-item">
+            <div class="symptom-icon">😤</div>
+            <div class="symptom-text"><strong>Ronflements forts et persistants</strong><span>Souvent le premier signe signalé par l'entourage. Les ronflements sont causés par les vibrations des tissus de la gorge.</span></div>
+          </div>
+          <div class="symptom-item">
+            <div class="symptom-icon">😴</div>
+            <div class="symptom-text"><strong>Fatigue chronique malgré une longue nuit</strong><span>Vous dormez 8h mais vous réveillez épuisé(e). La multiplication des micro-réveils fragmente votre sommeil profond.</span></div>
+          </div>
+          <div class="symptom-item">
+            <div class="symptom-icon">🤯</div>
+            <div class="symptom-text"><strong>Maux de tête matinaux & difficultés de concentration</strong><span>Le manque d'oxygène pendant la nuit provoque des céphalées au réveil et une baisse de la vigilance dans la journée.</span></div>
+          </div>
+          <div class="symptom-item">
+            <div class="symptom-icon">💤</div>
+            <div class="symptom-text"><strong>Somnolence au volant ou au travail</strong><span>S'endormir devant la télé ou en réunion est un signal d'alarme. Le risque d'accident est multiplié par 3 chez les conducteurs apnéiques.</span></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="risks-box">
+          <h3>⚠️ Si non traitée, l'apnée peut provoquer…</h3>
+          <div class="risk-list">
+            <div class="risk-item">Hypertension artérielle résistante aux traitements</div>
+            <div class="risk-item">Risque accru d'AVC et d'infarctus du myocarde</div>
+            <div class="risk-item">Diabète de type 2 et troubles métaboliques</div>
+            <div class="risk-item">Dépression, anxiété chronique</div>
+            <div class="risk-item">Accidents de la route (risque ×3)</div>
+            <div class="risk-item">Dysfonction érectile</div>
+          </div>
+        </div>
+        <div class="info-box">
+          <h3>📊 En France, un enjeu de santé publique</h3>
+          <div class="info-stat">
+            <div class="big">3M</div>
+            <div class="desc">de personnes souffrent d'apnée du sommeil en France</div>
+          </div>
+          <div class="info-stat">
+            <div class="big">80%</div>
+            <div class="desc">ne sont pas encore diagnostiquées — et ne le savent pas</div>
+          </div>
+          <div class="info-stat">
+            <div class="big">1 nuit</div>
+            <div class="desc">d'examen à domicile suffit pour un diagnostic précis</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
 <!-- STOP-BANG -->
 <section class="stopbang" id="stopbang">
@@ -641,7 +760,7 @@
         <p class="result-msg" id="resultMsg"></p>
         <div>
           <button class="btn-quiz-reset" onclick="resetQuiz()">Recommencer</button>
-          <button class="btn-quiz-cta" onclick="openLogin()">Connexion partenaire →</button>
+          <button class="btn-quiz-cta" onclick="document.getElementById('teleconsult').scrollIntoView({behavior:'smooth'})">Consulter un médecin →</button>
         </div>
       </div>
     </div>
@@ -652,39 +771,39 @@
 <section class="how" id="how">
   <div class="container how-inner">
     <div>
-      <div class="section-eyebrow">Comment ça marche</div>
-      <div class="section-title">De la prescription à l'analyse, sans se déplacer</div>
-      <p class="section-sub" style="margin-bottom:36px">Un parcours simple, coordonné en temps réel par notre plateforme numérique.</p>
+      <div class="section-eyebrow">Votre parcours</div>
+      <div class="section-title">Du test au diagnostic, en 4 étapes simples</div>
+      <p class="section-sub" style="margin-bottom:36px">Tout se passe chez vous. Pas de déplacement, pas d'hôpital, pas d'attente de plusieurs mois.</p>
       <div class="how-steps">
         <div class="step">
           <div class="step-num">1</div>
           <div class="step-body">
-            <h4>Votre médecin prescrit</h4>
-            <p>Il remplit une prescription en 2 minutes depuis son espace sécurisé. Un boîtier est automatiquement réservé.</p>
-            <span class="step-tag">👨‍⚕️ Interface médecin</span>
+            <h4>Faites le test STOP-BANG</h4>
+            <p>8 questions rapides pour évaluer votre risque d'apnée du sommeil. Gratuit, anonyme, résultat immédiat.</p>
+            <span class="step-tag">⏱️ 2 minutes</span>
           </div>
         </div>
         <div class="step">
           <div class="step-num">2</div>
           <div class="step-body">
-            <h4>Livraison à votre domicile</h4>
-            <p>Un technicien livre et installe le boîtier d'enregistrement chez vous, le soir même ou le lendemain.</p>
-            <span class="step-tag">🚚 Tournée optimisée</span>
+            <h4>Téléconsultation avec un médecin</h4>
+            <p>Un médecin partenaire analyse votre score et vous prescrit l'examen si nécessaire. Depuis votre canapé, sous 24h.</p>
+            <span class="step-tag">🩺 Via Médadom</span>
           </div>
         </div>
         <div class="step">
           <div class="step-num">3</div>
           <div class="step-body">
-            <h4>Enregistrement de votre nuit</h4>
-            <p>Vous dormez normalement chez vous. Le boîtier enregistre vos données respiratoires pendant la nuit.</p>
-            <span class="step-tag">😴 À domicile</span>
+            <h4>Le boîtier livré chez vous</h4>
+            <p>Un technicien dépose et installe le boîtier d'enregistrement à votre domicile. Vous dormez normalement dans votre lit.</p>
+            <span class="step-tag">🏠 À domicile</span>
           </div>
         </div>
         <div class="step">
           <div class="step-num">4</div>
           <div class="step-body">
-            <h4>Récupération &amp; analyse</h4>
-            <p>Le lendemain matin, le boîtier est récupéré. Les données sont analysées et les résultats transmis à votre médecin sous 7 jours.</p>
+            <h4>Résultats en 5 à 7 jours</h4>
+            <p>Vos données respiratoires sont analysées par des spécialistes certifiés. Le compte-rendu est transmis à votre médecin.</p>
             <span class="step-tag">📊 Résultats sécurisés</span>
           </div>
         </div>
@@ -693,32 +812,32 @@
     <div>
       <div class="how-timeline">
         <div class="tl-item">
-          <div class="tl-icon">🩺</div>
-          <div class="tl-text"><div class="tl-title">Interface Médecin</div><div class="tl-sub">Prescription · Dossier · Suivi long terme</div></div>
+          <div class="tl-icon">📋</div>
+          <div class="tl-text"><div class="tl-title">Test STOP-BANG</div><div class="tl-sub">2 min · Gratuit · Résultat immédiat</div></div>
           <div class="tl-arrow">→</div>
         </div>
         <div class="tl-connector"></div>
         <div class="tl-item">
-          <div class="tl-icon">🚚</div>
-          <div class="tl-text"><div class="tl-title">Interface Livreur</div><div class="tl-sub">Tournées · Scan QR · Navigation maps</div></div>
+          <div class="tl-icon">💻</div>
+          <div class="tl-text"><div class="tl-title">Téléconsultation</div><div class="tl-sub">Médecin partenaire · Prescription · Sous 24h</div></div>
+          <div class="tl-arrow">→</div>
+        </div>
+        <div class="tl-connector"></div>
+        <div class="tl-item">
+          <div class="tl-icon">📦</div>
+          <div class="tl-text"><div class="tl-title">Livraison à domicile</div><div class="tl-sub">Boîtier installé · Explication · Soir même</div></div>
           <div class="tl-arrow">→</div>
         </div>
         <div class="tl-connector"></div>
         <div class="tl-item">
           <div class="tl-icon">😴</div>
-          <div class="tl-text"><div class="tl-title">Examen à domicile</div><div class="tl-sub">1 nuit · Confort · Sans hospitalisation</div></div>
+          <div class="tl-text"><div class="tl-title">Enregistrement nocturne</div><div class="tl-sub">1 nuit · Dans votre lit · Sans contrainte</div></div>
           <div class="tl-arrow">→</div>
         </div>
         <div class="tl-connector"></div>
         <div class="tl-item">
-          <div class="tl-icon">🧹</div>
-          <div class="tl-text"><div class="tl-title">Interface Assistante</div><div class="tl-sub">Nettoyage · Upload · Remise en stock</div></div>
-          <div class="tl-arrow">→</div>
-        </div>
-        <div class="tl-connector"></div>
-        <div class="tl-item">
-          <div class="tl-icon">⚙️</div>
-          <div class="tl-text"><div class="tl-title">Interface Admin</div><div class="tl-sub">Carte live · Alertes · Revenus · Comptes</div></div>
+          <div class="tl-icon">📊</div>
+          <div class="tl-text"><div class="tl-title">Résultats & compte-rendu</div><div class="tl-sub">5 à 7 jours · Médecin notifié · Traitement adapté</div></div>
           <div class="tl-arrow">→</div>
         </div>
       </div>
@@ -726,44 +845,44 @@
   </div>
 </section>
 
-<!-- FEATURES -->
-<section class="features" id="features">
+<!-- NOS ENGAGEMENTS -->
+<section class="features engagements" id="engagements">
   <div class="container">
-    <div class="features-header">
-      <div class="section-eyebrow">La plateforme</div>
-      <div class="section-title">Tout ce qui rend SomnoHub différent</div>
-      <p class="section-sub">Une technologie conçue pour les structures médico-techniques qui gèrent la polygraphie à domicile.</p>
+    <div class="features-header engagements-header">
+      <div class="section-eyebrow">Nos engagements</div>
+      <div class="section-title">Pourquoi choisir SomnoHub ?</div>
+      <p class="section-sub">Un service pensé pour vous — confortable, accessible, remboursé et 100% sécurisé.</p>
     </div>
     <div class="features-grid">
       <div class="feat-card">
+        <div class="feat-icon">🏠</div>
+        <h3>Confort total à domicile</h3>
+        <p>L'examen se fait dans votre propre lit, dans votre environnement habituel. Aucun déplacement en clinique ou à l'hôpital.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">💳</div>
+        <h3>Remboursé par l'Assurance Maladie</h3>
+        <p>Avec une prescription médicale, la polygraphie ventilatoire est prise en charge par la Sécurité Sociale et votre mutuelle.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">⚡</div>
+        <h3>Résultats en 5 à 7 jours</h3>
+        <p>Vos données sont analysées rapidement par des médecins spécialistes du sommeil. Fini les délais de 6 mois en hôpital.</p>
+      </div>
+      <div class="feat-card">
         <div class="feat-icon">🩺</div>
-        <h3>Prescription en 2 minutes</h3>
-        <p>Le médecin prescrit avec nom, téléphone, adresse et score STOP-BANG. Le boîtier est assigné automatiquement.</p>
-      </div>
-      <div class="feat-card">
-        <div class="feat-icon">📦</div>
-        <h3>Logistique automatisée</h3>
-        <p>Tournées matin et soir générées automatiquement. Le livreur scanne les QR codes pour valider chaque étape en temps réel.</p>
-      </div>
-      <div class="feat-card">
-        <div class="feat-icon">🗺️</div>
-        <h3>Suivi temps réel</h3>
-        <p>Chaque boîtier est suivi sur carte interactive. L'admin voit le statut de chaque appareil et reçoit des alertes automatiques.</p>
-      </div>
-      <div class="feat-card">
-        <div class="feat-icon">💬</div>
-        <h3>SMS automatiques</h3>
-        <p>Le patient reçoit un SMS à chaque étape clé. Rappels à 3 mois, 6 mois et 1 an après l'examen, sans intervention manuelle.</p>
-      </div>
-      <div class="feat-card">
-        <div class="feat-icon">📊</div>
-        <h3>Tableau de bord revenus</h3>
-        <p>Revenus par médecin, graphique sur 30 jours, projection mensuelle, comparaison mois précédent. Vue financière complète.</p>
+        <h3>Médecins partenaires certifiés</h3>
+        <p>Nos médecins sont spécialisés en médecine du sommeil. Téléconsultation disponible sous 24h via notre partenaire Médadom.</p>
       </div>
       <div class="feat-card">
         <div class="feat-icon">🔒</div>
-        <h3>Sécurité & conformité</h3>
-        <p>Hébergement OVHcloud certifié HDS en France. Données chiffrées AES-256, authentification JWT, RGPD conforme.</p>
+        <h3>Données médicales sécurisées</h3>
+        <p>Vos données de santé sont hébergées en France sur une infrastructure certifiée HDS, conforme RGPD. Votre vie privée est protégée.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">📞</div>
+        <h3>Accompagnement humain</h3>
+        <p>Un technicien vous explique l'installation du boîtier à votre domicile. Notre équipe reste disponible si vous avez des questions.</p>
       </div>
     </div>
   </div>
@@ -772,14 +891,14 @@
 <!-- STATS -->
 <section class="stats-section">
   <div class="container">
-    <div class="section-eyebrow" style="background:rgba(255,255,255,.15);color:var(--accent-light)">En chiffres</div>
-    <div class="section-title" style="color:var(--white)">L'apnée du sommeil, un enjeu de santé publique</div>
-    <p class="section-sub" style="color:rgba(255,255,255,.6);margin:0 auto 52px">Sous-diagnostiquée, l'apnée du sommeil touche des millions de Français. SomnoHub rend le diagnostic accessible.</p>
+    <div class="section-eyebrow" style="background:rgba(255,255,255,.15);color:var(--accent-light)">SomnoHub en chiffres</div>
+    <div class="section-title" style="color:var(--white)">Un service rapide, accessible et fiable</div>
+    <p class="section-sub" style="color:rgba(255,255,255,.6);margin:0 auto 52px">Parce que votre santé ne peut pas attendre 6 mois un rendez-vous hospitalier.</p>
     <div class="stats-grid">
-      <div class="stat-item"><div class="val">4%</div><div class="lbl">de la population adulte touchée par l'apnée obstructive</div></div>
-      <div class="stat-item"><div class="val">80%</div><div class="lbl">des cas non diagnostiqués à ce jour en France</div></div>
-      <div class="stat-item"><div class="val">1 nuit</div><div class="lbl">suffit pour obtenir un diagnostic précis</div></div>
-      <div class="stat-item"><div class="val">100%</div><div class="lbl">des boîtiers traçables en temps réel sur la plateforme</div></div>
+      <div class="stat-item"><div class="val">&lt; 24h</div><div class="lbl">pour obtenir une téléconsultation avec un médecin partenaire</div></div>
+      <div class="stat-item"><div class="val">48h</div><div class="lbl">entre la prescription et la livraison du boîtier à domicile</div></div>
+      <div class="stat-item"><div class="val">5–7j</div><div class="lbl">pour recevoir votre compte-rendu médical complet</div></div>
+      <div class="stat-item"><div class="val">100%</div><div class="lbl">à domicile — zéro déplacement, zéro hospitalisation</div></div>
     </div>
   </div>
 </section>
@@ -788,71 +907,71 @@
 <section class="temoignages">
   <div class="container">
     <div class="temo-header">
-      <div class="section-eyebrow">Témoignages</div>
-      <div class="section-title">Ce qu'ils en disent</div>
-      <p class="section-sub">Médecins et patients qui ont adopté SomnoHub pour leurs examens de polygraphie.</p>
+      <div class="section-eyebrow">Témoignages patients</div>
+      <div class="section-title">Ils ont retrouvé un sommeil réparateur</div>
+      <p class="section-sub">Des patients comme vous qui ont franchi le pas du dépistage à domicile.</p>
     </div>
     <div class="temo-grid">
       <div class="temo-card">
         <div class="temo-stars">★★★★★</div>
-        <p class="temo-text">« Très simple d'utilisation, j'ai pu prescrire et suivre mes patients en quelques clics. Le tableau de bord est clair, les alertes automatiques m'évitent de relancer manuellement. »</p>
+        <p class="temo-text">« Je ronfle depuis des années et ma femme n'en pouvait plus. J'ai fait le test STOP-BANG en 2 minutes, eu une téléconsultation le lendemain, et le boîtier était livré deux jours après. Résultat : apnée sévère diagnostiquée, maintenant je dors avec une PPC et je me sens renaître. »</p>
         <div class="temo-author">
-          <div class="temo-avatar">DM</div>
-          <div><div class="temo-name">Dr. Marc Dupont</div><div class="temo-role">Pneumologue — Paris 15e</div></div>
+          <div class="temo-avatar">PM</div>
+          <div><div class="temo-name">Pierre M.</div><div class="temo-role">Patient — Paris, 52 ans</div></div>
         </div>
       </div>
       <div class="temo-card">
         <div class="temo-stars">★★★★★</div>
-        <p class="temo-text">« Franchement je n'imaginais pas que l'examen pouvait se faire chez moi. La livraison était rapide, l'appareil simple à utiliser, et j'ai eu mes résultats en moins d'une semaine. »</p>
+        <p class="temo-text">« Je n'imaginais pas que l'examen pouvait se faire chez moi. La livraison était rapide, l'appareil très simple à utiliser, et j'ai eu mes résultats en moins d'une semaine. Enfin une solution sans attendre 6 mois à l'hôpital ! »</p>
         <div class="temo-author">
           <div class="temo-avatar">CL</div>
-          <div><div class="temo-name">Christine Lefebvre</div><div class="temo-role">Patiente — Bordeaux</div></div>
+          <div><div class="temo-name">Christine L.</div><div class="temo-role">Patiente — Bordeaux, 44 ans</div></div>
         </div>
       </div>
       <div class="temo-card">
         <div class="temo-stars">★★★★★</div>
-        <p class="temo-text">« Nous gérons plus de 60 examens par mois. SomnoHub a divisé notre charge administrative par trois. La gestion des tournées et la traçabilité des boîtiers sont parfaitement intégrées. »</p>
+        <p class="temo-text">« J'étais épuisée en permanence malgré 8h de sommeil. Mon médecin m'avait dit d'attendre des mois pour un bilan hospitalier. Avec SomnoHub, j'ai eu mon diagnostic en une semaine. Le traitement a tout changé. »</p>
         <div class="temo-author">
-          <div class="temo-avatar">SR</div>
-          <div><div class="temo-name">Sophie Renaud</div><div class="temo-role">Directrice — Centre du Sommeil Lyon</div></div>
+          <div class="temo-avatar">MS</div>
+          <div><div class="temo-name">Marie S.</div><div class="temo-role">Patiente — Lyon, 38 ans</div></div>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- INTERFACES -->
-<section class="interfaces" id="interfaces">
+<!-- TELECONSULTATION -->
+<section class="teleconsult" id="teleconsult">
   <div class="container">
-    <div class="interfaces-header">
-      <div class="section-eyebrow">4 interfaces dédiées</div>
-      <div class="section-title">Chaque rôle, son outil</div>
-      <p class="section-sub">Interfaces conçues spécifiquement pour chaque profil — web pour les médecins et l'admin, mobile PWA pour le livreur et l'assistante.</p>
-    </div>
-    <div class="if-grid">
-      <div class="if-card medecin">
-        <div class="if-icon">🩺</div>
-        <div class="if-role">Médecin</div>
-        <div class="if-title">Prescriptions & Suivi</div>
-        <div class="if-desc">Prescription en 2 min, dossier complet, historique horodaté, suivi à 3/6/12 mois, score STOP-BANG intégré.</div>
+    <div class="teleconsult-box">
+      <div class="tc-left">
+        <div class="tc-eyebrow">Partenariat Médadom</div>
+        <h2>Consultez un médecin depuis chez vous</h2>
+        <p>Votre score STOP-BANG est élevé ou vous avez des doutes ? Un médecin partenaire analysera votre situation et vous prescrira l'examen si nécessaire — le tout en vidéo depuis votre domicile, disponible sous 24h.</p>
+        <button class="btn-tc" onclick="window.open('https://www.medadom.com','_blank')">Prendre RDV en téléconsultation →</button>
+        <div class="tc-partner">
+          <span>En partenariat avec</span>
+          <span class="tc-partner-badge">🩺 Médadom</span>
+          <span class="tc-partner-badge">🔒 Remboursé Sécu</span>
+        </div>
       </div>
-      <div class="if-card livreur">
-        <div class="if-icon">🚚</div>
-        <div class="if-role">Livreur</div>
-        <div class="if-title">Tournées mobiles</div>
-        <div class="if-desc">App installable sur mobile. Calendrier, scan QR caméra, navigation Google Maps directe, gros boutons tactiles.</div>
-      </div>
-      <div class="if-card assistante">
-        <div class="if-icon">🧹</div>
-        <div class="if-role">Assistante</div>
-        <div class="if-title">Scan & Remise en stock</div>
-        <div class="if-desc">Page unique ultra-simple sur smartphone. Un geste : scanner le boîtier nettoyé pour le remettre disponible.</div>
-      </div>
-      <div class="if-card admin">
-        <div class="if-icon">⚙️</div>
-        <div class="if-role">Administrateur</div>
-        <div class="if-title">Dashboard complet</div>
-        <div class="if-desc">Carte live des boîtiers, alertes automatiques, revenus par médecin avec graphiques, gestion des comptes.</div>
+      <div class="tc-right">
+        <div class="tc-step">
+          <div class="tc-step-num">1</div>
+          <div class="tc-step-text"><strong>Faites le test STOP-BANG</strong><span>Gratuit, 2 minutes, résultat immédiat</span></div>
+        </div>
+        <div class="tc-step">
+          <div class="tc-step-num">2</div>
+          <div class="tc-step-text"><strong>Prenez RDV en téléconsultation</strong><span>Disponible sous 24h, remboursé par la Sécu</span></div>
+        </div>
+        <div class="tc-step">
+          <div class="tc-step-num">3</div>
+          <div class="tc-step-text"><strong>Recevez votre prescription</strong><span>Le médecin vous oriente vers l'examen adapté</span></div>
+        </div>
+        <div class="tc-step">
+          <div class="tc-step-num">4</div>
+          <div class="tc-step-text"><strong>Boîtier livré à votre domicile</strong><span>Examen confortable dans votre propre lit</span></div>
+        </div>
       </div>
     </div>
   </div>
@@ -931,11 +1050,11 @@
 <section class="cta" id="contact">
   <div class="container">
     <div class="cta-box">
-      <h2>Rejoignez le réseau SomnoHub</h2>
-      <p>Vous êtes un cabinet médical, un laboratoire ou un centre du sommeil ? Déployez la plateforme pour vos patients en quelques jours.</p>
+      <h2>Prêt à enfin bien dormir ?</h2>
+      <p>Faites le test en 2 minutes et découvrez si vous êtes à risque. Gratuit, anonyme, sans engagement.</p>
       <div class="cta-actions">
-        <button class="btn-cta-primary" onclick="openLogin()">Connexion partenaire →</button>
-        <button class="btn-cta-ghost" onclick="document.getElementById('stopbang').scrollIntoView({behavior:'smooth'})">Évaluer mon risque</button>
+        <button class="btn-cta-primary" onclick="document.getElementById('stopbang').scrollIntoView({behavior:'smooth'})">Faire le test STOP-BANG →</button>
+        <button class="btn-cta-ghost" onclick="window.open('https://www.medadom.com','_blank')">Téléconsultation Médadom</button>
       </div>
     </div>
   </div>
@@ -945,15 +1064,15 @@
 <footer>
   <div class="footer-inner">
     <div class="footer-brand">
-      <div class="logo">Somni<span>Link</span></div>
-      <p>Plateforme de gestion logistique pour la polygraphie ventilatoire à domicile. Du diagnostic à l'analyse, coordonné en temps réel.</p>
+      <div class="logo">Somno<span>Hub</span></div>
+      <p>Dépistage de l'apnée du sommeil à domicile — test STOP-BANG, téléconsultation et polygraphie ventilatoire. Simple, rapide, remboursé.</p>
     </div>
     <div class="footer-col">
-      <h4>Service</h4>
-      <a href="#stopbang">Évaluer mon risque</a>
+      <h4>Patients</h4>
+      <a href="#apnee">L'apnée du sommeil</a>
+      <a href="#stopbang">Test STOP-BANG</a>
+      <a href="#teleconsult">Téléconsultation</a>
       <a href="#how">Comment ça marche</a>
-      <a href="#features">La plateforme</a>
-      <a href="#interfaces">Interfaces</a>
     </div>
     <div class="footer-col">
       <h4>Conformité</h4>
@@ -983,7 +1102,7 @@
 <div class="modal-overlay" id="loginModal" onclick="handleOverlay(event)">
   <div class="modal-box">
     <div class="modal-top">
-      <div class="modal-logo">Somni<span>Link</span></div>
+      <div class="modal-logo">Somno<span>Hub</span></div>
       <div class="modal-subtitle">Espace partenaires — Connexion sécurisée</div>
       <button class="modal-close" onclick="closeLogin()">✕</button>
     </div>
@@ -1003,10 +1122,10 @@
       <div class="demo-chips">
         <div class="demo-label">Comptes de démonstration</div>
         <div class="demo-grid">
-          <div class="demo-chip" onclick="fillDemo('admin@somnohub.fr','Admin123!')"><div class="chip-icon">⚙️</div><div class="chip-name">Admin</div><div class="chip-email">admin@somnohub.fr</div></div>
-          <div class="demo-chip" onclick="fillDemo('dr.martin@somnohub.fr','Medecin123!')"><div class="chip-icon">🩺</div><div class="chip-name">Médecin</div><div class="chip-email">dr.martin@somnohub.fr</div></div>
-          <div class="demo-chip" onclick="fillDemo('livreur@somnohub.fr','Livreur123!')"><div class="chip-icon">🚚</div><div class="chip-name">Livreur</div><div class="chip-email">livreur@somnohub.fr</div></div>
-          <div class="demo-chip" onclick="fillDemo('assistante@somnohub.fr','Assist123!')"><div class="chip-icon">🧹</div><div class="chip-name">Assistante</div><div class="chip-email">assistante@somnohub.fr</div></div>
+          <div class="demo-chip" onclick="fillDemo('admin@somnohub.fr','Lune45!')"><div class="chip-icon">⚙️</div><div class="chip-name">Admin</div><div class="chip-email">admin@somnohub.fr</div></div>
+          <div class="demo-chip" onclick="fillDemo('dr.martin@somnohub.fr','Pluie34!')"><div class="chip-icon">🩺</div><div class="chip-name">Médecin</div><div class="chip-email">dr.martin@somnohub.fr</div></div>
+          <div class="demo-chip" onclick="fillDemo('livreur@somnohub.fr','Soleil45!')"><div class="chip-icon">🚚</div><div class="chip-name">Livreur</div><div class="chip-email">livreur@somnohub.fr</div></div>
+          <div class="demo-chip" onclick="fillDemo('assistante@somnohub.fr','Pluie12!')"><div class="chip-icon">🧹</div><div class="chip-name">Assistante</div><div class="chip-email">assistante@somnohub.fr</div></div>
         </div>
       </div>
     </div>
