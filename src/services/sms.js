@@ -61,4 +61,9 @@ async function smsSuivi1An(patient, medecin) {
   await envoyerSMS(patient.id, 'suivi_1an', msg, patient.telephone);
 }
 
-module.exports = { smsPrescription, smsRappelRecuperation, smsSuivi3Mois, smsSuivi6Mois, smsSuivi1An };
+async function smsDepartTournee(patient) {
+  const msg = `Bonjour ${patient.prenom}, votre boîtier de polygraphie du sommeil sera déposé dans votre boîte aux lettres ce soir. Scannez le QR code sur le boîtier pour accéder aux instructions et réalisez votre examen cette nuit. L'équipe SomnoHub.`;
+  await envoyerSMS(patient.id, 'depart_tournee', msg, patient.telephone);
+}
+
+module.exports = { smsPrescription, smsRappelRecuperation, smsSuivi3Mois, smsSuivi6Mois, smsSuivi1An, smsDepartTournee };

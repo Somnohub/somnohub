@@ -457,12 +457,15 @@
 </div>
 
 <!-- BOTTOM BAR -->
-<div class="bottom-bar" style="gap:10px">
-  <button class="btn-scan-fab" onclick="openScannerDirect()" style="flex:1;justify-content:center">
-    <span style="font-size:1.2rem">📷</span> Scanner
+<div class="bottom-bar" style="gap:8px">
+  <button class="btn-scan-fab" id="btnDemarrer" onclick="demarrerTournee()" style="flex:1;justify-content:center;background:linear-gradient(135deg,#b71c1c,#c62828);font-size:.8rem;padding:14px 10px" disabled>
+    <span style="font-size:1.1rem">🚀</span> Démarrer
   </button>
-  <button class="btn-scan-fab" id="btnItineraire" onclick="genererItineraire()" style="flex:1;justify-content:center;background:linear-gradient(135deg,#1565c0,#1976d2)" disabled>
-    <span style="font-size:1.2rem">🗺️</span> Itinéraire
+  <button class="btn-scan-fab" onclick="openScannerDirect()" style="flex:1;justify-content:center;font-size:.8rem;padding:14px 10px">
+    <span style="font-size:1.1rem">📷</span> Scanner
+  </button>
+  <button class="btn-scan-fab" id="btnItineraire" onclick="genererItineraire()" style="flex:1;justify-content:center;background:linear-gradient(135deg,#1565c0,#1976d2);font-size:.8rem;padding:14px 10px" disabled>
+    <span style="font-size:1.1rem">🗺️</span> Itinéraire
   </button>
 </div>
 
@@ -589,17 +592,30 @@ async function loadStops() {
 
     const banner = document.getElementById('seuilBanner');
     const btnIti = document.getElementById('btnItineraire');
+    const btnDem = document.getElementById('btnDemarrer');
+    const isToday = selectedDate === new Date().toISOString().split('T')[0];
+    const livraisons = enAttente.filter(s => s.action === 'livrer');
 
     if (enAttente.length > 0 && enAttente.length < SEUIL_TOURNEE) {
       banner.style.display = '';
       banner.textContent = `⚠️ ${enAttente.length}/${SEUIL_TOURNEE} adresses — tournée non déclenchée (minimum ${SEUIL_TOURNEE} requis)`;
       btnIti.disabled = true;
       btnIti.style.opacity = '0.45';
+      btnDem.disabled = true;
+      btnDem.style.opacity = '0.45';
       stopsCache[selectedDate] = stops;
     } else {
       banner.style.display = 'none';
       btnIti.disabled = false;
       btnIti.style.opacity = '1';
+      // Bouton Démarrer : actif uniquement pour aujourd'hui avec livraisons en attente
+      if (isToday && livraisons.length > 0) {
+        btnDem.disabled = false;
+        btnDem.style.opacity = '1';
+      } else {
+        btnDem.disabled = true;
+        btnDem.style.opacity = '0.45';
+      }
       // Optimisation Google Directions
       if (enAttente.length >= SEUIL_TOURNEE) {
         btnIti.innerHTML = '⏳';
@@ -609,7 +625,7 @@ async function loadStops() {
         } catch(e) {
           stopsCache[selectedDate] = stops;
         }
-        btnIti.innerHTML = '<span style="font-size:1.2rem">🗺️</span> Itinéraire';
+        btnIti.innerHTML = '<span style="font-size:1.1rem">🗺️</span> Itinéraire';
       } else {
         stopsCache[selectedDate] = stops;
       }
@@ -693,6 +709,35 @@ function renderStops() {
     </div>
     ${statsHtml}
     ${cardsHtml}`;
+}
+
+async function demarrerTournee() {
+  const stops = (stopsCache[selectedDate] || []).filter(s => s.statut !== 'complete' && s.action === 'livrer');
+  if (stops.length === 0) return;
+  if (!confirm(`Démarrer la tournée et envoyer un SMS à ${stops.length} patient(s) ?`)) return;
+
+  const btn = document.getElementById('btnDemarrer');
+  btn.disabled = true;
+  btn.innerHTML = '⏳';
+
+  try {
+    const res = await fetch(`${API}/api/livreur/demarrer-tournee`, {
+      method: 'POST', headers: authHeaders()
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showResult('ok', '🚀', 'Tournée démarrée !', `${data.sms_envoyes} SMS envoyé(s) aux patients`);
+      btn.innerHTML = '<span style="font-size:1.1rem">✅</span> Démarré';
+    } else {
+      showResult('err', '❌', 'Erreur', data.error || 'Impossible de démarrer');
+      btn.disabled = false;
+      btn.innerHTML = '<span style="font-size:1.1rem">🚀</span> Démarrer';
+    }
+  } catch(e) {
+    showResult('err', '❌', 'Erreur réseau', 'Vérifiez votre connexion');
+    btn.disabled = false;
+    btn.innerHTML = '<span style="font-size:1.1rem">🚀</span> Démarrer';
+  }
 }
 
 function genererItineraire() {

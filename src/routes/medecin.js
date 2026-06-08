@@ -53,6 +53,11 @@ router.post('/patients', auth(['medecin']), async (req, res) => {
     return res.status(400).json({ error: 'Champs obligatoires manquants' });
   }
 
+  const telClean = telephone.replace(/\s/g, '');
+  if (!/^0[1-9]\d{8}$/.test(telClean)) {
+    return res.status(400).json({ error: 'Numéro de téléphone invalide — 10 chiffres requis (ex: 0612345678)' });
+  }
+
   const db = getDb();
 
   // Chercher un boîtier disponible

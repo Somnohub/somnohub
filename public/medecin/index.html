@@ -727,7 +727,7 @@
     const alertEl = document.getElementById('prescAlert');
     const nom = document.getElementById('pNom').value.trim();
     const prenom = document.getElementById('pPrenom').value.trim();
-    const telephone = document.getElementById('pTel').value.trim();
+    const telephone = document.getElementById('pTel').value.replace(/\s/g, '');
     const adresseBase = document.getElementById('pAdresse').value.trim();
     const complement = document.getElementById('pComplement').value.trim();
     const lat = parseFloat(document.getElementById('pLat').value) || null;
@@ -738,6 +738,12 @@
 
     if (!nom || !prenom || !telephone || !adresseBase) {
       alertEl.textContent = 'Tous les champs sont obligatoires';
+      alertEl.style.display = 'block';
+      return;
+    }
+
+    if (!/^0[1-9]\d{8}$/.test(telephone)) {
+      alertEl.textContent = 'Numéro de téléphone invalide — 10 chiffres requis (ex: 0612345678)';
       alertEl.style.display = 'block';
       return;
     }

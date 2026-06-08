@@ -33,11 +33,15 @@ initDb();
 startScheduler();
 
 app.listen(PORT, () => {
+  const dbPath = process.env.DB_PATH || require('path').join(__dirname, 'somnohub.db');
   console.log('');
   console.log('╔══════════════════════════════════════════╗');
   console.log('║         SOMNOHUB — Démarré              ║');
   console.log(`║  http://localhost:${PORT}                    ║`);
   console.log('╚══════════════════════════════════════════╝');
+  console.log('');
+  console.log(`  DB_PATH = ${dbPath}`);
+  console.log(`  PERSISTANT = ${dbPath.startsWith('/app/data') ? 'OUI (volume Railway)' : 'NON — données éphémères !'}`);
   console.log('');
   console.log('  /           → Page de connexion');
   console.log('  /medecin    → Interface médecin');

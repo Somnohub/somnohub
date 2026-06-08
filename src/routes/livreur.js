@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { getDb } = require('../db');
 const auth = require('../middleware/auth');
+const { smsDepartTournee } = require('../services/sms');
 
 // Jours ayant des stops sur les 21 prochains jours + 7 passés
 router.get('/jours-tournees', auth(['livreur', 'admin']), (req, res) => {
@@ -188,6 +189,35 @@ router.post('/scan', auth(['livreur']), (req, res) => {
     nouveau_statut_boitier: nouveauStatutBoitier,
     nouveau_statut_patient: nouveauStatutPatient
   });
+});
+
+// Démarrer la tournée — envoie SMS à tous les patients "livrer" du jour
+router.post('/demarrer-tournee', auth(['livreur']), async (req, res) => {
+  const db = getDb();
+  const today = new Date().toISOString().split('T')[0];
+
+  const stops = db.prepare(`
+    SELECT ts.*, p.nom as patient_nom, p.prenom as patient_prenom, p.telephone as patient_telephone, p.id as patient_id
+    FROM tournee_stops ts
+    JOIN patients p ON ts.patient_id = p.id
+    WHERE ts.date <= ? AND ts.action = 'livrer' AND ts.statut != 'complete'
+  `).all(today);
+
+  let envoyes = 0;
+  for (const stop of stops) {
+    try {
+      await smsDepartTournee({
+        id: stop.patient_id,
+        prenom: stop.patient_prenom,
+        telephone: stop.patient_telephone
+      });
+      envoyes++;
+    } catch (e) {
+      console.error('[SMS] Erreur envoi départ tournée:', e.message);
+    }
+  }
+
+  res.json({ success: true, sms_envoyes: envoyes, nb_stops: stops.length });
 });
 
 // Signaler un problème sur un stop
