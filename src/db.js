@@ -43,7 +43,7 @@ function initDb() {
       score_stop_bang INTEGER DEFAULT 0,
       statut TEXT DEFAULT 'prescrit' CHECK(statut IN (
         'prescrit','livraison_prevue','livraison_effectuee',
-        'examen_en_cours','examen_termine','resultat_disponible','consultation_annonce'
+        'examen_en_cours','en_cours_d_analyse','examen_termine','resultat_disponible','consultation_annonce'
       )),
       date_resultat DATETIME,
       suivi_3mois_envoye INTEGER DEFAULT 0,
@@ -58,7 +58,7 @@ function initDb() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       numero TEXT UNIQUE NOT NULL,
       statut TEXT DEFAULT 'disponible' CHECK(statut IN (
-        'disponible','assigne','chez_patient','maintenance','reserve','hors_service'
+        'disponible','assigne','chez_patient','en_analyse','maintenance','reserve','hors_service'
       )),
       tracker_gps TEXT,
       lat REAL DEFAULT 48.8566,

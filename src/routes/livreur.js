@@ -116,16 +116,16 @@ router.post('/scan', auth(['livreur']), (req, res) => {
     }
 
   } else if (boitier.statut === 'chez_patient' || action === 'recuperer') {
-    // Récupération chez le patient
-    nouveauStatutBoitier = 'maintenance';
-    nouveauStatutPatient = 'examen_termine';
-    message = `✅ Boîtier ${boitier_numero} récupéré — En maintenance`;
+    // Récupération chez le patient — en attente de nettoyage par l'assistante
+    nouveauStatutBoitier = 'en_analyse';
+    nouveauStatutPatient = 'en_cours_d_analyse';
+    message = `✅ Boîtier ${boitier_numero} récupéré — En cours d'analyse`;
 
-    db.prepare(`UPDATE boitiers SET statut = 'maintenance', derniere_action = CURRENT_TIMESTAMP, patient_id = NULL WHERE id = ?`).run(boitier.id);
+    db.prepare(`UPDATE boitiers SET statut = 'en_analyse', derniere_action = CURRENT_TIMESTAMP WHERE id = ?`).run(boitier.id);
 
     if (boitier.patient_id) {
-      db.prepare(`UPDATE patients SET statut = 'examen_termine', updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(boitier.patient_id);
-      db.prepare(`INSERT INTO historique_patient (patient_id, statut, note, created_by) VALUES (?, 'examen_termine', 'Boîtier récupéré, données en cours d\\'analyse', ?)`).run(boitier.patient_id, req.user.id);
+      db.prepare(`UPDATE patients SET statut = 'en_cours_d_analyse', updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(boitier.patient_id);
+      db.prepare(`INSERT INTO historique_patient (patient_id, statut, note, created_by) VALUES (?, 'en_cours_d_analyse', 'Boîtier récupéré — données en cours d\\'analyse', ?)`).run(boitier.patient_id, req.user.id);
     }
 
   } else if (boitier.statut === 'disponible') {

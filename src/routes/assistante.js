@@ -19,9 +19,9 @@ router.post('/scan', auth(['assistante', 'admin']), (req, res) => {
     return res.status(404).json({ error: `Boîtier ${boitier_numero} introuvable` });
   }
 
-  if (boitier.statut !== 'maintenance') {
+  if (boitier.statut !== 'en_analyse') {
     return res.status(400).json({
-      error: `Boîtier ${boitier_numero} n'est pas en maintenance (statut actuel: ${boitier.statut})`,
+      error: `Boîtier ${boitier_numero} n'est pas en cours d'analyse (statut actuel: ${boitier.statut})`,
       statut_actuel: boitier.statut
     });
   }
@@ -32,10 +32,9 @@ router.post('/scan', auth(['assistante', 'admin']), (req, res) => {
   `).run(boitier.id);
 
   // Le patient dont le boîtier est revenu → résultat disponible
-  // On cherche le dernier patient lié à ce boîtier via l'historique
   const dernierPatient = db.prepare(`
     SELECT p.* FROM patients p
-    WHERE p.statut = 'examen_termine'
+    WHERE p.statut = 'en_cours_d_analyse'
     AND p.id IN (
       SELECT patient_id FROM tournee_stops WHERE boitier_id = ?
       ORDER BY created_at DESC LIMIT 1
