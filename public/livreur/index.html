@@ -573,6 +573,7 @@ function goToday() {
 
 // ── STOPS ──────────────────────────────────────────────
 async function loadStops() {
+  closeResult();
   document.getElementById('mainContent').innerHTML = `
     <div style="text-align:center;padding:40px">
       <div style="width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto"></div>
@@ -601,9 +602,13 @@ async function loadStops() {
       btnIti.style.opacity = '1';
       // Optimisation Google Directions
       if (enAttente.length >= SEUIL_TOURNEE) {
-        btnIti.textContent = '⏳';
-        const optimises = await optimiserAvecGoogle(enAttente);
-        stopsCache[selectedDate] = [...optimises, ...completes];
+        btnIti.innerHTML = '⏳';
+        try {
+          const optimises = await optimiserAvecGoogle(enAttente);
+          stopsCache[selectedDate] = [...optimises, ...completes];
+        } catch(e) {
+          stopsCache[selectedDate] = stops;
+        }
         btnIti.innerHTML = '<span style="font-size:1.2rem">🗺️</span> Itinéraire';
       } else {
         stopsCache[selectedDate] = stops;
