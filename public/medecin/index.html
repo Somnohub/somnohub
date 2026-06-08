@@ -426,7 +426,13 @@
       </div>
       <div class="form-group">
         <label>Adresse *</label>
-        <input type="text" id="pAdresse" class="form-control" placeholder="15 rue de la Paix, 75001 Paris" id="addressInput">
+        <input type="text" id="pAdresse" class="form-control" placeholder="15 rue de la Paix, 75001 Paris" autocomplete="off">
+        <input type="hidden" id="pLat">
+        <input type="hidden" id="pLng">
+      </div>
+      <div class="form-group">
+        <label>Complément d'adresse <span style="font-weight:400;color:var(--text-light);font-size:.8rem">(bâtiment, étage, appartement…)</span></label>
+        <input type="text" id="pComplement" class="form-control" placeholder="Bât B, Apt 42, 2ème étage">
       </div>
       <div class="form-group">
         <label>Score STOP-BANG *
@@ -722,10 +728,15 @@
     const nom = document.getElementById('pNom').value.trim();
     const prenom = document.getElementById('pPrenom').value.trim();
     const telephone = document.getElementById('pTel').value.trim();
-    const adresse = document.getElementById('pAdresse').value.trim();
+    const adresseBase = document.getElementById('pAdresse').value.trim();
+    const complement = document.getElementById('pComplement').value.trim();
+    const lat = parseFloat(document.getElementById('pLat').value) || null;
+    const lng = parseFloat(document.getElementById('pLng').value) || null;
     const score = parseInt(document.getElementById('pScore').value);
 
-    if (!nom || !prenom || !telephone || !adresse) {
+    const adresse = complement ? `${adresseBase} — ${complement}` : adresseBase;
+
+    if (!nom || !prenom || !telephone || !adresseBase) {
       alertEl.textContent = 'Tous les champs sont obligatoires';
       alertEl.style.display = 'block';
       return;
@@ -739,13 +750,13 @@
       const res = await fetch(`${API}/api/medecin/patients`, {
         method: 'POST',
         headers: authHeaders(),
-        body: JSON.stringify({ nom, prenom, telephone, adresse, score_stop_bang: score })
+        body: JSON.stringify({ nom, prenom, telephone, adresse, lat, lng, score_stop_bang: score })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
       closeModal('prescriptionModal');
-      ['pNom','pPrenom','pTel','pAdresse'].forEach(id => document.getElementById(id).value = '');
+      ['pNom','pPrenom','pTel','pAdresse','pComplement','pLat','pLng'].forEach(id => document.getElementById(id).value = '');
       document.getElementById('pScore').value = '0';
       updateScoreDisplay();
       showToast(`Prescription créée pour ${prenom} ${nom}`, 'success');
@@ -822,6 +833,28 @@
   // ── Init ──────────────────────────────────────────────
   loadPatients();
   updateScoreDisplay();
+
+  // ── Places Autocomplete ────────────────────────────────
+  function initPlacesAutocomplete() {
+    const input = document.getElementById('pAdresse');
+    const autocomplete = new google.maps.places.Autocomplete(input, {
+      componentRestrictions: { country: 'fr' },
+      fields: ['formatted_address', 'geometry'],
+      types: ['address']
+    });
+    autocomplete.addListener('place_changed', () => {
+      const place = autocomplete.getPlace();
+      if (place.geometry) {
+        document.getElementById('pLat').value = place.geometry.location.lat();
+        document.getElementById('pLng').value = place.geometry.location.lng();
+      }
+      if (place.formatted_address) {
+        input.value = place.formatted_address;
+      }
+      document.getElementById('pComplement').focus();
+    });
+  }
 </script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBPL4FZ6litzOBAW2aRiiDxHqmWy2kMySw&libraries=places&callback=initPlacesAutocomplete" async defer></script>
 </body>
 </html>
