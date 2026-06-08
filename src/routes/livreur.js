@@ -38,17 +38,52 @@ router.get('/prescriptions-en-attente', auth(['livreur', 'admin']), (req, res) =
   res.json({ nb: count.nb, seuil, seuil_atteint: count.nb >= seuil });
 });
 
-// Tournées du jour — inclut les stops en attente des jours précédents (accumulation jusqu'à seuil)
+// ── Optimisation d'itinéraire (nearest-neighbor) ──────────────────────────
+const DEPOT_LAT = 48.9362; // 65 avenue Stalingrad, Saint-Denis
+const DEPOT_LNG = 2.3574;
+
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function optimiserRoute(stops) {
+  // Stops sans coordonnées → placés en fin de liste
+  const avecCoords = stops.filter(s => s.patient_lat && s.patient_lng);
+  const sansCoords = stops.filter(s => !s.patient_lat || !s.patient_lng);
+  if (avecCoords.length <= 1) return stops;
+
+  const restants = [...avecCoords];
+  const resultat = [];
+  let curLat = DEPOT_LAT, curLng = DEPOT_LNG;
+
+  while (restants.length > 0) {
+    let minDist = Infinity, minIdx = 0;
+    for (let i = 0; i < restants.length; i++) {
+      const d = haversine(curLat, curLng, restants[i].patient_lat, restants[i].patient_lng);
+      if (d < minDist) { minDist = d; minIdx = i; }
+    }
+    resultat.push(restants[minIdx]);
+    curLat = restants[minIdx].patient_lat;
+    curLng = restants[minIdx].patient_lng;
+    restants.splice(minIdx, 1);
+  }
+
+  return [...resultat, ...sansCoords];
+}
+
+// Tournées du jour — inclut les stops en attente des jours précédents + ordre optimisé
 router.get('/tournees', auth(['livreur', 'admin']), (req, res) => {
   const db = getDb();
   const date = req.query.date || new Date().toISOString().split('T')[0];
   const today = new Date().toISOString().split('T')[0];
-
-  // Pour le jour courant ou passé : inclure tous les stops en attente jusqu'à cette date
-  // Pour les jours futurs : uniquement les stops prévus ce jour-là
   const isPastOrToday = date <= today;
 
-  let query = `
+  const query = `
     SELECT ts.*,
       p.nom as patient_nom, p.prenom as patient_prenom,
       p.telephone as patient_telephone, p.adresse as patient_adresse,
@@ -57,11 +92,15 @@ router.get('/tournees', auth(['livreur', 'admin']), (req, res) => {
     FROM tournee_stops ts
     JOIN patients p ON ts.patient_id = p.id
     LEFT JOIN boitiers b ON ts.boitier_id = b.id
-    WHERE ${isPastOrToday ? 'ts.date <= ? AND ts.statut != \'complete\'' : 'ts.date = ?'}
+    WHERE ${isPastOrToday ? "ts.date <= ? AND ts.statut != 'complete'" : 'ts.date = ?'}
+    ORDER BY ts.id
   `;
 
   const stops = db.prepare(query).all(date);
-  res.json(stops);
+  // Optimiser uniquement les stops en attente, garder les complétés à la fin
+  const enAttente = stops.filter(s => s.statut !== 'complete');
+  const completes = stops.filter(s => s.statut === 'complete');
+  res.json([...optimiserRoute(enAttente), ...completes]);
 });
 
 // Scanner un QR code (action livreur)
