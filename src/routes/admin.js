@@ -234,6 +234,44 @@ router.get('/dashboard', auth(['admin']), (req, res) => {
   res.json({ boitiers: statsBoitiers, patients: statsPatients, alertes_non_lues: nonLues });
 });
 
+// ─── Stats prescriptions ────────────────────────────────────────────────────
+
+router.get('/prescriptions-stats', auth(['admin']), (req, res) => {
+  const db = getDb();
+  const today = new Date().toISOString().split('T')[0];
+  const debutSemaine = new Date(Date.now() - 6 * 86400000).toISOString().split('T')[0];
+  const debutMois = today.slice(0, 7) + '-01';
+
+  const parJour = db.prepare(`
+    SELECT p.created_at, p.nom, p.prenom, p.statut, p.score_stop_bang,
+      u.nom as medecin_nom, u.prenom as medecin_prenom
+    FROM patients p JOIN users u ON p.medecin_id = u.id
+    WHERE date(p.created_at) = ? ORDER BY p.created_at DESC
+  `).all(today);
+
+  const nbSemaine = db.prepare(`SELECT COUNT(*) as nb FROM patients WHERE date(created_at) >= ?`).get(debutSemaine).nb;
+  const nbMois = db.prepare(`SELECT COUNT(*) as nb FROM patients WHERE date(created_at) >= ?`).get(debutMois).nb;
+
+  const parMedecin = db.prepare(`
+    SELECT u.nom, u.prenom,
+      SUM(CASE WHEN date(p.created_at) = ? THEN 1 ELSE 0 END) as aujourd_hui,
+      SUM(CASE WHEN date(p.created_at) >= ? THEN 1 ELSE 0 END) as semaine,
+      SUM(CASE WHEN date(p.created_at) >= ? THEN 1 ELSE 0 END) as mois,
+      COUNT(p.id) as total
+    FROM users u LEFT JOIN patients p ON p.medecin_id = u.id
+    WHERE u.role = 'medecin'
+    GROUP BY u.id ORDER BY mois DESC
+  `).all(today, debutSemaine, debutMois);
+
+  res.json({
+    aujourd_hui: parJour.length,
+    semaine: nbSemaine,
+    mois: nbMois,
+    prescriptions_du_jour: parJour,
+    par_medecin: parMedecin
+  });
+});
+
 // ─── Tous les patients (vue admin) ──────────────────────────────────────────
 
 router.get('/patients', auth(['admin']), (req, res) => {

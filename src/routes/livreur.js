@@ -107,11 +107,11 @@ router.post('/scan', auth(['livreur']), (req, res) => {
       db.prepare(`INSERT INTO historique_patient (patient_id, statut, note, created_by) VALUES (?, 'livraison_effectuee', 'Boîtier déposé chez le patient', ?)`).run(boitier.patient_id, req.user.id);
       db.prepare(`INSERT INTO historique_patient (patient_id, statut, note, created_by) VALUES (?, 'examen_en_cours', 'Examen démarré', ?)`).run(boitier.patient_id, req.user.id);
 
-      // Créer un stop de récupération pour le lendemain matin
+      // Créer un stop de récupération pour le soir J+1
       const demain = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-      const existeStop = db.prepare(`SELECT id FROM tournee_stops WHERE date = ? AND type = 'matin' AND boitier_id = ?`).get(demain, boitier.id);
+      const existeStop = db.prepare(`SELECT id FROM tournee_stops WHERE date = ? AND type = 'soir' AND boitier_id = ?`).get(demain, boitier.id);
       if (!existeStop) {
-        db.prepare(`INSERT INTO tournee_stops (date, type, patient_id, boitier_id, action, ordre) VALUES (?, 'matin', ?, ?, 'recuperer', 99)`).run(demain, boitier.patient_id, boitier.id);
+        db.prepare(`INSERT INTO tournee_stops (date, type, patient_id, boitier_id, action, ordre) VALUES (?, 'soir', ?, ?, 'recuperer', 99)`).run(demain, boitier.patient_id, boitier.id);
       }
     }
 

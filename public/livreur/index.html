@@ -397,7 +397,7 @@
   <!-- HEADER -->
   <header class="header">
     <div class="header-inner">
-      <div class="header-brand">Somni<span>Link</span> <span style="font-size:.75rem;opacity:.6;font-weight:500">Livreur</span></div>
+      <div class="header-brand">Somno<span>Hub</span> <span style="font-size:.75rem;opacity:.6;font-weight:500">Livreur</span></div>
       <div class="header-right">
         <div class="header-name" id="livreurName"></div>
         <button class="btn-logout" onclick="logout()">Déconnexion</button>
@@ -414,19 +414,8 @@
     </div>
   </header>
 
-  <!-- TABS -->
-  <div class="tour-tabs">
-    <div class="tour-tab active" id="tabMatin" onclick="switchType('matin')">
-      <span class="tab-icon">🌅</span>
-      <span class="tab-label">MATIN 7h–9h</span>
-      <span class="tab-badge" id="badgeMatin">0</span>
-    </div>
-    <div class="tour-tab" id="tabSoir" onclick="switchType('soir')">
-      <span class="tab-icon">🌆</span>
-      <span class="tab-label">SOIR 17h–19h</span>
-      <span class="tab-badge" id="badgeSoir">0</span>
-    </div>
-  </div>
+  <!-- SEUIL BANNIERE -->
+  <div id="seuilBanner" style="display:none;background:#fff8e1;border-bottom:1px solid #ffe082;padding:10px 18px;font-size:.8rem;color:#e65100;font-weight:600;text-align:center"></div>
 
   <!-- MAIN -->
   <main class="main" id="mainContent">
@@ -468,9 +457,12 @@
 </div>
 
 <!-- BOTTOM BAR -->
-<div class="bottom-bar">
-  <button class="btn-scan-fab" onclick="openScannerDirect()">
-    <span style="font-size:1.2rem">📷</span> Scanner un boîtier
+<div class="bottom-bar" style="gap:10px">
+  <button class="btn-scan-fab" onclick="openScannerDirect()" style="flex:1;justify-content:center">
+    <span style="font-size:1.2rem">📷</span> Scanner
+  </button>
+  <button class="btn-scan-fab" id="btnItineraire" onclick="genererItineraire()" style="flex:1;justify-content:center;background:linear-gradient(135deg,#1565c0,#1976d2)" disabled>
+    <span style="font-size:1.2rem">🗺️</span> Itinéraire
   </button>
 </div>
 
@@ -496,11 +488,11 @@ function logout() {
 
 // ── STATE ──────────────────────────────────────────────
 let selectedDate = new Date().toISOString().split('T')[0];
-let selectedType = 'matin';
 let joursTournees = [];
 let stopsCache = {};
 let currentStopId = null;
 let html5QrCode = null;
+const SEUIL_TOURNEE = 10;
 
 // ── DATE STRIP ─────────────────────────────────────────
 async function loadJoursTournees() {
@@ -561,13 +553,6 @@ function goToday() {
   if (todayChip) todayChip.scrollIntoView({ inline: 'center', behavior: 'smooth' });
 }
 
-function switchType(type) {
-  selectedType = type;
-  document.getElementById('tabMatin').classList.toggle('active', type === 'matin');
-  document.getElementById('tabSoir').classList.toggle('active', type === 'soir');
-  renderStops();
-}
-
 // ── STOPS ──────────────────────────────────────────────
 async function loadStops() {
   document.getElementById('mainContent').innerHTML = `
@@ -580,18 +565,18 @@ async function loadStops() {
     const stops = await res.json();
     stopsCache[selectedDate] = stops;
 
-    const matin = stops.filter(s => s.type === 'matin');
-    const soir = stops.filter(s => s.type === 'soir');
+    const pending = stops.filter(s => s.statut !== 'complete').length;
+    const banner = document.getElementById('seuilBanner');
+    if (stops.length > 0 && stops.length < SEUIL_TOURNEE) {
+      banner.style.display = '';
+      banner.textContent = `⚠️ ${stops.length}/${SEUIL_TOURNEE} adresses — tournée non déclenchée (minimum ${SEUIL_TOURNEE} requis)`;
+    } else {
+      banner.style.display = 'none';
+    }
 
-    // Badges
-    const nbMatinAttente = matin.filter(s => s.statut !== 'complete').length;
-    const nbSoirAttente = soir.filter(s => s.statut !== 'complete').length;
-    const bmBadge = document.getElementById('badgeMatin');
-    const bsBadge = document.getElementById('badgeSoir');
-    bmBadge.textContent = nbMatinAttente || matin.length;
-    bsBadge.textContent = nbSoirAttente || soir.length;
-    bmBadge.className = `tab-badge${nbMatinAttente > 0 ? ' has-items' : ''}`;
-    bsBadge.className = `tab-badge${nbSoirAttente > 0 ? ' has-items' : ''}`;
+    const btnIti = document.getElementById('btnItineraire');
+    btnIti.disabled = stops.length < SEUIL_TOURNEE;
+    btnIti.style.opacity = stops.length < SEUIL_TOURNEE ? '0.45' : '1';
 
     renderStops();
   } catch(e) {
@@ -600,10 +585,9 @@ async function loadStops() {
 }
 
 function renderStops() {
-  const stops = (stopsCache[selectedDate] || []).filter(s => s.type === selectedType);
+  const stops = stopsCache[selectedDate] || [];
   const main = document.getElementById('mainContent');
 
-  // Formater la date lisible
   const d = new Date(selectedDate + 'T12:00:00');
   const dateLabel = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
   const isToday = selectedDate === new Date().toISOString().split('T')[0];
@@ -612,16 +596,14 @@ function renderStops() {
   const done = stops.filter(s => s.statut === 'complete');
 
   if (stops.length === 0) {
-    const msg = selectedType === 'matin' ? 'récupération prévue' : 'livraison prévue';
     main.innerHTML = `
       <div class="day-title">
         <span class="day-title-text">${isToday ? "Aujourd'hui" : dateLabel}</span>
-        <span class="day-title-sub">${selectedType === 'matin' ? '7h–9h' : '17h–19h'}</span>
       </div>
       <div class="empty-day">
-        <div class="e-icon">${selectedType === 'matin' ? '🌅' : '🌆'}</div>
-        <div class="e-title">Aucune ${msg}</div>
-        <div class="e-sub">Tournée non déclenchée pour ce créneau.<br>Minimum 20 courses requises.</div>
+        <div class="e-icon">📭</div>
+        <div class="e-title">Aucune tournée prévue</div>
+        <div class="e-sub">Minimum ${SEUIL_TOURNEE} adresses requises pour déclencher une tournée.</div>
       </div>`;
     return;
   }
@@ -631,6 +613,8 @@ function renderStops() {
       <div class="stats-bar-item"><div class="stats-val">${stops.length}</div><div class="stats-lbl">Total</div></div>
       <div class="stats-bar-item"><div class="stats-val" style="color:var(--accent)">${pending.length}</div><div class="stats-lbl">En attente</div></div>
       <div class="stats-bar-item"><div class="stats-val" style="color:#40916c">${done.length}</div><div class="stats-lbl">Fait</div></div>
+      <div class="stats-bar-item"><div class="stats-val" style="color:#1565c0">${stops.filter(s=>s.action==='livrer').length}</div><div class="stats-lbl">Livraisons</div></div>
+      <div class="stats-bar-item"><div class="stats-val" style="color:#e65100">${stops.filter(s=>s.action==='recuperer').length}</div><div class="stats-lbl">Récups</div></div>
     </div>`;
 
   const cardsHtml = stops.map((s, i) => {
@@ -668,10 +652,20 @@ function renderStops() {
   main.innerHTML = `
     <div class="day-title">
       <span class="day-title-text">${isToday ? "Aujourd'hui" : dateLabel}</span>
-      <span class="day-title-sub">${selectedType === 'matin' ? '7h–9h' : '17h–19h'}</span>
+      <span class="day-title-sub">Tournée soir</span>
     </div>
     ${statsHtml}
     ${cardsHtml}`;
+}
+
+function genererItineraire() {
+  const stops = (stopsCache[selectedDate] || []).filter(s => s.statut !== 'complete');
+  if (stops.length === 0) return;
+  const adresses = stops.map(s => encodeURIComponent(s.patient_adresse));
+  const destination = adresses[adresses.length - 1];
+  const waypoints = adresses.slice(0, -1).join('|');
+  const url = `https://www.google.com/maps/dir/?api=1&destination=${destination}&waypoints=${waypoints}&travelmode=driving`;
+  window.open(url, '_blank');
 }
 
 // ── SCANNER ────────────────────────────────────────────

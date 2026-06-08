@@ -303,6 +303,9 @@
       <div class="nav-item" onclick="showSection('revenus', this)">
         <span class="nav-icon">💰</span><span>Revenus</span>
       </div>
+      <div class="nav-item" onclick="showSection('prescriptions', this)">
+        <span class="nav-icon">🩺</span><span>Prescriptions</span>
+      </div>
       <div class="nav-item" onclick="showSection('comptes', this)">
         <span class="nav-icon">👥</span><span>Comptes</span>
       </div>
@@ -390,6 +393,31 @@
             <table>
               <thead><tr><th>Médecin</th><th>Examens</th><th>Revenus mois</th></tr></thead>
               <tbody id="revenusMedecinBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PRESCRIPTIONS ── -->
+      <div class="tab-content" id="section-prescriptions">
+        <div class="revenus-kpis">
+          <div class="kpi-grid" id="prescKpis"></div>
+        </div>
+        <div class="chart-card" style="margin-top:16px">
+          <h3>👨‍⚕️ Activité par médecin</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Médecin</th><th>Aujourd'hui</th><th>Cette semaine</th><th>Ce mois</th><th>Total</th></tr></thead>
+              <tbody id="prescMedecinBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="chart-card" style="margin-top:16px">
+          <h3>📋 Prescriptions du jour</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Heure</th><th>Patient</th><th>Médecin</th><th>Score STOP-BANG</th><th>Statut</th></tr></thead>
+              <tbody id="prescDuJourBody"></tbody>
             </table>
           </div>
         </div>
@@ -555,7 +583,8 @@ const titles = {
   boitiers: 'Gestion des boîtiers',
   alertes: 'Alertes automatiques',
   revenus: 'Tableau de bord revenus',
-  comptes: 'Gestion des comptes médecins'
+  comptes: 'Gestion des comptes médecins',
+  prescriptions: 'Prescriptions — Suivi par médecin'
 };
 
 function showSection(section, el) {
@@ -571,6 +600,7 @@ function showSection(section, el) {
   else if (section === 'alertes') loadAlertes();
   else if (section === 'revenus') loadRevenus();
   else if (section === 'comptes') loadComptes();
+  else if (section === 'prescriptions') loadPrescriptions();
 }
 
 function refreshCurrent() { showSection(currentSection, document.querySelector('.nav-item.active')); }
@@ -1011,6 +1041,44 @@ function showToast(msg, type = 'info') {
   t.textContent = msg;
   c.appendChild(t);
   setTimeout(() => t.remove(), 3500);
+}
+
+async function loadPrescriptions() {
+  try {
+    const res = await fetch(`${API}/api/admin/prescriptions-stats`, { headers: authHeaders() });
+    const data = await res.json();
+
+    document.getElementById('prescKpis').innerHTML = `
+      <div class="kpi-card"><div class="kpi-val">${data.aujourd_hui}</div><div class="kpi-lbl">Aujourd'hui</div></div>
+      <div class="kpi-card"><div class="kpi-val">${data.semaine}</div><div class="kpi-lbl">Cette semaine</div></div>
+      <div class="kpi-card"><div class="kpi-val">${data.mois}</div><div class="kpi-lbl">Ce mois</div></div>
+    `;
+
+    const statutLabel = { prescrit:'Prescrit', livraison_prevue:'Livraison prévue', examen_en_cours:'Examen en cours', en_cours_d_analyse:'En analyse', examen_termine:'Terminé', resultat_disponible:'Résultat dispo', consultation_annonce:'Consulté' };
+    const statutColor = { prescrit:'#1565c0', livraison_prevue:'#e65100', examen_en_cours:'#2e7d32', resultat_disponible:'#6a1b9a' };
+
+    document.getElementById('prescMedecinBody').innerHTML = data.par_medecin.length
+      ? data.par_medecin.map(m => `
+        <tr>
+          <td><strong>Dr. ${m.prenom} ${m.nom}</strong></td>
+          <td style="text-align:center;font-weight:700;color:var(--primary)">${m.aujourd_hui || 0}</td>
+          <td style="text-align:center">${m.semaine || 0}</td>
+          <td style="text-align:center">${m.mois || 0}</td>
+          <td style="text-align:center;color:var(--text-light)">${m.total || 0}</td>
+        </tr>`).join('')
+      : '<tr><td colspan="5" style="text-align:center;color:var(--text-light)">Aucun médecin</td></tr>';
+
+    document.getElementById('prescDuJourBody').innerHTML = data.prescriptions_du_jour.length
+      ? data.prescriptions_du_jour.map(p => `
+        <tr>
+          <td style="color:var(--text-light);font-size:.82rem">${new Date(p.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</td>
+          <td><strong>${p.prenom} ${p.nom}</strong></td>
+          <td>Dr. ${p.medecin_prenom} ${p.medecin_nom}</td>
+          <td style="text-align:center"><span style="font-weight:700;color:${p.score_stop_bang>=5?'#c62828':p.score_stop_bang>=3?'#e65100':'#2e7d32'}">${p.score_stop_bang}/8</span></td>
+          <td><span style="background:${(statutColor[p.statut]||'#555')}22;color:${statutColor[p.statut]||'#555'};padding:3px 10px;border-radius:20px;font-size:.78rem;font-weight:700">${statutLabel[p.statut]||p.statut}</span></td>
+        </tr>`).join('')
+      : '<tr><td colspan="5" style="text-align:center;color:var(--text-light)">Aucune prescription aujourd\'hui</td></tr>';
+  } catch(e) { console.error(e); }
 }
 
 // ── Init ──────────────────────────────────────────────────
