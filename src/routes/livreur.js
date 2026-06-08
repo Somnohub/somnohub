@@ -38,11 +38,15 @@ router.get('/prescriptions-en-attente', auth(['livreur', 'admin']), (req, res) =
   res.json({ nb: count.nb, seuil, seuil_atteint: count.nb >= seuil });
 });
 
-// Tournées du jour
+// Tournées du jour — inclut les stops en attente des jours précédents (accumulation jusqu'à seuil)
 router.get('/tournees', auth(['livreur', 'admin']), (req, res) => {
   const db = getDb();
   const date = req.query.date || new Date().toISOString().split('T')[0];
-  const type = req.query.type;
+  const today = new Date().toISOString().split('T')[0];
+
+  // Pour le jour courant ou passé : inclure tous les stops en attente jusqu'à cette date
+  // Pour les jours futurs : uniquement les stops prévus ce jour-là
+  const isPastOrToday = date <= today;
 
   let query = `
     SELECT ts.*,
@@ -53,18 +57,10 @@ router.get('/tournees', auth(['livreur', 'admin']), (req, res) => {
     FROM tournee_stops ts
     JOIN patients p ON ts.patient_id = p.id
     LEFT JOIN boitiers b ON ts.boitier_id = b.id
-    WHERE ts.date = ?
+    WHERE ${isPastOrToday ? 'ts.date <= ? AND ts.statut != \'complete\'' : 'ts.date = ?'}
   `;
-  const params = [date];
 
-  if (type) {
-    query += ' AND ts.type = ?';
-    params.push(type);
-  }
-
-  query += ' ORDER BY ts.type, ts.ordre, ts.id';
-
-  const stops = db.prepare(query).all(...params);
+  const stops = db.prepare(query).all(date);
   res.json(stops);
 });
 
