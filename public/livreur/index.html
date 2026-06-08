@@ -743,10 +743,8 @@ async function demarrerTournee() {
 function genererItineraire() {
   const stops = (stopsCache[selectedDate] || []).filter(s => s.statut !== 'complete');
   if (stops.length === 0) return;
-  const adresses = stops.map(s => encodeURIComponent(s.patient_adresse));
-  const destination = adresses[adresses.length - 1];
-  const waypoints = adresses.slice(0, -1).join('|');
-  const url = `https://www.google.com/maps/dir/?api=1&destination=${destination}&waypoints=${waypoints}&travelmode=driving`;
+  const tous = [DEPOT, ...stops.map(s => s.patient_adresse)];
+  const url = 'https://www.google.com/maps/dir/' + tous.map(a => encodeURIComponent(a)).join('/');
   window.open(url, '_blank');
 }
 
