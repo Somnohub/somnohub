@@ -493,6 +493,24 @@ let stopsCache = {};
 let currentStopId = null;
 let html5QrCode = null;
 const SEUIL_TOURNEE = 5;
+const GOOGLE_KEY = 'AIzaSyBPL4FZ6litzOBAW2aRiiDxHqmWy2kMySw';
+const DEPOT = '65 avenue Stalingrad, Saint-Denis, France';
+
+// ── OPTIMISATION GOOGLE DIRECTIONS ─────────────────────
+async function optimiserAvecGoogle(stops) {
+  if (stops.length < 2) return stops;
+  const addrs = stops.map(s => encodeURIComponent(s.patient_adresse));
+  const waypoints = 'optimize:true|' + addrs.join('|');
+  const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${encodeURIComponent(DEPOT)}&destination=${encodeURIComponent(DEPOT)}&waypoints=${waypoints}&region=fr&language=fr&key=${GOOGLE_KEY}`;
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.status === 'OK' && data.routes[0]?.waypoint_order) {
+      return data.routes[0].waypoint_order.map(i => stops[i]);
+    }
+  } catch(e) {}
+  return stops; // fallback nearest-neighbor (déjà trié par le backend)
+}
 
 // ── DATE STRIP ─────────────────────────────────────────
 async function loadJoursTournees() {
@@ -565,18 +583,32 @@ async function loadStops() {
     const stops = await res.json();
     stopsCache[selectedDate] = stops;
 
-    const pending = stops.filter(s => s.statut !== 'complete').length;
+    const enAttente = stops.filter(s => s.statut !== 'complete');
+    const completes = stops.filter(s => s.statut === 'complete');
+
     const banner = document.getElementById('seuilBanner');
-    if (stops.length > 0 && stops.length < SEUIL_TOURNEE) {
+    const btnIti = document.getElementById('btnItineraire');
+
+    if (enAttente.length > 0 && enAttente.length < SEUIL_TOURNEE) {
       banner.style.display = '';
-      banner.textContent = `⚠️ ${stops.length}/${SEUIL_TOURNEE} adresses — tournée non déclenchée (minimum ${SEUIL_TOURNEE} requis)`;
+      banner.textContent = `⚠️ ${enAttente.length}/${SEUIL_TOURNEE} adresses — tournée non déclenchée (minimum ${SEUIL_TOURNEE} requis)`;
+      btnIti.disabled = true;
+      btnIti.style.opacity = '0.45';
+      stopsCache[selectedDate] = stops;
     } else {
       banner.style.display = 'none';
+      btnIti.disabled = false;
+      btnIti.style.opacity = '1';
+      // Optimisation Google Directions
+      if (enAttente.length >= SEUIL_TOURNEE) {
+        btnIti.textContent = '⏳';
+        const optimises = await optimiserAvecGoogle(enAttente);
+        stopsCache[selectedDate] = [...optimises, ...completes];
+        btnIti.innerHTML = '<span style="font-size:1.2rem">🗺️</span> Itinéraire';
+      } else {
+        stopsCache[selectedDate] = stops;
+      }
     }
-
-    const btnIti = document.getElementById('btnItineraire');
-    btnIti.disabled = stops.length < SEUIL_TOURNEE;
-    btnIti.style.opacity = stops.length < SEUIL_TOURNEE ? '0.45' : '1';
 
     renderStops();
   } catch(e) {
