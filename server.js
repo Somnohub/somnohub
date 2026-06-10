@@ -65,7 +65,7 @@ app.listen(PORT, () => {
   console.log('╚══════════════════════════════════════════╝');
   console.log('');
   console.log(`  DB_PATH = ${dbPath}`);
-  console.log(`  PERSISTANT = ${dbPath.startsWith('/app/data') ? 'OUI (volume Railway)' : 'NON — données éphémères !'}`);
+  console.log(`  PERSISTANT = ${process.env.DB_PATH ? 'OUI (volume Railway)' : 'NON — données éphémères !'}`);
   try {
     const nbPatients = getDb().prepare('SELECT COUNT(*) as n FROM patients').get().n;
     console.log(`  PATIENTS EN BASE = ${nbPatients}`);
