@@ -28,6 +28,30 @@ app.get('/livreur', (req, res) => res.sendFile(path.join(__dirname, 'public/livr
 app.get('/assistante', (req, res) => res.sendFile(path.join(__dirname, 'public/assistante/index.html')));
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/admin/index.html')));
 
+// ── DIAGNOSTIC PERSISTANCE VOLUME ───────────────────────
+// Écrit un fichier témoin et relit le précédent : si le témoin ne survit
+// pas au redémarrage, c'est le volume Railway qui ne persiste pas.
+(function diagnosticVolume() {
+  const fs = require('fs');
+  const p = require('path');
+  const dir = p.dirname(process.env.DB_PATH || p.join(__dirname, 'somnohub.db'));
+  const marker = p.join(dir, '.persist-marker');
+  try {
+    if (fs.existsSync(marker)) {
+      console.log(`[DIAG] Témoin précédent : ${fs.readFileSync(marker, 'utf8')}`);
+    } else {
+      console.log('[DIAG] Témoin précédent : AUCUN (le fichier a disparu)');
+    }
+    fs.writeFileSync(marker, new Date().toISOString());
+    const files = fs.readdirSync(dir).map(f => {
+      try { return `${f} (${fs.statSync(p.join(dir, f)).size}o)`; } catch (e) { return f; }
+    });
+    console.log(`[DIAG] Contenu de ${dir} : ${files.join(', ') || '(vide)'}`);
+  } catch (e) {
+    console.log(`[DIAG] Erreur accès volume : ${e.message}`);
+  }
+})();
+
 // Démarrage
 initDb();
 startScheduler();
