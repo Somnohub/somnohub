@@ -16,10 +16,22 @@ let db;
 function getDb() {
   if (!db) {
     db = new Database(DB_PATH);
-    db.pragma('journal_mode = WAL');
+    // journal_mode = DELETE + synchronous = FULL :
+    // chaque commit est fsync directement dans le fichier sur le volume.
+    // Évite la perte de données quand Railway tue le container (le WAL n'était
+    // pas checkpointé à temps → transactions perdues au redémarrage).
+    db.pragma('journal_mode = DELETE');
+    db.pragma('synchronous = FULL');
     db.pragma('foreign_keys = ON');
   }
   return db;
+}
+
+function closeDb() {
+  if (db) {
+    try { db.close(); } catch (e) {}
+    db = null;
+  }
 }
 
 function initDb() {
@@ -182,4 +194,4 @@ function seedData(db) {
   console.log('  assistante@somnohub.fr / Pluie12!');
 }
 
-module.exports = { getDb, initDb };
+module.exports = { getDb, initDb, closeDb };

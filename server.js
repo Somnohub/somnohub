@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { initDb } = require('./src/db');
+const { initDb, getDb, closeDb } = require('./src/db');
 const { startScheduler } = require('./src/services/scheduler');
 
 const app = express();
@@ -42,6 +42,10 @@ app.listen(PORT, () => {
   console.log('');
   console.log(`  DB_PATH = ${dbPath}`);
   console.log(`  PERSISTANT = ${dbPath.startsWith('/app/data') ? 'OUI (volume Railway)' : 'NON — données éphémères !'}`);
+  try {
+    const nbPatients = getDb().prepare('SELECT COUNT(*) as n FROM patients').get().n;
+    console.log(`  PATIENTS EN BASE = ${nbPatients}`);
+  } catch (e) {}
   console.log('');
   console.log('  /           → Page de connexion');
   console.log('  /medecin    → Interface médecin');
@@ -50,3 +54,12 @@ app.listen(PORT, () => {
   console.log('  /admin      → Interface admin');
   console.log('');
 });
+
+// Fermeture propre de la base quand Railway arrête le container
+function arretPropre() {
+  console.log('[Arrêt] Fermeture de la base de données...');
+  closeDb();
+  process.exit(0);
+}
+process.on('SIGTERM', arretPropre);
+process.on('SIGINT', arretPropre);
