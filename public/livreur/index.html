@@ -461,11 +461,8 @@
   <button class="btn-scan-fab" id="btnDemarrer" onclick="demarrerTournee()" style="flex:1;justify-content:center;background:linear-gradient(135deg,#b71c1c,#c62828);font-size:.8rem;padding:14px 10px" disabled>
     <span style="font-size:1.1rem">🚀</span> Démarrer
   </button>
-  <button class="btn-scan-fab" onclick="openScannerDirect()" style="flex:1;justify-content:center;font-size:.8rem;padding:14px 10px">
+  <button class="btn-scan-fab" onclick="openScannerDirect()" style="flex:1;justify-content:center;font-size:.85rem;padding:14px 10px">
     <span style="font-size:1.1rem">📷</span> Scanner
-  </button>
-  <button class="btn-scan-fab" id="btnItineraire" onclick="genererItineraire()" style="flex:1;justify-content:center;background:linear-gradient(135deg,#1565c0,#1976d2);font-size:.8rem;padding:14px 10px" disabled>
-    <span style="font-size:1.1rem">🗺️</span> Itinéraire
   </button>
 </div>
 
@@ -493,18 +490,21 @@ function logout() {
 let selectedDate = new Date().toISOString().split('T')[0];
 let joursTournees = [];
 let stopsCache = {};
+let toursCache = {};
 let currentStopId = null;
 let html5QrCode = null;
 const SEUIL_TOURNEE = 5;
+const MAX_PAR_TOURNEE = 15; // au-delà → découpage en plusieurs tournées
 const GOOGLE_KEY = 'AIzaSyBPL4FZ6litzOBAW2aRiiDxHqmWy2kMySw';
 const DEPOT = '65 avenue Stalingrad, Saint-Denis, France';
 
-// ── OPTIMISATION GOOGLE DIRECTIONS ─────────────────────
+// ── OPTIMISATION GOOGLE DIRECTIONS (trafic temps réel) ──
 async function optimiserAvecGoogle(stops) {
   if (stops.length < 2) return stops;
   const addrs = stops.map(s => encodeURIComponent(s.patient_adresse));
   const waypoints = 'optimize:true|' + addrs.join('|');
-  const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${encodeURIComponent(DEPOT)}&destination=${encodeURIComponent(DEPOT)}&waypoints=${waypoints}&region=fr&language=fr&key=${GOOGLE_KEY}`;
+  // departure_time=now → l'ordre tient compte du trafic réel au départ
+  const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${encodeURIComponent(DEPOT)}&destination=${encodeURIComponent(DEPOT)}&waypoints=${waypoints}&departure_time=now&region=fr&language=fr&key=${GOOGLE_KEY}`;
   try {
     const res = await fetch(url);
     const data = await res.json();
@@ -513,6 +513,20 @@ async function optimiserAvecGoogle(stops) {
     }
   } catch(e) {}
   return stops; // fallback nearest-neighbor (déjà trié par le backend)
+}
+
+// ── DÉCOUPAGE MULTI-TOURNÉES ────────────────────────────
+// Les arrêts arrivent déjà ordonnés géographiquement (nearest-neighbor backend).
+// On les découpe en blocs équilibrés → chaque bloc reste cohérent géographiquement.
+function decouperEnTours(stops) {
+  if (stops.length <= MAX_PAR_TOURNEE) return [stops];
+  const nbTours = Math.ceil(stops.length / MAX_PAR_TOURNEE);
+  const taille = Math.ceil(stops.length / nbTours);
+  const tours = [];
+  for (let i = 0; i < stops.length; i += taille) {
+    tours.push(stops.slice(i, i + taille));
+  }
+  return tours;
 }
 
 // ── DATE STRIP ─────────────────────────────────────────
@@ -591,44 +605,40 @@ async function loadStops() {
     const completes = stops.filter(s => s.statut === 'complete');
 
     const banner = document.getElementById('seuilBanner');
-    const btnIti = document.getElementById('btnItineraire');
     const btnDem = document.getElementById('btnDemarrer');
     const isToday = selectedDate === new Date().toISOString().split('T')[0];
     const livraisons = enAttente.filter(s => s.action === 'livrer');
 
+    // Bouton Démarrer : aujourd'hui, livraisons en attente, seuil atteint
+    if (isToday && livraisons.length > 0 && enAttente.length >= SEUIL_TOURNEE) {
+      btnDem.disabled = false; btnDem.style.opacity = '1';
+    } else {
+      btnDem.disabled = true; btnDem.style.opacity = '0.45';
+    }
+
     if (enAttente.length > 0 && enAttente.length < SEUIL_TOURNEE) {
+      // Sous le seuil : afficher les adresses sans optimiser ni proposer d'itinéraire
       banner.style.display = '';
       banner.textContent = `⚠️ ${enAttente.length}/${SEUIL_TOURNEE} adresses — tournée non déclenchée (minimum ${SEUIL_TOURNEE} requis)`;
-      btnIti.disabled = true;
-      btnIti.style.opacity = '0.45';
-      btnDem.disabled = true;
-      btnDem.style.opacity = '0.45';
+      toursCache[selectedDate] = [enAttente];
       stopsCache[selectedDate] = stops;
-    } else {
+    } else if (enAttente.length >= SEUIL_TOURNEE) {
       banner.style.display = 'none';
-      btnIti.disabled = false;
-      btnIti.style.opacity = '1';
-      // Bouton Démarrer : actif uniquement pour aujourd'hui avec livraisons en attente
-      if (isToday && livraisons.length > 0) {
-        btnDem.disabled = false;
-        btnDem.style.opacity = '1';
-      } else {
-        btnDem.disabled = true;
-        btnDem.style.opacity = '0.45';
-      }
-      // Optimisation Google Directions
-      if (enAttente.length >= SEUIL_TOURNEE) {
-        btnIti.innerHTML = '⏳';
-        try {
-          const optimises = await optimiserAvecGoogle(enAttente);
-          stopsCache[selectedDate] = [...optimises, ...completes];
-        } catch(e) {
-          stopsCache[selectedDate] = stops;
-        }
-        btnIti.innerHTML = '<span style="font-size:1.1rem">🗺️</span> Itinéraire';
-      } else {
-        stopsCache[selectedDate] = stops;
-      }
+      // Découpage multi-tournées + optimisation Google (trafic temps réel)
+      document.getElementById('mainContent').innerHTML = `
+        <div style="text-align:center;padding:40px;color:var(--text-light)">
+          <div style="width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 14px"></div>
+          Optimisation des itinéraires…
+        </div>`;
+      const blocs = decouperEnTours(enAttente);
+      const toursOptim = await Promise.all(blocs.map(b => optimiserAvecGoogle(b)));
+      toursCache[selectedDate] = toursOptim;
+      stopsCache[selectedDate] = [...toursOptim.flat(), ...completes];
+    } else {
+      // Aucun arrêt en attente (tout terminé)
+      banner.style.display = 'none';
+      toursCache[selectedDate] = [];
+      stopsCache[selectedDate] = stops;
     }
 
     renderStops();
@@ -638,17 +648,16 @@ async function loadStops() {
 }
 
 function renderStops() {
-  const stops = stopsCache[selectedDate] || [];
+  const allStops = stopsCache[selectedDate] || [];
+  const tours = toursCache[selectedDate] || [];
+  const done = allStops.filter(s => s.statut === 'complete');
   const main = document.getElementById('mainContent');
 
   const d = new Date(selectedDate + 'T12:00:00');
   const dateLabel = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
   const isToday = selectedDate === new Date().toISOString().split('T')[0];
 
-  const pending = stops.filter(s => s.statut !== 'complete');
-  const done = stops.filter(s => s.statut === 'complete');
-
-  if (stops.length === 0) {
+  if (allStops.length === 0) {
     main.innerHTML = `
       <div class="day-title">
         <span class="day-title-text">${isToday ? "Aujourd'hui" : dateLabel}</span>
@@ -661,46 +670,45 @@ function renderStops() {
     return;
   }
 
+  const pending = tours.flat();
+  const sousSeuil = pending.length > 0 && pending.length < SEUIL_TOURNEE;
+
   const statsHtml = `
     <div class="stats-bar">
-      <div class="stats-bar-item"><div class="stats-val">${stops.length}</div><div class="stats-lbl">Total</div></div>
+      <div class="stats-bar-item"><div class="stats-val">${allStops.length}</div><div class="stats-lbl">Total</div></div>
       <div class="stats-bar-item"><div class="stats-val" style="color:var(--accent)">${pending.length}</div><div class="stats-lbl">En attente</div></div>
       <div class="stats-bar-item"><div class="stats-val" style="color:#40916c">${done.length}</div><div class="stats-lbl">Fait</div></div>
-      <div class="stats-bar-item"><div class="stats-val" style="color:#1565c0">${stops.filter(s=>s.action==='livrer').length}</div><div class="stats-lbl">Livraisons</div></div>
-      <div class="stats-bar-item"><div class="stats-val" style="color:#e65100">${stops.filter(s=>s.action==='recuperer').length}</div><div class="stats-lbl">Récups</div></div>
+      <div class="stats-bar-item"><div class="stats-val" style="color:#1565c0">${allStops.filter(s=>s.action==='livrer').length}</div><div class="stats-lbl">Livraisons</div></div>
+      <div class="stats-bar-item"><div class="stats-val" style="color:#e65100">${allStops.filter(s=>s.action==='recuperer').length}</div><div class="stats-lbl">Récups</div></div>
     </div>`;
 
-  const cardsHtml = stops.map((s, i) => {
-    const isDone = s.statut === 'complete';
-    const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(s.patient_adresse)}`;
-    return `
-      <div class="stop-card ${isDone ? 'done' : ''}" id="stop-${s.id}">
-        <div class="card-top">
-          <div class="card-top-left">
-            <div class="stop-num">${i + 1}</div>
-            <div class="stop-patient">
-              <div class="stop-name">${s.patient_prenom} ${s.patient_nom}</div>
-              <div class="stop-boitier">📦 ${s.boitier_numero || 'Non assigné'} · 📞 ${s.patient_telephone}</div>
-            </div>
-          </div>
-          ${isDone
-            ? `<span class="action-pill pill-done">✓ Fait</span>`
-            : `<span class="action-pill ${s.action === 'livrer' ? 'pill-livrer' : 'pill-recuperer'}">${s.action === 'livrer' ? '📦 LIVRER' : '🔙 RÉCUP.'}</span>`}
-        </div>
-        <div class="card-address">
-          <span class="card-address-icon">📍</span>
-          ${s.patient_adresse}
-        </div>
-        ${!isDone ? `
-        <div class="card-actions">
-          <a href="${mapsUrl}" target="_blank" class="btn-nav">🗺️ Navigation</a>
-          <button class="btn-scan-card" onclick="openScanner(${s.id}, '${s.boitier_numero || ''}', '${s.action}')">
-            📷 Scanner
-          </button>
-          <button class="btn-probleme" onclick="signalerProbleme(${s.id})">⚠️ Signaler un problème</button>
-        </div>` : ''}
-      </div>`;
-  }).join('');
+  let toursHtml = '';
+  tours.forEach((tour, ti) => {
+    if (!tour.length) return;
+    let titre;
+    if (tours.length > 1) titre = `Tournée ${ti + 1}/${tours.length} · ${tour.length} arrêts`;
+    else if (sousSeuil) titre = `Adresses en attente · ${tour.length}`;
+    else titre = `Itinéraire optimisé · ${tour.length} arrêts`;
+
+    const boutonIti = sousSeuil ? '' :
+      `<button onclick="genererItineraireTour(${ti})" style="background:linear-gradient(135deg,#1565c0,#1976d2);color:#fff;border:none;border-radius:10px;padding:9px 14px;font-size:.8rem;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap">🗺️ Itinéraire</button>`;
+
+    toursHtml += `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 4px 8px;margin-top:${ti > 0 ? '12px' : '0'}">
+        <span style="font-size:.92rem;font-weight:800;color:var(--primary)">${titre}</span>
+        ${boutonIti}
+      </div>
+      ${tour.map((s, i) => renderCard(s, i + 1)).join('')}`;
+  });
+
+  let doneHtml = '';
+  if (done.length) {
+    doneHtml = `
+      <div style="padding:16px 4px 8px;margin-top:12px">
+        <span style="font-size:.92rem;font-weight:800;color:#40916c">✓ ${done.length} terminé${done.length > 1 ? 's' : ''}</span>
+      </div>
+      ${done.map(s => renderCard(s, '✓')).join('')}`;
+  }
 
   main.innerHTML = `
     <div class="day-title">
@@ -708,7 +716,40 @@ function renderStops() {
       <span class="day-title-sub">Tournée soir</span>
     </div>
     ${statsHtml}
-    ${cardsHtml}`;
+    ${toursHtml}
+    ${doneHtml}`;
+}
+
+function renderCard(s, num) {
+  const isDone = s.statut === 'complete';
+  const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(s.patient_adresse)}`;
+  return `
+    <div class="stop-card ${isDone ? 'done' : ''}" id="stop-${s.id}">
+      <div class="card-top">
+        <div class="card-top-left">
+          <div class="stop-num">${num}</div>
+          <div class="stop-patient">
+            <div class="stop-name">${s.patient_prenom} ${s.patient_nom}</div>
+            <div class="stop-boitier">📦 ${s.boitier_numero || 'Non assigné'} · 📞 ${s.patient_telephone}</div>
+          </div>
+        </div>
+        ${isDone
+          ? `<span class="action-pill pill-done">✓ Fait</span>`
+          : `<span class="action-pill ${s.action === 'livrer' ? 'pill-livrer' : 'pill-recuperer'}">${s.action === 'livrer' ? '📦 LIVRER' : '🔙 RÉCUP.'}</span>`}
+      </div>
+      <div class="card-address">
+        <span class="card-address-icon">📍</span>
+        ${s.patient_adresse}
+      </div>
+      ${!isDone ? `
+      <div class="card-actions">
+        <a href="${mapsUrl}" target="_blank" class="btn-nav">🗺️ Navigation</a>
+        <button class="btn-scan-card" onclick="openScanner(${s.id}, '${s.boitier_numero || ''}', '${s.action}')">
+          📷 Scanner
+        </button>
+        <button class="btn-probleme" onclick="signalerProbleme(${s.id})">⚠️ Signaler un problème</button>
+      </div>` : ''}
+    </div>`;
 }
 
 async function demarrerTournee() {
@@ -740,10 +781,10 @@ async function demarrerTournee() {
   }
 }
 
-function genererItineraire() {
-  const stops = (stopsCache[selectedDate] || []).filter(s => s.statut !== 'complete');
-  if (stops.length === 0) return;
-  const tous = [DEPOT, ...stops.map(s => s.patient_adresse)];
+function genererItineraireTour(ti) {
+  const tour = (toursCache[selectedDate] || [])[ti];
+  if (!tour || !tour.length) return;
+  const tous = [DEPOT, ...tour.map(s => s.patient_adresse)];
   const url = 'https://www.google.com/maps/dir/' + tous.map(a => encodeURIComponent(a)).join('/');
   window.open(url, '_blank');
 }
