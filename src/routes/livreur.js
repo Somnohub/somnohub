@@ -93,11 +93,12 @@ router.get('/tournees', auth(['livreur', 'admin']), (req, res) => {
     FROM tournee_stops ts
     JOIN patients p ON ts.patient_id = p.id
     LEFT JOIN boitiers b ON ts.boitier_id = b.id
-    WHERE ${isPastOrToday ? "ts.date <= ? AND ts.statut != 'complete'" : 'ts.date = ?'}
+    WHERE ${isPastOrToday ? "ts.date <= ? AND (ts.statut != 'complete' OR ts.date = ?)" : 'ts.date = ?'}
     ORDER BY ts.id
   `;
 
-  const stops = db.prepare(query).all(date);
+  // Pour aujourd'hui/passé : arrêts en attente (report inclus) + arrêts complétés du jour
+  const stops = isPastOrToday ? db.prepare(query).all(date, date) : db.prepare(query).all(date);
   // Optimiser uniquement les stops en attente, garder les complétés à la fin
   const enAttente = stops.filter(s => s.statut !== 'complete');
   const completes = stops.filter(s => s.statut === 'complete');

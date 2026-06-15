@@ -609,33 +609,53 @@ async function loadStops() {
     const isToday = selectedDate === new Date().toISOString().split('T')[0];
     const livraisons = enAttente.filter(s => s.action === 'livrer');
 
-    // Bouton Démarrer : aujourd'hui, livraisons en attente, seuil atteint
-    if (isToday && livraisons.length > 0 && enAttente.length >= SEUIL_TOURNEE) {
+    // La tournée est « active » dès qu'au moins un arrêt est fait,
+    // ou dès que le total du jour atteint le seuil.
+    const totalJour = enAttente.length + completes.length;
+    const tourneeActive = completes.length > 0 || totalJour >= SEUIL_TOURNEE;
+
+    // Bouton Démarrer : aujourd'hui, livraisons en attente, tournée active
+    if (isToday && livraisons.length > 0 && tourneeActive) {
       btnDem.disabled = false; btnDem.style.opacity = '1';
     } else {
       btnDem.disabled = true; btnDem.style.opacity = '0.45';
     }
 
-    if (enAttente.length > 0 && enAttente.length < SEUIL_TOURNEE) {
-      // Sous le seuil : afficher les adresses sans optimiser ni proposer d'itinéraire
+    if (!tourneeActive && enAttente.length > 0) {
+      // Sous le seuil et rien de commencé : afficher les adresses sans optimiser
       banner.style.display = '';
+      banner.style.background = '';
+      banner.style.color = '';
       banner.textContent = `⚠️ ${enAttente.length}/${SEUIL_TOURNEE} adresses — tournée non déclenchée (minimum ${SEUIL_TOURNEE} requis)`;
       toursCache[selectedDate] = [enAttente];
       stopsCache[selectedDate] = stops;
-    } else if (enAttente.length >= SEUIL_TOURNEE) {
-      banner.style.display = 'none';
-      // Découpage multi-tournées + optimisation Google (trafic temps réel)
-      document.getElementById('mainContent').innerHTML = `
-        <div style="text-align:center;padding:40px;color:var(--text-light)">
-          <div style="width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 14px"></div>
-          Optimisation des itinéraires…
-        </div>`;
-      const blocs = decouperEnTours(enAttente);
-      const toursOptim = await Promise.all(blocs.map(b => optimiserAvecGoogle(b)));
-      toursCache[selectedDate] = toursOptim;
-      stopsCache[selectedDate] = [...toursOptim.flat(), ...completes];
+    } else if (tourneeActive) {
+      // Tournée active : bandeau de progression vert
+      if (completes.length > 0) {
+        banner.style.display = '';
+        banner.style.background = '#e8f5e9';
+        banner.style.color = '#2e7d32';
+        banner.textContent = `✅ ${completes.length} sur ${totalJour} arrêt${totalJour > 1 ? 's' : ''} effectué${completes.length > 1 ? 's' : ''}`;
+      } else {
+        banner.style.display = 'none';
+      }
+      if (enAttente.length > 0) {
+        // Découpage multi-tournées + optimisation Google (trafic temps réel)
+        document.getElementById('mainContent').innerHTML = `
+          <div style="text-align:center;padding:40px;color:var(--text-light)">
+            <div style="width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 14px"></div>
+            Optimisation des itinéraires…
+          </div>`;
+        const blocs = decouperEnTours(enAttente);
+        const toursOptim = await Promise.all(blocs.map(b => optimiserAvecGoogle(b)));
+        toursCache[selectedDate] = toursOptim;
+        stopsCache[selectedDate] = [...toursOptim.flat(), ...completes];
+      } else {
+        toursCache[selectedDate] = [];
+        stopsCache[selectedDate] = stops;
+      }
     } else {
-      // Aucun arrêt en attente (tout terminé)
+      // Aucun arrêt
       banner.style.display = 'none';
       toursCache[selectedDate] = [];
       stopsCache[selectedDate] = stops;
@@ -671,7 +691,9 @@ function renderStops() {
   }
 
   const pending = tours.flat();
-  const sousSeuil = pending.length > 0 && pending.length < SEUIL_TOURNEE;
+  const totalJour = pending.length + done.length;
+  const tourneeActive = done.length > 0 || totalJour >= SEUIL_TOURNEE;
+  const sousSeuil = !tourneeActive && pending.length > 0;
 
   const statsHtml = `
     <div class="stats-bar">
