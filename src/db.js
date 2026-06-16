@@ -136,6 +136,17 @@ function initDb() {
       FOREIGN KEY (patient_id) REFERENCES patients(id)
     );
 
+    CREATE TABLE IF NOT EXISTS tournees_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      date TEXT NOT NULL,
+      nb_arrets INTEGER DEFAULT 0,
+      distance_km REAL,
+      duree_min INTEGER,
+      livreur_id INTEGER,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (livreur_id) REFERENCES users(id)
+    );
+
     CREATE TABLE IF NOT EXISTS revenus (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       medecin_id INTEGER NOT NULL,

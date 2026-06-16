@@ -493,6 +493,7 @@ let stopsCache = {};
 let toursCache = {};
 let currentStopId = null;
 let html5QrCode = null;
+let routeMetrics = { distanceM: 0, durationS: 0 }; // cumul km/durée de la tournée optimisée
 const SEUIL_TOURNEE = 5;
 const MAX_PAR_TOURNEE = 15; // au-delà → découpage en plusieurs tournées
 const GOOGLE_KEY = 'AIzaSyBPL4FZ6litzOBAW2aRiiDxHqmWy2kMySw';
@@ -508,8 +509,15 @@ async function optimiserAvecGoogle(stops) {
   try {
     const res = await fetch(url);
     const data = await res.json();
-    if (data.status === 'OK' && data.routes[0]?.waypoint_order) {
-      return data.routes[0].waypoint_order.map(i => stops[i]);
+    if (data.status === 'OK' && data.routes[0]) {
+      const route = data.routes[0];
+      // Cumul distance/durée (avec trafic) pour la journalisation de la tournée
+      for (const leg of (route.legs || [])) {
+        routeMetrics.distanceM += (leg.distance && leg.distance.value) || 0;
+        const dur = leg.duration_in_traffic || leg.duration;
+        routeMetrics.durationS += (dur && dur.value) || 0;
+      }
+      if (route.waypoint_order) return route.waypoint_order.map(i => stops[i]);
     }
   } catch(e) {}
   return stops; // fallback nearest-neighbor (déjà trié par le backend)
@@ -647,9 +655,22 @@ async function loadStops() {
             Optimisation des itinéraires…
           </div>`;
         const blocs = decouperEnTours(enAttente);
+        routeMetrics = { distanceM: 0, durationS: 0 };
         const toursOptim = await Promise.all(blocs.map(b => optimiserAvecGoogle(b)));
         toursCache[selectedDate] = toursOptim;
         stopsCache[selectedDate] = [...toursOptim.flat(), ...completes];
+        // Journaliser les métriques de la tournée du jour (best-effort)
+        if (isToday && routeMetrics.distanceM > 0) {
+          fetch(`${API}/api/livreur/tournee-log`, {
+            method: 'POST', headers: authHeaders(),
+            body: JSON.stringify({
+              date: selectedDate,
+              nb_arrets: enAttente.length,
+              distance_km: Math.round(routeMetrics.distanceM / 100) / 10,
+              duree_min: Math.round(routeMetrics.durationS / 60)
+            })
+          }).catch(() => {});
+        }
       } else {
         toursCache[selectedDate] = [];
         stopsCache[selectedDate] = stops;

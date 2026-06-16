@@ -2,9 +2,11 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const QRCode = require('qrcode');
+const fs = require('fs');
 const { getDb } = require('../db');
 const auth = require('../middleware/auth');
 const { genererAlertes } = require('../services/scheduler');
+const { backupNow, dernieresSauvegardes } = require('../services/backup');
 
 // ─── Boîtiers ───────────────────────────────────────────────────────────────
 
@@ -285,6 +287,175 @@ router.get('/patients', auth(['admin']), (req, res) => {
     ORDER BY p.updated_at DESC
   `).all();
   res.json(patients);
+});
+
+// ─── Santé du système ───────────────────────────────────────────────────────
+
+router.get('/sante', auth(['admin']), (req, res) => {
+  const db = getDb();
+
+  const nbPatients = db.prepare('SELECT COUNT(*) as n FROM patients').get().n;
+  const nbBoitiers = db.prepare('SELECT COUNT(*) as n FROM boitiers').get().n;
+  const parStatut = db.prepare('SELECT statut, COUNT(*) as nb FROM boitiers GROUP BY statut').all();
+  const dernierScan = db.prepare(`SELECT MAX(completed_at) as d FROM tournee_stops WHERE statut = 'complete'`).get().d;
+  const derniereActionBoitier = db.prepare('SELECT MAX(derniere_action) as d FROM boitiers').get().d;
+  const nbSms = db.prepare('SELECT COUNT(*) as n FROM sms_log').get().n;
+  const nbAlertesNonLues = db.prepare('SELECT COUNT(*) as n FROM alertes WHERE lu = 0').get().n;
+
+  let db_taille = null, db_modifie = null;
+  try {
+    const st = fs.statSync(getDb().name);
+    db_taille = st.size;
+    db_modifie = st.mtime.toISOString();
+  } catch (e) {}
+
+  const sauvegardes = dernieresSauvegardes();
+
+  res.json({
+    patients: nbPatients,
+    boitiers: { total: nbBoitiers, par_statut: parStatut },
+    dernier_scan: dernierScan,
+    derniere_action_boitier: derniereActionBoitier,
+    sms_envoyes: nbSms,
+    alertes_non_lues: nbAlertesNonLues,
+    persistant: !!process.env.DB_PATH,
+    db: { chemin: getDb().name, taille: db_taille, modifie: db_modifie },
+    derniere_sauvegarde: sauvegardes[0] || null,
+    nb_sauvegardes: sauvegardes.length
+  });
+});
+
+router.post('/backup', auth(['admin']), async (req, res) => {
+  try {
+    const r = await backupNow();
+    res.json({ success: true, ...r });
+  } catch (e) {
+    console.error('[Backup manuel] Erreur:', e);
+    res.status(500).json({ error: 'Échec de la sauvegarde' });
+  }
+});
+
+// ─── KPIs logistiques ────────────────────────────────────────────────────────
+
+router.get('/kpis', auth(['admin']), (req, res) => {
+  const db = getDb();
+  const r1 = v => (v == null ? null : Math.round(v * 10) / 10);
+
+  // Délai moyen prescription → livraison (en jours)
+  const prescLivr = db.prepare(`
+    SELECT AVG(d) as moy FROM (
+      SELECT julianday(MIN(h.created_at)) - julianday(p.created_at) as d
+      FROM patients p
+      JOIN historique_patient h ON h.patient_id = p.id AND h.statut = 'livraison_effectuee'
+      GROUP BY p.id
+    )
+  `).get().moy;
+
+  // Délai moyen livraison → récupération
+  const livrRecup = db.prepare(`
+    SELECT AVG(d) as moy FROM (
+      SELECT julianday(MIN(r.created_at)) - julianday(MIN(l.created_at)) as d
+      FROM patients p
+      JOIN historique_patient l ON l.patient_id = p.id AND l.statut = 'livraison_effectuee'
+      JOIN historique_patient r ON r.patient_id = p.id AND r.statut = 'en_cours_d_analyse'
+      GROUP BY p.id
+    )
+  `).get().moy;
+
+  // Délai moyen récupération → résultat
+  const recupResultat = db.prepare(`
+    SELECT AVG(d) as moy FROM (
+      SELECT julianday(p.date_resultat) - julianday(MIN(r.created_at)) as d
+      FROM patients p
+      JOIN historique_patient r ON r.patient_id = p.id AND r.statut = 'en_cours_d_analyse'
+      WHERE p.date_resultat IS NOT NULL
+      GROUP BY p.id
+    )
+  `).get().moy;
+
+  // Délai total prescription → résultat
+  const total = db.prepare(`
+    SELECT AVG(julianday(date_resultat) - julianday(created_at)) as moy
+    FROM patients WHERE date_resultat IS NOT NULL
+  `).get().moy;
+
+  // Taux de boîtiers en retard (chez patient depuis +24h)
+  const boitChez = db.prepare(`SELECT COUNT(*) as n FROM boitiers WHERE statut = 'chez_patient'`).get().n;
+  const boitRetard = db.prepare(`SELECT COUNT(*) as n FROM boitiers WHERE statut = 'chez_patient' AND datetime(derniere_action) < datetime('now','-24 hours')`).get().n;
+
+  // % examens menés au résultat (exploitables)
+  const examensDemarres = db.prepare(`
+    SELECT COUNT(DISTINCT patient_id) as n FROM historique_patient WHERE statut = 'examen_en_cours'
+  `).get().n;
+  const examensResultat = db.prepare(`SELECT COUNT(*) as n FROM patients WHERE date_resultat IS NOT NULL`).get().n;
+
+  res.json({
+    delai_prescription_livraison_j: r1(prescLivr),
+    delai_livraison_recup_j: r1(livrRecup),
+    delai_recup_resultat_j: r1(recupResultat),
+    delai_total_j: r1(total),
+    boitiers_en_retard: {
+      total: boitChez,
+      en_retard: boitRetard,
+      taux: boitChez > 0 ? Math.round((boitRetard / boitChez) * 100) : 0
+    },
+    examens: {
+      demarres: examensDemarres,
+      avec_resultat: examensResultat,
+      taux_exploitables: examensDemarres > 0 ? Math.round((examensResultat / examensDemarres) * 100) : null
+    }
+  });
+});
+
+// ─── Historique des tournées ─────────────────────────────────────────────────
+
+router.get('/tournees-historique', auth(['admin']), (req, res) => {
+  const db = getDb();
+
+  // Données réelles dérivées des arrêts (nb, durée effective première→dernière complétion)
+  const parJour = db.prepare(`
+    SELECT date,
+      SUM(CASE WHEN action = 'livrer' THEN 1 ELSE 0 END) as livraisons,
+      SUM(CASE WHEN action = 'recuperer' THEN 1 ELSE 0 END) as recups,
+      SUM(CASE WHEN statut = 'complete' THEN 1 ELSE 0 END) as completes,
+      COUNT(*) as total,
+      MIN(CASE WHEN statut = 'complete' THEN completed_at END) as debut,
+      MAX(CASE WHEN statut = 'complete' THEN completed_at END) as fin
+    FROM tournee_stops
+    GROUP BY date
+    ORDER BY date DESC
+    LIMIT 30
+  `).all();
+
+  // Métriques d'optimisation (km, durée estimée) loggées par l'app livreur
+  const logs = db.prepare(`
+    SELECT date, MAX(distance_km) as distance_km, MAX(duree_min) as duree_min, MAX(nb_arrets) as nb_arrets
+    FROM tournees_log GROUP BY date
+  `).all();
+  const logMap = {};
+  for (const l of logs) logMap[l.date] = l;
+
+  const historique = parJour.map(j => {
+    let dureeReelleMin = null;
+    if (j.debut && j.fin) {
+      // différence en minutes entre la première et la dernière complétion
+      const diffJours = (Date.parse(j.fin) - Date.parse(j.debut)) / 86400000;
+      dureeReelleMin = Math.max(0, Math.round(diffJours * 24 * 60));
+    }
+    const log = logMap[j.date] || {};
+    return {
+      date: j.date,
+      livraisons: j.livraisons,
+      recups: j.recups,
+      completes: j.completes,
+      total: j.total,
+      duree_reelle_min: dureeReelleMin,
+      distance_km: log.distance_km != null ? log.distance_km : null,
+      duree_estimee_min: log.duree_min != null ? log.duree_min : null
+    };
+  });
+
+  res.json(historique);
 });
 
 module.exports = router;

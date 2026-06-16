@@ -306,6 +306,9 @@
       <div class="nav-item" onclick="showSection('prescriptions', this)">
         <span class="nav-icon">🩺</span><span>Prescriptions</span>
       </div>
+      <div class="nav-item" onclick="showSection('systeme', this)">
+        <span class="nav-icon">⚙️</span><span>Système</span>
+      </div>
       <div class="nav-item" onclick="showSection('comptes', this)">
         <span class="nav-icon">👥</span><span>Comptes</span>
       </div>
@@ -418,6 +421,32 @@
             <table>
               <thead><tr><th>Heure</th><th>Patient</th><th>Médecin</th><th>Score STOP-BANG</th><th>Statut</th></tr></thead>
               <tbody id="prescDuJourBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SYSTÈME (santé, KPIs, historique tournées) ── -->
+      <div class="tab-content" id="section-systeme">
+        <div class="chart-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+            <h3 style="margin:0">🩺 Santé du système</h3>
+            <button class="btn btn-primary btn-sm" id="btnBackup" onclick="lancerBackup()">💾 Sauvegarder maintenant</button>
+          </div>
+          <div class="kpi-grid" id="santeKpis" style="margin-top:16px"></div>
+        </div>
+
+        <div class="chart-card" style="margin-top:16px">
+          <h3>📊 Indicateurs logistiques (KPIs)</h3>
+          <div class="kpi-grid" id="kpiCards"></div>
+        </div>
+
+        <div class="chart-card" style="margin-top:16px">
+          <h3>🚚 Historique des tournées</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Date</th><th>Livraisons</th><th>Récups</th><th>Effectués</th><th>Distance</th><th>Durée estimée</th><th>Durée réelle</th></tr></thead>
+              <tbody id="tourneesBody"></tbody>
             </table>
           </div>
         </div>
@@ -584,7 +613,8 @@ const titles = {
   alertes: 'Alertes automatiques',
   revenus: 'Tableau de bord revenus',
   comptes: 'Gestion des comptes médecins',
-  prescriptions: 'Prescriptions — Suivi par médecin'
+  prescriptions: 'Prescriptions — Suivi par médecin',
+  systeme: 'Système — Santé, KPIs & historique des tournées'
 };
 
 function showSection(section, el) {
@@ -601,6 +631,7 @@ function showSection(section, el) {
   else if (section === 'revenus') loadRevenus();
   else if (section === 'comptes') loadComptes();
   else if (section === 'prescriptions') loadPrescriptions();
+  else if (section === 'systeme') loadSysteme();
 }
 
 function refreshCurrent() { showSection(currentSection, document.querySelector('.nav-item.active')); }
@@ -1079,6 +1110,120 @@ async function loadPrescriptions() {
         </tr>`).join('')
       : '<tr><td colspan="5" style="text-align:center;color:var(--text-light)">Aucune prescription aujourd\'hui</td></tr>';
   } catch(e) { console.error(e); }
+}
+
+// ── Système (santé, KPIs, historique tournées) ───────────
+function fmtTaille(o) {
+  if (o == null) return '—';
+  if (o < 1024) return o + ' o';
+  if (o < 1048576) return (o / 1024).toFixed(0) + ' Ko';
+  return (o / 1048576).toFixed(1) + ' Mo';
+}
+function fmtDuree(min) {
+  if (min == null) return '—';
+  if (min < 60) return min + ' min';
+  const h = Math.floor(min / 60), m = min % 60;
+  return m ? `${h}h${String(m).padStart(2, '0')}` : `${h}h`;
+}
+function fmtJours(j) {
+  if (j == null) return '—';
+  if (j < 1) return Math.round(j * 24) + ' h';
+  return j + ' j';
+}
+
+async function loadSysteme() {
+  // Santé
+  try {
+    const s = await (await fetch(`${API}/api/admin/sante`, { headers: authHeaders() })).json();
+    const dispo = (s.boitiers.par_statut.find(x => x.statut === 'disponible') || {}).nb || 0;
+    const sauv = s.derniere_sauvegarde;
+    document.getElementById('santeKpis').innerHTML = `
+      <div class="kpi-card">
+        <div class="kpi-label">Patients en base</div>
+        <div class="kpi-value">${s.patients}</div>
+        <div class="kpi-sub">Persistance : ${s.persistant ? '✅ volume Railway' : '⚠️ éphémère'}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Boîtiers</div>
+        <div class="kpi-value">${s.boitiers.total}</div>
+        <div class="kpi-sub">${dispo} disponible${dispo > 1 ? 's' : ''} · ${s.alertes_non_lues} alerte(s)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Dernier scan</div>
+        <div class="kpi-value" style="font-size:1.1rem">${formatDatetime(s.dernier_scan)}</div>
+        <div class="kpi-sub">${s.sms_envoyes} SMS envoyés au total</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Dernière sauvegarde</div>
+        <div class="kpi-value" style="font-size:1.1rem">${sauv ? formatDatetime(sauv.date) : 'Aucune'}</div>
+        <div class="kpi-sub">${s.nb_sauvegardes} sauvegarde(s) · base ${fmtTaille(s.db.taille)}</div>
+      </div>`;
+  } catch (e) { console.error(e); }
+
+  // KPIs logistiques
+  try {
+    const k = await (await fetch(`${API}/api/admin/kpis`, { headers: authHeaders() })).json();
+    document.getElementById('kpiCards').innerHTML = `
+      <div class="kpi-card">
+        <div class="kpi-label">Prescription → Livraison</div>
+        <div class="kpi-value">${fmtJours(k.delai_prescription_livraison_j)}</div>
+        <div class="kpi-sub">délai moyen</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Livraison → Récupération</div>
+        <div class="kpi-value">${fmtJours(k.delai_livraison_recup_j)}</div>
+        <div class="kpi-sub">durée chez le patient</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Récupération → Résultat</div>
+        <div class="kpi-value">${fmtJours(k.delai_recup_resultat_j)}</div>
+        <div class="kpi-sub">délai d'analyse</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Délai total</div>
+        <div class="kpi-value" style="color:var(--accent)">${fmtJours(k.delai_total_j)}</div>
+        <div class="kpi-sub">prescription → résultat</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Boîtiers en retard</div>
+        <div class="kpi-value" style="color:${k.boitiers_en_retard.en_retard > 0 ? '#c62828' : 'var(--primary)'}">${k.boitiers_en_retard.taux}%</div>
+        <div class="kpi-sub">${k.boitiers_en_retard.en_retard}/${k.boitiers_en_retard.total} chez patient +24h</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Examens menés au résultat</div>
+        <div class="kpi-value">${k.examens.taux_exploitables != null ? k.examens.taux_exploitables + '%' : '—'}</div>
+        <div class="kpi-sub">${k.examens.avec_resultat}/${k.examens.demarres} examens</div>
+      </div>`;
+  } catch (e) { console.error(e); }
+
+  // Historique tournées
+  try {
+    const h = await (await fetch(`${API}/api/admin/tournees-historique`, { headers: authHeaders() })).json();
+    document.getElementById('tourneesBody').innerHTML = h.length
+      ? h.map(t => `
+        <tr>
+          <td><strong>${new Date(t.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit', month: 'short' })}</strong></td>
+          <td style="text-align:center">${t.livraisons}</td>
+          <td style="text-align:center">${t.recups}</td>
+          <td style="text-align:center"><strong>${t.completes}</strong>/${t.total}</td>
+          <td style="text-align:center">${t.distance_km != null ? t.distance_km + ' km' : '—'}</td>
+          <td style="text-align:center">${fmtDuree(t.duree_estimee_min)}</td>
+          <td style="text-align:center">${fmtDuree(t.duree_reelle_min)}</td>
+        </tr>`).join('')
+      : '<tr><td colspan="7" style="text-align:center;color:var(--text-light);padding:20px">Aucune tournée enregistrée</td></tr>';
+  } catch (e) { console.error(e); }
+}
+
+async function lancerBackup() {
+  const btn = document.getElementById('btnBackup');
+  btn.disabled = true; btn.textContent = '💾 Sauvegarde…';
+  try {
+    const res = await fetch(`${API}/api/admin/backup`, { method: 'POST', headers: authHeaders() });
+    const data = await res.json();
+    if (res.ok) { showToast('Sauvegarde créée', 'success'); loadSysteme(); }
+    else showToast(data.error || 'Échec', 'error');
+  } catch (e) { showToast('Erreur réseau', 'error'); }
+  finally { btn.disabled = false; btn.textContent = '💾 Sauvegarder maintenant'; }
 }
 
 // ── Init ──────────────────────────────────────────────────

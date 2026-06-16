@@ -233,4 +233,22 @@ router.put('/stops/:id/echec', auth(['livreur']), (req, res) => {
   res.json({ success: true });
 });
 
+// Journaliser les métriques d'une tournée optimisée (km, durée, nb arrêts).
+// Appelé par l'app livreur après le calcul d'itinéraire. Une ligne par
+// livreur et par jour (on remplace si recalcul).
+router.post('/tournee-log', auth(['livreur']), (req, res) => {
+  try {
+    const { date, nb_arrets, distance_km, duree_min } = req.body;
+    const db = getDb();
+    const jour = date || new Date().toISOString().split('T')[0];
+    db.prepare('DELETE FROM tournees_log WHERE date = ? AND livreur_id = ?').run(jour, req.user.id);
+    db.prepare(`INSERT INTO tournees_log (date, nb_arrets, distance_km, duree_min, livreur_id) VALUES (?, ?, ?, ?, ?)`)
+      .run(jour, nb_arrets || 0, distance_km != null ? distance_km : null, duree_min != null ? duree_min : null, req.user.id);
+    res.json({ success: true });
+  } catch (e) {
+    console.error('[tournee-log] Erreur:', e);
+    res.status(500).json({ error: 'Erreur enregistrement tournée' });
+  }
+});
+
 module.exports = router;

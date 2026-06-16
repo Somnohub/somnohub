@@ -1,6 +1,7 @@
 const cron = require('node-cron');
 const { getDb } = require('../db');
 const { smsSuivi3Mois, smsSuivi6Mois, smsSuivi1An, smsRappelRecuperation } = require('./sms');
+const { backupNow } = require('./backup');
 
 function startScheduler() {
   // Vérification SMS de suivi — chaque jour à 8h00
@@ -68,18 +69,33 @@ function startScheduler() {
     genererAlertes();
   });
 
+  // Sauvegarde automatique de la base — chaque jour à 3h00
+  cron.schedule('0 3 * * *', async () => {
+    try {
+      const r = await backupNow();
+      console.log(`[Backup] Sauvegarde quotidienne : ${r.fichier} (${r.taille} o)`);
+    } catch (e) {
+      console.error('[Backup] Échec sauvegarde quotidienne :', e.message);
+    }
+  });
+
+  // Une sauvegarde au démarrage, pour toujours disposer d'un point de reprise récent
+  backupNow()
+    .then(r => console.log(`[Backup] Sauvegarde de démarrage : ${r.fichier} (${r.taille} o)`))
+    .catch(e => console.error('[Backup] Échec sauvegarde de démarrage :', e.message));
+
   console.log('[Scheduler] Tâches planifiées démarrées');
 }
 
 function genererAlertes() {
   const db = getDb();
 
-  // Boîtier chez patient depuis +48h
+  // Boîtier chez patient depuis +24h (relance récupération)
   const boitiersImmobiles = db.prepare(`
     SELECT b.*, p.nom, p.prenom FROM boitiers b
     LEFT JOIN patients p ON b.patient_id = p.id
     WHERE b.statut = 'chez_patient'
-    AND datetime(b.derniere_action) < datetime('now', '-48 hours')
+    AND datetime(b.derniere_action) < datetime('now', '-24 hours')
   `).all();
 
   for (const b of boitiersImmobiles) {
@@ -89,7 +105,7 @@ function genererAlertes() {
     if (!existante) {
       db.prepare(`INSERT INTO alertes (type, message, boitier_id, patient_id) VALUES (?, ?, ?, ?)`).run(
         'boitier_immobile',
-        `Boîtier ${b.numero} chez le patient ${b.prenom} ${b.nom} depuis +48h`,
+        `Boîtier ${b.numero} chez le patient ${b.prenom || ''} ${b.nom || ''} depuis +24h — à récupérer`,
         b.id, b.patient_id
       );
     }
