@@ -107,6 +107,7 @@ router.get('/tournees', auth(['livreur', 'admin']), (req, res) => {
 
 // Scanner un QR code (action livreur)
 router.post('/scan', auth(['livreur']), (req, res) => {
+ try {
   const { boitier_numero, stop_id } = req.body;
 
   if (!boitier_numero) {
@@ -162,7 +163,7 @@ router.post('/scan', auth(['livreur']), (req, res) => {
 
     if (boitier.patient_id) {
       db.prepare(`UPDATE patients SET statut = 'en_cours_d_analyse', updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(boitier.patient_id);
-      db.prepare(`INSERT INTO historique_patient (patient_id, statut, note, created_by) VALUES (?, 'en_cours_d_analyse', 'Boîtier récupéré — données en cours d\\'analyse', ?)`).run(boitier.patient_id, req.user.id);
+      db.prepare(`INSERT INTO historique_patient (patient_id, statut, note, created_by) VALUES (?, 'en_cours_d_analyse', ?, ?)`).run(boitier.patient_id, 'Boîtier récupéré — données en cours d\'analyse', req.user.id);
     }
 
   } else if (boitier.statut === 'disponible') {
@@ -190,6 +191,10 @@ router.post('/scan', auth(['livreur']), (req, res) => {
     nouveau_statut_boitier: nouveauStatutBoitier,
     nouveau_statut_patient: nouveauStatutPatient
   });
+ } catch (e) {
+   console.error('[SCAN] Erreur:', e);
+   res.status(500).json({ error: 'Erreur serveur lors du scan' });
+ }
 });
 
 // Démarrer la tournée — envoie SMS à tous les patients "livrer" du jour
