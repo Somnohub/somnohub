@@ -293,6 +293,10 @@
       <div class="nav-item active" onclick="showSection('carte', this)">
         <span class="nav-icon">🗺️</span><span>Carte</span>
       </div>
+      <div class="nav-item" onclick="showSection('demandes', this)">
+        <span class="nav-icon">📨</span><span>Demandes</span>
+        <span class="nav-badge d-none" id="demandesBadge">0</span>
+      </div>
       <div class="nav-item" onclick="showSection('boitiers', this)">
         <span class="nav-icon">📦</span><span>Boîtiers</span>
       </div>
@@ -340,6 +344,30 @@
           <div class="legend-item"><div class="legend-dot" style="background:#00BCD4"></div>Assigné</div>
         </div>
         <div id="map"></div>
+      </div>
+
+      <!-- ── DEMANDES ── -->
+      <div class="tab-content" id="section-demandes">
+        <div class="boitiers-top">
+          <div class="statut-filter" id="demandeFilter">
+            <div class="filter-chip active" onclick="filterDemandes('', this)">Toutes</div>
+            <div class="filter-chip" onclick="filterDemandes('recue', this)">Reçues</div>
+            <div class="filter-chip" onclick="filterDemandes('validee', this)">Validées</div>
+            <div class="filter-chip" onclick="filterDemandes('programmee', this)">Programmées</div>
+            <div class="filter-chip" onclick="filterDemandes('realisee', this)">Réalisées</div>
+            <div class="filter-chip" onclick="filterDemandes('cr_signe', this)">CR signé</div>
+            <div class="filter-chip" onclick="filterDemandes('cloturee', this)">Clôturées</div>
+            <div class="filter-chip" onclick="filterDemandes('refusee', this)">Refusées</div>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>N°</th><th>Reçue</th><th>Parcours</th><th>Patient</th><th>Téléphone</th><th>Ordonnance</th><th>Statut</th><th>Action</th></tr>
+            </thead>
+            <tbody id="demandesBody"></tbody>
+          </table>
+        </div>
       </div>
 
       <!-- ── BOÎTIERS ── -->
@@ -478,6 +506,18 @@
   </div>
 </div>
 
+<!-- ── Modal Détail demande ── -->
+<div class="modal-overlay d-none" id="demandeModal">
+  <div class="modal-box" style="max-width:520px">
+    <div class="modal-header">
+      <h3 id="demandeModalTitle">Demande</h3>
+      <button class="modal-close" onclick="closeModal('demandeModal')">✕</button>
+    </div>
+    <div class="modal-body" id="demandeModalBody"></div>
+    <div class="modal-footer" id="demandeModalFooter" style="flex-wrap:wrap;gap:8px"></div>
+  </div>
+</div>
+
 <!-- ── Modal Ajouter boîtier ── -->
 <div class="modal-overlay d-none" id="addBoitierModal">
   <div class="modal-box" style="max-width:420px">
@@ -609,6 +649,7 @@ function logout() {
 let currentSection = 'carte';
 const titles = {
   carte: 'Carte — Tracking boîtiers en temps réel',
+  demandes: 'Demandes de polygraphie — File d\'attente',
   boitiers: 'Gestion des boîtiers',
   alertes: 'Alertes automatiques',
   revenus: 'Tableau de bord revenus',
@@ -626,6 +667,7 @@ function showSection(section, el) {
   document.getElementById('contentTitle').textContent = titles[section];
 
   if (section === 'carte') loadCarte();
+  else if (section === 'demandes') loadDemandes();
   else if (section === 'boitiers') loadBoitiers();
   else if (section === 'alertes') loadAlertes();
   else if (section === 'revenus') loadRevenus();
@@ -1112,6 +1154,154 @@ async function loadPrescriptions() {
   } catch(e) { console.error(e); }
 }
 
+// ── Demandes (cockpit) ───────────────────────────────────
+let demandeFilterStatut = '';
+const STATUTS_DEMANDE = {
+  recue:      { label: 'Reçue',      color: '#1565c0' },
+  validee:    { label: 'Validée',    color: '#00838f' },
+  programmee: { label: 'Programmée', color: '#e65100' },
+  realisee:   { label: 'Réalisée',   color: '#6a1b9a' },
+  cr_signe:   { label: 'CR signé',   color: '#2e7d32' },
+  cloturee:   { label: 'Clôturée',   color: '#555' },
+  refusee:    { label: 'Refusée',    color: '#c62828' }
+};
+function statutChip(s) {
+  const st = STATUTS_DEMANDE[s] || { label: s, color: '#555' };
+  return `<span style="background:${st.color}22;color:${st.color};padding:3px 10px;border-radius:20px;font-size:.78rem;font-weight:700;white-space:nowrap">${st.label}</span>`;
+}
+
+function filterDemandes(statut, el) {
+  demandeFilterStatut = statut;
+  document.querySelectorAll('#demandeFilter .filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  loadDemandes();
+}
+
+async function updateDemandesBadge() {
+  try {
+    const data = await (await fetch(`${API}/api/admin/demandes?statut=recue`, { headers: authHeaders() })).json();
+    const badge = document.getElementById('demandesBadge');
+    const n = data.recues || 0;
+    badge.textContent = n;
+    badge.classList.toggle('d-none', n === 0);
+  } catch (e) {}
+}
+
+async function loadDemandes() {
+  try {
+    const q = demandeFilterStatut ? `?statut=${demandeFilterStatut}` : '';
+    const data = await (await fetch(`${API}/api/admin/demandes${q}`, { headers: authHeaders() })).json();
+    const badge = document.getElementById('demandesBadge');
+    const nRecues = (data.compteurs && data.compteurs.recue) || 0;
+    badge.textContent = nRecues;
+    badge.classList.toggle('d-none', nRecues === 0);
+
+    document.getElementById('demandesBody').innerHTML = data.demandes.length
+      ? data.demandes.map(d => `
+        <tr>
+          <td><strong>#${d.id}</strong></td>
+          <td style="font-size:.8rem;color:var(--text-light)">${formatDatetime(d.created_at)}</td>
+          <td>${d.source === 'medecin' ? '🩺 Médecin' : '🙋 Patient'}</td>
+          <td><strong>${d.patient_prenom} ${d.patient_nom}</strong></td>
+          <td style="font-size:.85rem">${d.telephone}</td>
+          <td style="text-align:center">${d.ordonnance_presente ? '✅' : (d.ordonnance_mode === 'transmise' ? '📄 à venir' : '🚚 livraison')}</td>
+          <td>${statutChip(d.statut)}</td>
+          <td><button class="btn btn-secondary btn-sm" onclick="openDemande(${d.id})">Ouvrir</button></td>
+        </tr>`).join('')
+      : '<tr><td colspan="8" style="text-align:center;color:var(--text-light);padding:20px">Aucune demande</td></tr>';
+  } catch (e) { showToast('Erreur chargement demandes', 'error'); }
+}
+
+async function openDemande(id) {
+  try {
+    const d = await (await fetch(`${API}/api/admin/demandes/${id}`, { headers: authHeaders() })).json();
+    document.getElementById('demandeModalTitle').textContent = `Demande #${d.id} · ${d.source === 'medecin' ? 'Parcours médecin' : 'Parcours patient'}`;
+
+    const row = (k, v) => v ? `<div style="display:flex;justify-content:space-between;gap:14px;padding:7px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-light);font-size:.85rem">${k}</span><span style="font-weight:600;text-align:right">${v}</span></div>` : '';
+    const ordoTxt = d.ordonnance_presente ? '✅ Présente au dossier'
+      : (d.ordonnance_mode === 'transmise' ? '📄 À transmettre' : '🚚 À remettre à la livraison');
+
+    document.getElementById('demandeModalBody').innerHTML = `
+      <div style="margin-bottom:10px">${statutChip(d.statut)}${d.statut === 'refusee' && d.motif_refus ? ` <span style="color:#c62828;font-size:.82rem">— ${d.motif_refus}</span>` : ''}</div>
+      ${row('Patient', `${d.patient_prenom} ${d.patient_nom}`)}
+      ${row('Date de naissance', d.date_naissance)}
+      ${row('Téléphone', d.telephone)}
+      ${row('Adresse', d.adresse)}
+      ${row('Médecin prescripteur', d.medecin_nom)}
+      ${row('RPPS', d.medecin_rpps)}
+      ${row('Indication', d.indication)}
+      ${row('Ordonnance', ordoTxt)}
+      ${row('Boîtier assigné', d.boitier_numero)}
+      ${row('Reçue le', formatDatetime(d.created_at))}`;
+
+    // Boutons d'action contextuels
+    const F = [];
+    if (d.statut === 'recue') {
+      F.push(`<button class="btn btn-success btn-sm" onclick="actionDemande(${d.id},'valider')">✓ Valider</button>`);
+      F.push(`<button class="btn btn-danger btn-sm" onclick="refuserDemande(${d.id})">✕ Refuser</button>`);
+    } else if (d.statut === 'validee') {
+      F.push(`<button class="btn btn-primary btn-sm" onclick="actionDemande(${d.id},'programmer')">📦 Programmer (créer patient + boîtier)</button>`);
+    } else if (d.statut === 'programmee') {
+      F.push(`<button class="btn btn-primary btn-sm" onclick="avancerDemande(${d.id},'realisee')">Marquer réalisée</button>`);
+    } else if (d.statut === 'realisee') {
+      const dis = d.ordonnance_presente ? '' : 'disabled title="Ordonnance absente du dossier"';
+      F.push(`<button class="btn btn-success btn-sm" ${dis} onclick="avancerDemande(${d.id},'cr_signe')">✍️ Signer le CR</button>`);
+    } else if (d.statut === 'cr_signe') {
+      F.push(`<button class="btn btn-secondary btn-sm" onclick="avancerDemande(${d.id},'cloturee')">Clôturer</button>`);
+    }
+    // Bascule ordonnance dès que programmée
+    if (['programmee', 'realisee', 'cr_signe'].includes(d.statut)) {
+      F.push(`<button class="btn btn-outline btn-sm" onclick="toggleOrdonnance(${d.id},${d.ordonnance_presente ? 0 : 1})">${d.ordonnance_presente ? '☑ Ordonnance reçue' : '☐ Marquer ordonnance reçue'}</button>`);
+    }
+    document.getElementById('demandeModalFooter').innerHTML = F.join('') || '<span style="color:var(--text-light);font-size:.85rem">Aucune action disponible</span>';
+
+    openModal('demandeModal');
+  } catch (e) { showToast('Erreur', 'error'); }
+}
+
+async function actionDemande(id, action) {
+  try {
+    const res = await fetch(`${API}/api/admin/demandes/${id}/${action}`, { method: 'PUT', headers: authHeaders() });
+    const data = await res.json();
+    if (res.ok) { showToast(action === 'programmer' ? 'Patient créé & boîtier assigné' : 'Demande validée', 'success'); closeModal('demandeModal'); loadDemandes(); }
+    else showToast(data.error || 'Échec', 'error');
+  } catch (e) { showToast('Erreur réseau', 'error'); }
+}
+
+async function refuserDemande(id) {
+  const motif = prompt('Motif du refus (optionnel) :') ;
+  if (motif === null) return;
+  try {
+    const res = await fetch(`${API}/api/admin/demandes/${id}/refuser`, {
+      method: 'PUT', headers: authHeaders(), body: JSON.stringify({ motif })
+    });
+    const data = await res.json();
+    if (res.ok) { showToast('Demande refusée', 'success'); closeModal('demandeModal'); loadDemandes(); }
+    else showToast(data.error || 'Échec', 'error');
+  } catch (e) { showToast('Erreur réseau', 'error'); }
+}
+
+async function avancerDemande(id, statut) {
+  try {
+    const res = await fetch(`${API}/api/admin/demandes/${id}/statut`, {
+      method: 'PUT', headers: authHeaders(), body: JSON.stringify({ statut })
+    });
+    const data = await res.json();
+    if (res.ok) { showToast('Statut mis à jour', 'success'); closeModal('demandeModal'); loadDemandes(); }
+    else showToast(data.error || 'Échec', 'error');
+  } catch (e) { showToast('Erreur réseau', 'error'); }
+}
+
+async function toggleOrdonnance(id, presente) {
+  try {
+    const res = await fetch(`${API}/api/admin/demandes/${id}/ordonnance`, {
+      method: 'PUT', headers: authHeaders(), body: JSON.stringify({ presente })
+    });
+    if (res.ok) { showToast('Ordonnance mise à jour', 'success'); openDemande(id); }
+    else showToast('Échec', 'error');
+  } catch (e) { showToast('Erreur réseau', 'error'); }
+}
+
 // ── Système (santé, KPIs, historique tournées) ───────────
 function fmtTaille(o) {
   if (o == null) return '—';
@@ -1228,6 +1418,7 @@ async function lancerBackup() {
 
 // ── Init ──────────────────────────────────────────────────
 loadCarte();
+updateDemandesBadge();
 
 // Rafraîchissement automatique des alertes toutes les 60s
 setInterval(async () => {
@@ -1238,6 +1429,7 @@ setInterval(async () => {
     badge.textContent = non_lues;
     badge.classList.toggle('d-none', non_lues === 0);
   } catch (e) {}
+  updateDemandesBadge();
 }, 60000);
 </script>
 </body>

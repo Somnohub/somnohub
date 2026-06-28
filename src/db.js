@@ -147,6 +147,28 @@ function initDb() {
       FOREIGN KEY (livreur_id) REFERENCES users(id)
     );
 
+    CREATE TABLE IF NOT EXISTS demandes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      source TEXT NOT NULL CHECK(source IN ('medecin','patient')),
+      patient_nom TEXT NOT NULL,
+      patient_prenom TEXT NOT NULL,
+      date_naissance TEXT,
+      telephone TEXT NOT NULL,
+      adresse TEXT NOT NULL,
+      medecin_nom TEXT,
+      medecin_rpps TEXT,
+      indication TEXT,
+      ordonnance_mode TEXT DEFAULT 'a_la_livraison' CHECK(ordonnance_mode IN ('transmise','a_la_livraison')),
+      ordonnance_presente INTEGER DEFAULT 0,
+      consentement INTEGER DEFAULT 0,
+      statut TEXT DEFAULT 'recue' CHECK(statut IN ('recue','validee','programmee','realisee','cr_signe','cloturee','refusee')),
+      motif_refus TEXT,
+      patient_id INTEGER,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (patient_id) REFERENCES patients(id)
+    );
+
     CREATE TABLE IF NOT EXISTS revenus (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       medecin_id INTEGER NOT NULL,

@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Demander une polygraphie ventilatoire à domicile | SomnoHub</title>
+  <meta name="description" content="Demandez votre polygraphie ventilatoire à domicile en quelques minutes, sans création de compte. Médecins partenaires et patients.">
+  <meta name="robots" content="noindex">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/somnohub.css">
+  <style>
+    body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--text); margin: 0; }
+    .wrap { max-width: 560px; margin: 0 auto; padding: 24px 18px 60px; }
+    .topbar { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; }
+    .topbar a { color: var(--text-light); text-decoration: none; font-size: .9rem; }
+    .logo { font-size: 1.3rem; font-weight: 800; color: var(--primary); }
+    .logo span { color: var(--accent); }
+    h1 { font-size: 1.5rem; color: var(--primary); margin: 0 0 6px; }
+    .lead { color: var(--text-mid); font-size: .95rem; line-height: 1.55; margin: 0 0 24px; }
+    .card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px 22px; }
+    .toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px; }
+    .toggle button {
+      padding: 14px 10px; border: 2px solid var(--border); background: var(--white); border-radius: var(--radius-sm);
+      font-family: inherit; font-size: .92rem; font-weight: 700; color: var(--text-mid); cursor: pointer; transition: all .15s;
+    }
+    .toggle button.active { border-color: var(--primary); background: var(--primary); color: var(--white); }
+    .toggle button .ic { display: block; font-size: 1.3rem; margin-bottom: 4px; }
+    .section-hint { font-size: .82rem; color: var(--text-light); margin: 0 0 16px; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .radio-group { display: grid; gap: 10px; margin-top: 6px; }
+    .radio-opt {
+      display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border: 2px solid var(--border);
+      border-radius: var(--radius-sm); cursor: pointer; font-size: .9rem; transition: border-color .15s;
+    }
+    .radio-opt.sel { border-color: var(--accent); background: #f0faf4; }
+    .radio-opt input { margin-top: 3px; }
+    .radio-opt small { display: block; color: var(--text-light); font-weight: 400; margin-top: 2px; }
+    .consent { display: flex; align-items: flex-start; gap: 10px; font-size: .88rem; color: var(--text-mid); margin: 20px 0 6px; cursor: pointer; }
+    .consent input { margin-top: 3px; width: 18px; height: 18px; flex-shrink: 0; }
+    .consent a { color: var(--accent); font-weight: 600; }
+    .req { color: var(--hors-service); }
+    .success { text-align: center; padding: 30px 10px; }
+    .success .big { font-size: 3rem; }
+    .success h2 { color: var(--primary); margin: 12px 0 8px; }
+    .success .num { font-weight: 800; color: var(--accent); font-size: 1.2rem; }
+    .d-none { display: none !important; }
+    @media (max-width: 460px) { .grid2 { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="logo">Somno<span>Hub</span></div>
+      <a href="/">← Retour à l'accueil</a>
+    </div>
+
+    <div id="formView">
+      <h1>Demander une polygraphie ventilatoire</h1>
+      <p class="lead">Examen du sommeil à domicile, sans déplacement. Remplissez ce formulaire en 2 minutes — <strong>aucun compte à créer</strong>. Notre équipe valide la demande et organise la livraison du boîtier.</p>
+
+      <div class="card">
+        <div class="toggle">
+          <button type="button" id="tabPatient" class="active" onclick="setParcours('patient')"><span class="ic">🙋</span>Je suis le patient</button>
+          <button type="button" id="tabMedecin" onclick="setParcours('medecin')"><span class="ic">🩺</span>Je suis médecin</button>
+        </div>
+
+        <div id="formAlert" class="alert-box alert-error d-none" style="margin-bottom:16px"></div>
+
+        <form id="demandeForm" onsubmit="return submitDemande(event)">
+          <!-- Bloc médecin (parcours médecin uniquement) -->
+          <div id="blocMedecin" class="d-none">
+            <p class="section-hint">Vos informations de prescripteur</p>
+            <div class="grid2">
+              <div class="form-group">
+                <label>Nom du médecin <span class="req">*</span></label>
+                <input type="text" class="form-control" id="medecin_nom" placeholder="Dr Martin">
+              </div>
+              <div class="form-group">
+                <label>Numéro RPPS</label>
+                <input type="text" class="form-control" id="medecin_rpps" placeholder="11 chiffres" inputmode="numeric">
+              </div>
+            </div>
+          </div>
+
+          <p class="section-hint" id="hintPatient">Coordonnées du patient</p>
+          <div class="grid2">
+            <div class="form-group">
+              <label>Nom <span class="req">*</span></label>
+              <input type="text" class="form-control" id="patient_nom" required>
+            </div>
+            <div class="form-group">
+              <label>Prénom <span class="req">*</span></label>
+              <input type="text" class="form-control" id="patient_prenom" required>
+            </div>
+          </div>
+          <div class="grid2">
+            <div class="form-group">
+              <label>Date de naissance</label>
+              <input type="date" class="form-control" id="date_naissance">
+            </div>
+            <div class="form-group">
+              <label>Téléphone <span class="req">*</span></label>
+              <input type="tel" class="form-control" id="telephone" placeholder="0612345678" inputmode="tel" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Adresse de livraison <span class="req">*</span></label>
+            <input type="text" class="form-control" id="adresse" placeholder="N°, rue, code postal, ville" required>
+          </div>
+
+          <!-- Médecin prescripteur (parcours patient uniquement) -->
+          <div id="blocPrescripteurPatient">
+            <div class="form-group">
+              <label>Nom de votre médecin prescripteur</label>
+              <input type="text" class="form-control" id="medecin_nom_patient" placeholder="Dr Dupont">
+            </div>
+          </div>
+
+          <!-- Indication clinique (parcours médecin uniquement) -->
+          <div id="blocIndication" class="d-none">
+            <div class="form-group">
+              <label>Indication clinique / motif</label>
+              <textarea class="form-control" id="indication" rows="2" placeholder="Suspicion de SAOS, ronflements, somnolence diurne…"></textarea>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Ordonnance</label>
+            <div class="radio-group" id="ordoGroup">
+              <label class="radio-opt sel">
+                <input type="radio" name="ordonnance_mode" value="transmise" checked onchange="syncOrdo()">
+                <span><strong id="ordoLabelTransmise">Je la transmettrai</strong><small id="ordoSubTransmise">Vous nous l'enverrez (ou la remettrez) après cette demande.</small></span>
+              </label>
+              <label class="radio-opt">
+                <input type="radio" name="ordonnance_mode" value="a_la_livraison" onchange="syncOrdo()">
+                <span><strong>À remettre à la livraison</strong><small>Vous donnerez l'ordonnance au livreur lors du dépôt du boîtier.</small></span>
+              </label>
+            </div>
+          </div>
+
+          <label class="consent">
+            <input type="checkbox" id="consentement">
+            <span>J'accepte que mes données soient traitées pour organiser l'examen, conformément à la <a href="/mentions-legales.html" target="_blank" rel="noopener">politique de confidentialité (RGPD)</a>. <span class="req">*</span></span>
+          </label>
+
+          <button type="submit" class="btn btn-primary btn-full btn-lg" id="btnSubmit" style="margin-top:16px">Envoyer ma demande</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Confirmation -->
+    <div id="successView" class="card d-none">
+      <div class="success">
+        <div class="big">✅</div>
+        <h2>Demande envoyée !</h2>
+        <p class="lead" style="margin-bottom:14px">Votre demande a bien été reçue. Notre équipe la valide et vous recontacte rapidement pour organiser la livraison du boîtier.</p>
+        <p>Numéro de demande : <span class="num" id="successNum">—</span></p>
+        <a href="/" class="btn btn-secondary btn-lg" style="margin-top:18px;display:inline-block">Retour à l'accueil</a>
+      </div>
+    </div>
+  </div>
+
+<script>
+const API = '';
+let parcours = 'patient';
+
+function setParcours(p) {
+  parcours = p;
+  document.getElementById('tabPatient').classList.toggle('active', p === 'patient');
+  document.getElementById('tabMedecin').classList.toggle('active', p === 'medecin');
+  document.getElementById('blocMedecin').classList.toggle('d-none', p !== 'medecin');
+  document.getElementById('blocIndication').classList.toggle('d-none', p !== 'medecin');
+  document.getElementById('blocPrescripteurPatient').classList.toggle('d-none', p !== 'patient');
+  document.getElementById('hintPatient').textContent = p === 'medecin' ? 'Coordonnées du patient' : 'Vos coordonnées';
+  // Adapter le langage de l'option "transmise"
+  if (p === 'patient') {
+    document.getElementById('ordoLabelTransmise').textContent = "J'ai mon ordonnance, je la transmettrai";
+    document.getElementById('ordoSubTransmise').textContent = "Vous nous l'enverrez après l'envoi de cette demande.";
+  } else {
+    document.getElementById('ordoLabelTransmise').textContent = 'Je transmets l\'ordonnance';
+    document.getElementById('ordoSubTransmise').textContent = "Vous nous la ferez parvenir après l'envoi de cette demande.";
+  }
+}
+
+function syncOrdo() {
+  document.querySelectorAll('#ordoGroup .radio-opt').forEach(o => {
+    o.classList.toggle('sel', o.querySelector('input').checked);
+  });
+}
+
+function showAlert(msg) {
+  const a = document.getElementById('formAlert');
+  a.textContent = msg;
+  a.classList.remove('d-none');
+  a.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+async function submitDemande(e) {
+  e.preventDefault();
+  document.getElementById('formAlert').classList.add('d-none');
+
+  if (!document.getElementById('consentement').checked) {
+    showAlert('Vous devez accepter la politique de confidentialité.');
+    return false;
+  }
+
+  const medecinNom = parcours === 'medecin'
+    ? document.getElementById('medecin_nom').value
+    : document.getElementById('medecin_nom_patient').value;
+
+  const payload = {
+    source: parcours,
+    patient_nom: document.getElementById('patient_nom').value,
+    patient_prenom: document.getElementById('patient_prenom').value,
+    date_naissance: document.getElementById('date_naissance').value,
+    telephone: document.getElementById('telephone').value,
+    adresse: document.getElementById('adresse').value,
+    medecin_nom: medecinNom,
+    medecin_rpps: parcours === 'medecin' ? document.getElementById('medecin_rpps').value : '',
+    indication: parcours === 'medecin' ? document.getElementById('indication').value : '',
+    ordonnance_mode: document.querySelector('input[name="ordonnance_mode"]:checked').value,
+    consentement: true
+  };
+
+  const btn = document.getElementById('btnSubmit');
+  btn.disabled = true; btn.textContent = 'Envoi…';
+  try {
+    const res = await fetch(`${API}/api/demandes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (res.ok) {
+      document.getElementById('formView').classList.add('d-none');
+      document.getElementById('successNum').textContent = '#' + data.numero;
+      document.getElementById('successView').classList.remove('d-none');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      showAlert(data.error || 'Une erreur est survenue.');
+    }
+  } catch (err) {
+    showAlert('Erreur réseau — vérifiez votre connexion.');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Envoyer ma demande';
+  }
+  return false;
+}
+
+setParcours('patient');
+</script>
+</body>
+</html>

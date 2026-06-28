@@ -5,6 +5,50 @@ const auth = require('../middleware/auth');
 const { smsPrescription } = require('../services/sms');
 const { genererAlertes } = require('../services/scheduler');
 
+// Helper réutilisable : crée un patient, assigne un boîtier disponible si possible,
+// crée le stop de tournée du soir, trace l'historique et envoie le SMS.
+// Utilisé par la prescription médecin ET par la programmation d'une demande (admin).
+// Retourne la ligne patient (avec boitier_numero).
+function creerPatientAvecBoitier(db, fields, createdBy, notePrescription = 'Prescription créée') {
+  const { medecin_id, nom, prenom, telephone, adresse, lat, lng, score_stop_bang } = fields;
+  const today = new Date().toISOString().split('T')[0];
+
+  const boitierDispo = db.prepare(`SELECT * FROM boitiers WHERE statut = 'disponible' LIMIT 1`).get();
+
+  const result = db.prepare(`
+    INSERT INTO patients (medecin_id, nom, prenom, telephone, adresse, lat, lng, score_stop_bang, statut)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    medecin_id,
+    nom.trim(), prenom.trim(), telephone.trim(), adresse.trim(),
+    lat || 48.8566, lng || 2.3522,
+    score_stop_bang || 0,
+    boitierDispo ? 'livraison_prevue' : 'prescrit'
+  );
+  const patientId = result.lastInsertRowid;
+
+  if (boitierDispo) {
+    db.prepare(`UPDATE boitiers SET patient_id = ?, statut = 'assigne', derniere_action = CURRENT_TIMESTAMP WHERE id = ?`).run(patientId, boitierDispo.id);
+    db.prepare(`INSERT INTO tournee_stops (date, type, patient_id, boitier_id, action, ordre) VALUES (?, 'soir', ?, ?, 'livrer', ?)`).run(today, patientId, boitierDispo.id, 99);
+    db.prepare(`INSERT INTO historique_patient (patient_id, statut, note, created_by) VALUES (?, 'livraison_prevue', ?, ?)`).run(patientId, `Boîtier ${boitierDispo.numero} assigné automatiquement`, createdBy);
+  }
+
+  db.prepare(`INSERT INTO historique_patient (patient_id, statut, note, created_by) VALUES (?, 'prescrit', ?, ?)`).run(patientId, notePrescription, createdBy);
+
+  if (boitierDispo) {
+    const patient = db.prepare('SELECT * FROM patients WHERE id = ?').get(patientId);
+    smsPrescription(patient).catch(console.error);
+  }
+
+  genererAlertes();
+
+  return db.prepare(`
+    SELECT p.*, b.numero as boitier_numero FROM patients p
+    LEFT JOIN boitiers b ON b.patient_id = p.id
+    WHERE p.id = ?
+  `).get(patientId);
+}
+
 // Liste des patients du médecin
 router.get('/patients', auth(['medecin']), (req, res) => {
   const db = getDb();
@@ -59,59 +103,10 @@ router.post('/patients', auth(['medecin']), async (req, res) => {
   }
 
   const db = getDb();
-
-  // Chercher un boîtier disponible
-  const boitierDispo = db.prepare(`SELECT * FROM boitiers WHERE statut = 'disponible' LIMIT 1`).get();
-
-  const now = new Date();
-  const today = now.toISOString().split('T')[0];
-
-  const result = db.prepare(`
-    INSERT INTO patients (medecin_id, nom, prenom, telephone, adresse, lat, lng, score_stop_bang, statut)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
-    req.user.id,
-    nom.trim(), prenom.trim(), telephone.trim(), adresse.trim(),
-    lat || 48.8566, lng || 2.3522,
-    score_stop_bang || 0,
-    boitierDispo ? 'livraison_prevue' : 'prescrit'
-  );
-
-  const patientId = result.lastInsertRowid;
-
-  if (boitierDispo) {
-    // Assigner le boîtier
-    db.prepare(`
-      UPDATE boitiers SET patient_id = ?, statut = 'assigne', derniere_action = CURRENT_TIMESTAMP WHERE id = ?
-    `).run(patientId, boitierDispo.id);
-
-    // Créer le stop tournée soir
-    db.prepare(`
-      INSERT INTO tournee_stops (date, type, patient_id, boitier_id, action, ordre) VALUES (?, 'soir', ?, ?, 'livrer', ?)
-    `).run(today, patientId, boitierDispo.id, 99);
-
-    db.prepare(`
-      INSERT INTO historique_patient (patient_id, statut, note, created_by) VALUES (?, 'livraison_prevue', ?, ?)
-    `).run(patientId, `Boîtier ${boitierDispo.numero} assigné automatiquement`, req.user.id);
-  }
-
-  db.prepare(`
-    INSERT INTO historique_patient (patient_id, statut, note, created_by) VALUES (?, 'prescrit', 'Prescription créée', ?)
-  `).run(patientId, req.user.id);
-
-  // Envoyer SMS si boîtier assigné
-  if (boitierDispo) {
-    const patient = db.prepare('SELECT * FROM patients WHERE id = ?').get(patientId);
-    smsPrescription(patient).catch(console.error);
-  }
-
-  genererAlertes();
-
-  const patient = db.prepare(`
-    SELECT p.*, b.numero as boitier_numero FROM patients p
-    LEFT JOIN boitiers b ON b.patient_id = p.id
-    WHERE p.id = ?
-  `).get(patientId);
+  const patient = creerPatientAvecBoitier(db, {
+    medecin_id: req.user.id,
+    nom, prenom, telephone, adresse, lat, lng, score_stop_bang
+  }, req.user.id);
 
   res.status(201).json(patient);
 });
@@ -166,4 +161,5 @@ router.get('/suivi', auth(['medecin']), (req, res) => {
   res.json(enrichis);
 });
 
+router.creerPatientAvecBoitier = creerPatientAvecBoitier;
 module.exports = router;

@@ -7,6 +7,7 @@ const { getDb } = require('../db');
 const auth = require('../middleware/auth');
 const { genererAlertes } = require('../services/scheduler');
 const { backupNow, dernieresSauvegardes } = require('../services/backup');
+const { creerPatientAvecBoitier } = require('./medecin');
 
 // ─── Boîtiers ───────────────────────────────────────────────────────────────
 
@@ -456,6 +457,102 @@ router.get('/tournees-historique', auth(['admin']), (req, res) => {
   });
 
   res.json(historique);
+});
+
+// ─── Demandes de polygraphie (cockpit) ──────────────────────────────────────
+
+router.get('/demandes', auth(['admin']), (req, res) => {
+  const db = getDb();
+  const { statut } = req.query;
+  let demandes;
+  if (statut) {
+    demandes = db.prepare(`SELECT * FROM demandes WHERE statut = ? ORDER BY created_at DESC`).all(statut);
+  } else {
+    demandes = db.prepare(`SELECT * FROM demandes ORDER BY created_at DESC`).all();
+  }
+  const compteurs = {};
+  for (const r of db.prepare(`SELECT statut, COUNT(*) as nb FROM demandes GROUP BY statut`).all()) {
+    compteurs[r.statut] = r.nb;
+  }
+  res.json({ demandes, compteurs, recues: compteurs.recue || 0 });
+});
+
+router.get('/demandes/:id', auth(['admin']), (req, res) => {
+  const db = getDb();
+  const demande = db.prepare(`
+    SELECT d.*, p.statut as patient_statut, b.numero as boitier_numero
+    FROM demandes d
+    LEFT JOIN patients p ON d.patient_id = p.id
+    LEFT JOIN boitiers b ON b.patient_id = p.id
+    WHERE d.id = ?
+  `).get(req.params.id);
+  if (!demande) return res.status(404).json({ error: 'Demande introuvable' });
+  res.json(demande);
+});
+
+router.put('/demandes/:id/valider', auth(['admin']), (req, res) => {
+  const db = getDb();
+  const d = db.prepare('SELECT * FROM demandes WHERE id = ?').get(req.params.id);
+  if (!d) return res.status(404).json({ error: 'Demande introuvable' });
+  if (d.statut !== 'recue') return res.status(400).json({ error: 'Seule une demande reçue peut être validée' });
+  db.prepare(`UPDATE demandes SET statut = 'validee', updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(d.id);
+  res.json({ success: true });
+});
+
+router.put('/demandes/:id/refuser', auth(['admin']), (req, res) => {
+  const db = getDb();
+  const d = db.prepare('SELECT * FROM demandes WHERE id = ?').get(req.params.id);
+  if (!d) return res.status(404).json({ error: 'Demande introuvable' });
+  if (d.statut !== 'recue') return res.status(400).json({ error: 'Seule une demande reçue peut être refusée' });
+  const { motif } = req.body;
+  db.prepare(`UPDATE demandes SET statut = 'refusee', motif_refus = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(motif || null, d.id);
+  res.json({ success: true });
+});
+
+router.put('/demandes/:id/programmer', auth(['admin']), (req, res) => {
+  const db = getDb();
+  const d = db.prepare('SELECT * FROM demandes WHERE id = ?').get(req.params.id);
+  if (!d) return res.status(404).json({ error: 'Demande introuvable' });
+  if (d.statut !== 'validee') return res.status(400).json({ error: 'La demande doit être validée avant programmation' });
+
+  // Réutilise le pipeline existant : crée le patient, assigne un boîtier, crée le stop, SMS.
+  // Le prescripteur réel reste tracé en texte dans la demande ; medecin_id = admin.
+  const note = d.medecin_nom ? `Demande programmée — prescripteur ${d.medecin_nom}` : 'Demande programmée';
+  const patient = creerPatientAvecBoitier(db, {
+    medecin_id: req.user.id,
+    nom: d.patient_nom, prenom: d.patient_prenom,
+    telephone: d.telephone, adresse: d.adresse, score_stop_bang: 0
+  }, req.user.id, note);
+
+  db.prepare(`UPDATE demandes SET statut = 'programmee', patient_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(patient.id, d.id);
+  res.json({ success: true, patient });
+});
+
+router.put('/demandes/:id/ordonnance', auth(['admin']), (req, res) => {
+  const db = getDb();
+  const d = db.prepare('SELECT * FROM demandes WHERE id = ?').get(req.params.id);
+  if (!d) return res.status(404).json({ error: 'Demande introuvable' });
+  const presente = req.body.presente ? 1 : 0;
+  db.prepare(`UPDATE demandes SET ordonnance_presente = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(presente, d.id);
+  res.json({ success: true, ordonnance_presente: presente });
+});
+
+router.put('/demandes/:id/statut', auth(['admin']), (req, res) => {
+  const db = getDb();
+  const d = db.prepare('SELECT * FROM demandes WHERE id = ?').get(req.params.id);
+  if (!d) return res.status(404).json({ error: 'Demande introuvable' });
+
+  const { statut } = req.body;
+  const allowed = ['realisee', 'cr_signe', 'cloturee'];
+  if (!allowed.includes(statut)) return res.status(400).json({ error: 'Statut non autorisé' });
+
+  // Garde-fou : pas de signature de CR sans ordonnance au dossier
+  if (statut === 'cr_signe' && !d.ordonnance_presente) {
+    return res.status(400).json({ error: 'Ordonnance absente du dossier — signature du CR bloquée' });
+  }
+
+  db.prepare(`UPDATE demandes SET statut = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(statut, d.id);
+  res.json({ success: true });
 });
 
 module.exports = router;

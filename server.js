@@ -21,12 +21,14 @@ app.use('/api/medecin', require('./src/routes/medecin'));
 app.use('/api/livreur', require('./src/routes/livreur'));
 app.use('/api/assistante', require('./src/routes/assistante'));
 app.use('/api/admin', require('./src/routes/admin'));
+app.use('/api/demandes', require('./src/routes/demandes'));
 
 // SPA fallbacks
 app.get('/medecin', (req, res) => res.sendFile(path.join(__dirname, 'public/medecin/index.html')));
 app.get('/livreur', (req, res) => res.sendFile(path.join(__dirname, 'public/livreur/index.html')));
 app.get('/assistante', (req, res) => res.sendFile(path.join(__dirname, 'public/assistante/index.html')));
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/admin/index.html')));
+app.get('/demande', (req, res) => res.sendFile(path.join(__dirname, 'public/demande/index.html')));
 
 // ── DIAGNOSTIC PERSISTANCE VOLUME ───────────────────────
 // Écrit un fichier témoin et relit le précédent : si le témoin ne survit
