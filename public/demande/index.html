@@ -134,6 +134,24 @@
             </div>
           </div>
 
+          <p class="section-hint" style="margin-top:6px">Couverture santé <span style="font-weight:400">(pour estimer votre reste à charge)</span></p>
+          <div class="form-group">
+            <label>Votre situation</label>
+            <select class="form-control" id="couverture" onchange="majResteACharge()">
+              <option value="">— Sélectionnez —</option>
+              <option value="secu_mutuelle">Sécurité sociale + mutuelle</option>
+              <option value="secu_seule">Sécurité sociale seule (sans mutuelle)</option>
+              <option value="css">Complémentaire santé solidaire (CSS / ex-CMU-C)</option>
+              <option value="ame">AME (Aide médicale d'État)</option>
+              <option value="inconnu">Je ne sais pas</option>
+            </select>
+          </div>
+          <div class="form-group d-none" id="mutuelleBloc">
+            <label>Nom de votre mutuelle (optionnel)</label>
+            <input type="text" class="form-control" id="mutuelle_nom" placeholder="ex : Harmonie, MGEN, Malakoff…">
+          </div>
+          <div id="resteACharge" class="d-none" style="background:#f0faf4;border:1px solid var(--accent-light);border-radius:var(--radius-sm);padding:12px 14px;font-size:.88rem;color:var(--text-mid);margin-bottom:18px"></div>
+
           <label class="consent">
             <input type="checkbox" id="consentement">
             <span>J'accepte que mes données soient traitées pour organiser l'examen, conformément à la <a href="/mentions-legales.html" target="_blank" rel="noopener">politique de confidentialité (RGPD)</a>. <span class="req">*</span></span>
@@ -205,6 +223,37 @@ function setParcours(p) {
   }
 }
 
+// ⚠️ Tarif conventionnel ESTIMÉ de la polygraphie ventilatoire (CCAM GLQP007).
+// À confirmer/ajuster avec le tarif officiel. Base de remboursement Sécu = 70%.
+const TARIF_POLYGRAPHIE = 150;
+const TAUX_SECU = 0.70;
+const TICKET_MODERATEUR = Math.round(TARIF_POLYGRAPHIE * (1 - TAUX_SECU));
+
+function majResteACharge() {
+  const c = document.getElementById('couverture').value;
+  document.getElementById('mutuelleBloc').classList.toggle('d-none', c !== 'secu_mutuelle');
+  const box = document.getElementById('resteACharge');
+  let html = '';
+  if (c === 'secu_mutuelle') {
+    html = `<strong>Reste à charge estimé : ~0 €</strong><br>Tarif estimé ${TARIF_POLYGRAPHIE} € · Assurance Maladie 70 % · reste avant mutuelle ≈ <strong>${TICKET_MODERATEUR} €</strong> (ticket modérateur), généralement pris en charge par votre mutuelle selon votre contrat.`;
+  } else if (c === 'secu_seule') {
+    html = `<strong>Reste à charge estimé : ~${TICKET_MODERATEUR} €</strong><br>Tarif estimé ${TARIF_POLYGRAPHIE} € · Assurance Maladie 70 % · le ticket modérateur (≈ ${TICKET_MODERATEUR} €) reste à votre charge sans mutuelle.`;
+  } else if (c === 'css') {
+    html = `<strong>Reste à charge : 0 €</strong><br>Complémentaire santé solidaire : prise en charge à 100 %, pas d'avance de frais (tiers payant).`;
+  } else if (c === 'ame') {
+    html = `<strong>Reste à charge : 0 €</strong><br>AME : prise en charge intégrale, pas d'avance de frais.`;
+  } else if (c === 'inconnu') {
+    html = `Pas d'inquiétude — nous vérifierons votre prise en charge avant l'examen.`;
+  }
+  if (html) {
+    html += `<br><span style="color:var(--text-light);font-size:.78rem">Estimation indicative — le montant exact dépend du tarif conventionnel et de votre contrat mutuelle.</span>`;
+    box.innerHTML = html;
+    box.classList.remove('d-none');
+  } else {
+    box.classList.add('d-none');
+  }
+}
+
 function syncOrdo() {
   document.querySelectorAll('#ordoGroup .radio-opt').forEach(o => {
     o.classList.toggle('sel', o.querySelector('input').checked);
@@ -242,6 +291,8 @@ async function submitDemande(e) {
     medecin_rpps: parcours === 'medecin' ? document.getElementById('medecin_rpps').value : '',
     indication: parcours === 'medecin' ? document.getElementById('indication').value : '',
     ordonnance_mode: document.querySelector('input[name="ordonnance_mode"]:checked').value,
+    couverture: document.getElementById('couverture').value,
+    mutuelle_nom: document.getElementById('mutuelle_nom').value,
     consentement: true
   };
 

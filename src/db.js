@@ -158,6 +158,8 @@ function initDb() {
       medecin_nom TEXT,
       medecin_rpps TEXT,
       indication TEXT,
+      couverture TEXT,
+      mutuelle_nom TEXT,
       lat REAL,
       lng REAL,
       ordonnance_mode TEXT DEFAULT 'a_la_livraison' CHECK(ordonnance_mode IN ('transmise','a_la_livraison')),
@@ -194,6 +196,8 @@ function migrate(db) {
   const ajouts = [
     `ALTER TABLE demandes ADD COLUMN lat REAL`,
     `ALTER TABLE demandes ADD COLUMN lng REAL`,
+    `ALTER TABLE demandes ADD COLUMN couverture TEXT`,
+    `ALTER TABLE demandes ADD COLUMN mutuelle_nom TEXT`,
   ];
   for (const sql of ajouts) {
     try { db.exec(sql); } catch (e) { /* colonne déjà présente */ }

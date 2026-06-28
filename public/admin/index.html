@@ -1221,6 +1221,19 @@ async function openDemande(id) {
     const ordoTxt = d.ordonnance_presente ? '✅ Présente au dossier'
       : (d.ordonnance_mode === 'transmise' ? '📄 À transmettre' : '🚚 À remettre à la livraison');
 
+    // Couverture santé + estimation reste à charge (tarif estimé GLQP007, à ajuster)
+    const TARIF_POLY = 150, TICKET = Math.round(TARIF_POLY * 0.30);
+    const COUV = {
+      secu_mutuelle: { label: 'Sécu + mutuelle', reste: `~0 € (ticket modérateur ≈ ${TICKET} € couvert par la mutuelle)` },
+      secu_seule:    { label: 'Sécu seule',      reste: `≈ ${TICKET} € (ticket modérateur, sans mutuelle)` },
+      css:           { label: 'CSS (ex-CMU-C)',  reste: '0 € (prise en charge 100 %)' },
+      ame:           { label: 'AME',             reste: '0 € (prise en charge intégrale)' },
+      inconnu:       { label: 'Non renseignée',  reste: 'À vérifier' }
+    };
+    const couv = COUV[d.couverture];
+    const couvTxt = couv ? `${couv.label}${d.mutuelle_nom ? ' · ' + d.mutuelle_nom : ''}` : null;
+    const resteTxt = couv ? couv.reste : null;
+
     document.getElementById('demandeModalBody').innerHTML = `
       <div style="margin-bottom:10px">${statutChip(d.statut)}${d.statut === 'refusee' && d.motif_refus ? ` <span style="color:#c62828;font-size:.82rem">— ${d.motif_refus}</span>` : ''}</div>
       ${row('Patient', `${d.patient_prenom} ${d.patient_nom}`)}
@@ -1230,6 +1243,8 @@ async function openDemande(id) {
       ${row('Médecin prescripteur', d.medecin_nom)}
       ${row('RPPS', d.medecin_rpps)}
       ${row('Indication', d.indication)}
+      ${row('Couverture', couvTxt)}
+      ${row('Reste à charge estimé', resteTxt)}
       ${row('Ordonnance', ordoTxt)}
       ${row('Boîtier assigné', d.boitier_numero)}
       ${row('Reçue le', formatDatetime(d.created_at))}`;

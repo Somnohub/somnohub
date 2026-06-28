@@ -9,7 +9,7 @@ router.post('/', (req, res) => {
     const {
       source, patient_nom, patient_prenom, date_naissance,
       telephone, adresse, medecin_nom, medecin_rpps, indication,
-      ordonnance_mode, consentement, lat, lng
+      ordonnance_mode, consentement, lat, lng, couverture, mutuelle_nom
     } = req.body;
 
     if (!['medecin', 'patient'].includes(source)) {
@@ -32,18 +32,22 @@ router.post('/', (req, res) => {
     const db = getDb();
     const latNum = (typeof lat === 'number' && isFinite(lat)) ? lat : null;
     const lngNum = (typeof lng === 'number' && isFinite(lng)) ? lng : null;
+    const couvertures = ['secu_seule', 'secu_mutuelle', 'css', 'ame', 'inconnu'];
+    const couv = couvertures.includes(couverture) ? couverture : null;
 
     const result = db.prepare(`
       INSERT INTO demandes (
         source, patient_nom, patient_prenom, date_naissance, telephone, adresse,
-        medecin_nom, medecin_rpps, indication, lat, lng, ordonnance_mode, consentement, statut
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'recue')
+        medecin_nom, medecin_rpps, indication, couverture, mutuelle_nom, lat, lng, ordonnance_mode, consentement, statut
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'recue')
     `).run(
       source,
       patient_nom.trim(), patient_prenom.trim(), (date_naissance || '').trim() || null,
       telClean, adresse.trim(),
       (medecin_nom || '').trim() || null, (medecin_rpps || '').trim() || null,
-      (indication || '').trim() || null, latNum, lngNum, mode
+      (indication || '').trim() || null,
+      couv, couv === 'secu_mutuelle' ? ((mutuelle_nom || '').trim() || null) : null,
+      latNum, lngNum, mode
     );
 
     res.status(201).json({ success: true, numero: result.lastInsertRowid });
