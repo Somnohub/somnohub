@@ -223,30 +223,32 @@ function setParcours(p) {
   }
 }
 
-// ⚠️ Tarif conventionnel ESTIMÉ de la polygraphie ventilatoire (CCAM GLQP007).
-// À confirmer/ajuster avec le tarif officiel. Base de remboursement Sécu = 70%.
-const TARIF_POLYGRAPHIE = 150;
-const TAUX_SECU = 0.70;
-const TICKET_MODERATEUR = Math.round(TARIF_POLYGRAPHIE * (1 - TAUX_SECU));
+// Polygraphie respiratoire nocturne (CCAM GLQP007) — tarif conventionnel 151,68 €.
+// Acte « onéreux » (≥ 120 €) → le ticket modérateur (30 %) est remplacé par la
+// participation forfaitaire FIXE de 32 € (depuis le 01/04/2026). Source : Ameli.
+// La mutuelle prend en charge ces 32 € ; CSS / AME : couverts de droit (0 €).
+const TARIF_POLYGRAPHIE = 151.68;
+const PARTICIPATION_FORFAITAIRE = 32;
 
 function majResteACharge() {
   const c = document.getElementById('couverture').value;
   document.getElementById('mutuelleBloc').classList.toggle('d-none', c !== 'secu_mutuelle');
   const box = document.getElementById('resteACharge');
+  const pf = PARTICIPATION_FORFAITAIRE;
   let html = '';
   if (c === 'secu_mutuelle') {
-    html = `<strong>Reste à charge estimé : ~0 €</strong><br>Tarif estimé ${TARIF_POLYGRAPHIE} € · Assurance Maladie 70 % · reste avant mutuelle ≈ <strong>${TICKET_MODERATEUR} €</strong> (ticket modérateur), généralement pris en charge par votre mutuelle selon votre contrat.`;
+    html = `<strong>Reste à charge estimé : ~0 €</strong><br>Tarif ${TARIF_POLYGRAPHIE.toLocaleString('fr-FR')} € · acte pris en charge par l'Assurance Maladie. Seule une <strong>participation forfaitaire de ${pf} €</strong> reste due — généralement réglée par votre mutuelle (selon votre contrat). Tiers payant possible, sans avance de frais.`;
   } else if (c === 'secu_seule') {
-    html = `<strong>Reste à charge estimé : ~${TICKET_MODERATEUR} €</strong><br>Tarif estimé ${TARIF_POLYGRAPHIE} € · Assurance Maladie 70 % · le ticket modérateur (≈ ${TICKET_MODERATEUR} €) reste à votre charge sans mutuelle.`;
+    html = `<strong>Reste à charge estimé : ${pf} €</strong><br>Tarif ${TARIF_POLYGRAPHIE.toLocaleString('fr-FR')} € · pour cet acte « onéreux », vous ne payez pas 30 % mais une <strong>participation forfaitaire fixe de ${pf} €</strong>. Sans mutuelle, ces ${pf} € restent à votre charge.`;
   } else if (c === 'css') {
-    html = `<strong>Reste à charge : 0 €</strong><br>Complémentaire santé solidaire : prise en charge à 100 %, pas d'avance de frais (tiers payant).`;
+    html = `<strong>Reste à charge : 0 €</strong><br>Complémentaire santé solidaire : la participation forfaitaire de ${pf} € est prise en charge de droit. Pas d'avance de frais (tiers payant).`;
   } else if (c === 'ame') {
-    html = `<strong>Reste à charge : 0 €</strong><br>AME : prise en charge intégrale, pas d'avance de frais.`;
+    html = `<strong>Reste à charge : 0 €</strong><br>AME : prise en charge de droit. Pas d'avance de frais.`;
   } else if (c === 'inconnu') {
     html = `Pas d'inquiétude — nous vérifierons votre prise en charge avant l'examen.`;
   }
   if (html) {
-    html += `<br><span style="color:var(--text-light);font-size:.78rem">Estimation indicative — le montant exact dépend du tarif conventionnel et de votre contrat mutuelle.</span>`;
+    html += `<br><span style="color:var(--text-light);font-size:.78rem">Estimation indicative. Acte exonéré (100 %) en cas d'ALD, maternité ou accident du travail.</span>`;
     box.innerHTML = html;
     box.classList.remove('d-none');
   } else {
