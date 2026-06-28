@@ -158,6 +158,8 @@ function initDb() {
       medecin_nom TEXT,
       medecin_rpps TEXT,
       indication TEXT,
+      lat REAL,
+      lng REAL,
       ordonnance_mode TEXT DEFAULT 'a_la_livraison' CHECK(ordonnance_mode IN ('transmise','a_la_livraison')),
       ordonnance_presente INTEGER DEFAULT 0,
       consentement INTEGER DEFAULT 0,
@@ -181,8 +183,21 @@ function initDb() {
     );
   `);
 
+  migrate(db);
   seedData(db);
   return db;
+}
+
+// Migrations idempotentes : ajoute les colonnes manquantes sur une base existante.
+// ALTER TABLE ADD COLUMN échoue si la colonne existe déjà → on ignore l'erreur.
+function migrate(db) {
+  const ajouts = [
+    `ALTER TABLE demandes ADD COLUMN lat REAL`,
+    `ALTER TABLE demandes ADD COLUMN lng REAL`,
+  ];
+  for (const sql of ajouts) {
+    try { db.exec(sql); } catch (e) { /* colonne déjà présente */ }
+  }
 }
 
 function seedData(db) {

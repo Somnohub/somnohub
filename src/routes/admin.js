@@ -521,7 +521,8 @@ router.put('/demandes/:id/programmer', auth(['admin']), (req, res) => {
   const patient = creerPatientAvecBoitier(db, {
     medecin_id: req.user.id,
     nom: d.patient_nom, prenom: d.patient_prenom,
-    telephone: d.telephone, adresse: d.adresse, score_stop_bang: 0
+    telephone: d.telephone, adresse: d.adresse,
+    lat: d.lat, lng: d.lng, score_stop_bang: 0
   }, req.user.id, note);
 
   db.prepare(`UPDATE demandes SET statut = 'programmee', patient_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(patient.id, d.id);

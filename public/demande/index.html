@@ -70,15 +70,9 @@
           <!-- Bloc médecin (parcours médecin uniquement) -->
           <div id="blocMedecin" class="d-none">
             <p class="section-hint">Vos informations de prescripteur</p>
-            <div class="grid2">
-              <div class="form-group">
-                <label>Nom du médecin <span class="req">*</span></label>
-                <input type="text" class="form-control" id="medecin_nom" placeholder="Dr Martin">
-              </div>
-              <div class="form-group">
-                <label>Numéro RPPS</label>
-                <input type="text" class="form-control" id="medecin_rpps" placeholder="11 chiffres" inputmode="numeric">
-              </div>
+            <div class="form-group">
+              <label>Nom du médecin <span class="req">*</span></label>
+              <input type="text" class="form-control" id="medecin_nom" placeholder="Dr Martin">
             </div>
           </div>
 
@@ -105,7 +99,9 @@
           </div>
           <div class="form-group">
             <label>Adresse de livraison <span class="req">*</span></label>
-            <input type="text" class="form-control" id="adresse" placeholder="N°, rue, code postal, ville" required>
+            <input type="text" class="form-control" id="adresse" placeholder="Commencez à taper, puis choisissez dans la liste" autocomplete="off" required>
+            <input type="hidden" id="lat"><input type="hidden" id="lng">
+            <small id="adresseHint" style="display:none;color:var(--accent);font-size:.78rem">✓ Adresse localisée</small>
           </div>
 
           <!-- Médecin prescripteur (parcours patient uniquement) -->
@@ -162,7 +158,34 @@
 
 <script>
 const API = '';
+const GOOGLE_KEY = 'AIzaSyBPL4FZ6litzOBAW2aRiiDxHqmWy2kMySw';
 let parcours = 'patient';
+
+// Autocomplétion d'adresse Google (restreinte à la France)
+function initAutocomplete() {
+  if (!(window.google && google.maps && google.maps.places)) return;
+  const input = document.getElementById('adresse');
+  const ac = new google.maps.places.Autocomplete(input, {
+    componentRestrictions: { country: 'fr' },
+    fields: ['formatted_address', 'geometry'],
+    types: ['address']
+  });
+  ac.addListener('place_changed', () => {
+    const place = ac.getPlace();
+    if (place.formatted_address) input.value = place.formatted_address;
+    if (place.geometry && place.geometry.location) {
+      document.getElementById('lat').value = place.geometry.location.lat();
+      document.getElementById('lng').value = place.geometry.location.lng();
+      document.getElementById('adresseHint').style.display = 'block';
+    }
+  });
+  // Si l'utilisateur modifie l'adresse à la main, on invalide les coordonnées
+  input.addEventListener('input', () => {
+    document.getElementById('lat').value = '';
+    document.getElementById('lng').value = '';
+    document.getElementById('adresseHint').style.display = 'none';
+  });
+}
 
 function setParcours(p) {
   parcours = p;
@@ -222,6 +245,10 @@ async function submitDemande(e) {
     consentement: true
   };
 
+  const latV = parseFloat(document.getElementById('lat').value);
+  const lngV = parseFloat(document.getElementById('lng').value);
+  if (isFinite(latV) && isFinite(lngV)) { payload.lat = latV; payload.lng = lngV; }
+
   const btn = document.getElementById('btnSubmit');
   btn.disabled = true; btn.textContent = 'Envoi…';
   try {
@@ -249,5 +276,7 @@ async function submitDemande(e) {
 
 setParcours('patient');
 </script>
+<script async defer
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBPL4FZ6litzOBAW2aRiiDxHqmWy2kMySw&libraries=places&language=fr&region=FR&callback=initAutocomplete"></script>
 </body>
 </html>
