@@ -30,6 +30,11 @@ app.get('/assistante', (req, res) => res.sendFile(path.join(__dirname, 'public/a
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public/admin/index.html')));
 app.get('/demande', (req, res) => res.sendFile(path.join(__dirname, 'public/demande/index.html')));
 
+// Pages SEO (contenu longue traîne)
+app.get('/apnee-du-sommeil', (req, res) => res.sendFile(path.join(__dirname, 'public/apnee-du-sommeil/index.html')));
+app.get('/polygraphie-ventilatoire', (req, res) => res.sendFile(path.join(__dirname, 'public/polygraphie-ventilatoire/index.html')));
+app.get('/remboursement-polygraphie', (req, res) => res.sendFile(path.join(__dirname, 'public/remboursement-polygraphie/index.html')));
+
 // ── DIAGNOSTIC PERSISTANCE VOLUME ───────────────────────
 // Écrit un fichier témoin et relit le précédent : si le témoin ne survit
 // pas au redémarrage, c'est le volume Railway qui ne persiste pas.
