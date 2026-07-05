@@ -306,6 +306,16 @@
       gap: 6px;
       margin-top: 8px;
     }
+    .sb-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px;
+      cursor: pointer; font-size: .88rem; color: var(--text); transition: all .12s; background: var(--white);
+    }
+    .sb-item:hover { border-color: var(--accent); }
+    .sb-item input { margin-top: 2px; width: 16px; height: 16px; flex-shrink: 0; cursor: pointer; }
+    .sb-item.checked { border-color: var(--accent); background: #f0faf4; }
+    .sb-item b { color: var(--primary); }
+    .sb-item small { display: block; color: var(--text-light); font-weight: 400; font-size: .78rem; }
     .score-display {
       text-align: center;
       font-size: 2.5rem;
@@ -369,7 +379,7 @@
             <span class="search-icon">🔍</span>
             <input type="text" id="searchInput" placeholder="Rechercher un patient..." oninput="filterPatients()">
           </div>
-          <button class="btn btn-primary" onclick="openModal('prescriptionModal')">
+          <button class="btn btn-primary" onclick="openPrescription()">
             + Nouvelle prescription
           </button>
         </div>
@@ -437,21 +447,22 @@
       <div class="form-group">
         <label>Score STOP-BANG *
           <span style="font-weight:400;color:var(--text-light);font-size:.8rem;margin-left:6px;">
-            (0 = pas de risque, 8 = risque maximal)
+            Cochez les critères présents — le score se calcule automatiquement
           </span>
         </label>
-        <select id="pScore" class="form-control" onchange="updateScoreDisplay()">
-          <option value="0">0 — Aucun facteur de risque</option>
-          <option value="1">1 — Risque faible</option>
-          <option value="2">2 — Risque faible</option>
-          <option value="3">3 — Risque intermédiaire</option>
-          <option value="4">4 — Risque intermédiaire</option>
-          <option value="5">5 — Risque élevé</option>
-          <option value="6">6 — Risque élevé</option>
-          <option value="7">7 — Risque très élevé</option>
-          <option value="8">8 — Risque maximal</option>
-        </select>
-        <div class="score-display" id="scoreDisplay">0</div>
+        <input type="hidden" id="pScore" value="0">
+        <div class="stop-bang-grid" id="stopBangGrid">
+          <label class="sb-item"><input type="checkbox" onchange="computeStopBang()"><span><b>S</b> — Ronflement fort <small>Audible à travers une porte fermée</small></span></label>
+          <label class="sb-item"><input type="checkbox" onchange="computeStopBang()"><span><b>T</b> — Fatigue / somnolence diurne <small>Endormissement en journée</small></span></label>
+          <label class="sb-item"><input type="checkbox" onchange="computeStopBang()"><span><b>O</b> — Apnées observées <small>Arrêts respiratoires constatés pendant le sommeil</small></span></label>
+          <label class="sb-item"><input type="checkbox" onchange="computeStopBang()"><span><b>P</b> — Pression artérielle élevée <small>HTA ou traitement antihypertenseur</small></span></label>
+          <label class="sb-item"><input type="checkbox" onchange="computeStopBang()"><span><b>B</b> — IMC &gt; 35 kg/m²</span></label>
+          <label class="sb-item"><input type="checkbox" onchange="computeStopBang()"><span><b>A</b> — Âge &gt; 50 ans</span></label>
+          <label class="sb-item"><input type="checkbox" onchange="computeStopBang()"><span><b>N</b> — Tour de cou &gt; 40 cm</span></label>
+          <label class="sb-item"><input type="checkbox" onchange="computeStopBang()"><span><b>G</b> — Sexe masculin</span></label>
+        </div>
+        <div class="score-display" id="scoreDisplay">0<span style="font-size:1rem;color:var(--text-light)">/8</span></div>
+        <div id="scoreRisk" style="text-align:center;font-size:.85rem;font-weight:700;margin-top:-6px;color:var(--disponible)">Risque faible</div>
       </div>
     </div>
     <div class="modal-footer">
@@ -715,11 +726,33 @@
   }
 
   // ── Prescription ──────────────────────────────────────
-  function updateScoreDisplay() {
-    const v = parseInt(document.getElementById('pScore').value);
+  function computeStopBang() {
+    let score = 0;
+    document.querySelectorAll('#stopBangGrid input[type=checkbox]').forEach(b => {
+      b.closest('.sb-item').classList.toggle('checked', b.checked);
+      if (b.checked) score++;
+    });
+    document.getElementById('pScore').value = score;
+    const color = score >= 5 ? 'var(--hors-service)' : score >= 3 ? 'var(--maintenance)' : 'var(--disponible)';
     const el = document.getElementById('scoreDisplay');
-    el.textContent = v;
-    el.style.color = v >= 5 ? 'var(--hors-service)' : v >= 3 ? 'var(--maintenance)' : 'var(--disponible)';
+    el.innerHTML = `${score}<span style="font-size:1rem;color:var(--text-light)">/8</span>`;
+    el.style.color = color;
+    const risk = document.getElementById('scoreRisk');
+    risk.textContent = score >= 5 ? 'Risque élevé de SAOS — polygraphie recommandée'
+      : score >= 3 ? 'Risque intermédiaire' : 'Risque faible';
+    risk.style.color = color;
+  }
+
+  // Ouvre le modal de prescription avec un formulaire vierge
+  function openPrescription() {
+    ['pNom','pPrenom','pTel','pAdresse','pComplement','pLat','pLng'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+    document.querySelectorAll('#stopBangGrid input[type=checkbox]').forEach(b => b.checked = false);
+    computeStopBang();
+    const alertEl = document.getElementById('prescAlert');
+    if (alertEl) alertEl.style.display = 'none';
+    openModal('prescriptionModal');
   }
 
   async function createPrescription() {
@@ -763,8 +796,8 @@
 
       closeModal('prescriptionModal');
       ['pNom','pPrenom','pTel','pAdresse','pComplement','pLat','pLng'].forEach(id => document.getElementById(id).value = '');
-      document.getElementById('pScore').value = '0';
-      updateScoreDisplay();
+      document.querySelectorAll('#stopBangGrid input[type=checkbox]').forEach(b => b.checked = false);
+      computeStopBang();
       showToast(`Prescription créée pour ${prenom} ${nom}`, 'success');
       loadPatients();
     } catch (e) {
@@ -838,7 +871,7 @@
 
   // ── Init ──────────────────────────────────────────────
   loadPatients();
-  updateScoreDisplay();
+  computeStopBang();
 
   // ── Places Autocomplete ────────────────────────────────
   function initPlacesAutocomplete() {
