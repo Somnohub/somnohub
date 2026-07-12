@@ -1439,6 +1439,9 @@
     <h2>Bienvenue sur SomnoHub</h2>
     <p>Pour vous orienter vers les informations les plus adaptées, dites-nous qui vous êtes.</p>
     <div class="popup-choices">
+      <button class="popup-btn-patient" onclick="popupChoixDemande()">
+        📨 Je veux réaliser une polygraphie ventilatoire
+      </button>
       <button class="popup-btn-patient" onclick="popupChoixPatient()">
         😴 Je suis patient — je cherche de l'aide pour mon sommeil
       </button>
@@ -1494,6 +1497,10 @@
 function popupChoixPatient() {
   document.getElementById('popupAccueil').classList.remove('show');
   sessionStorage.setItem('sh_accueil_vu', '1');
+}
+function popupChoixDemande() {
+  sessionStorage.setItem('sh_accueil_vu', '1');
+  window.location.href = '/demande';
 }
 function popupChoixPro() {
   document.getElementById('popupAccueil').classList.remove('show');
