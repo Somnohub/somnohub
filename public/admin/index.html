@@ -300,6 +300,9 @@
       <div class="nav-item" onclick="showSection('boitiers', this)">
         <span class="nav-icon">📦</span><span>Boîtiers</span>
       </div>
+      <div class="nav-item" onclick="showSection('patients', this)">
+        <span class="nav-icon">🧑‍⚕️</span><span>Patients</span>
+      </div>
       <div class="nav-item" onclick="showSection('alertes', this)">
         <span class="nav-icon">🔔</span><span>Alertes</span>
         <span class="nav-badge d-none" id="alertBadge">0</span>
@@ -396,6 +399,18 @@
               </tr>
             </thead>
             <tbody id="boitiersBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── PATIENTS ── -->
+      <div class="tab-content" id="section-patients">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Patient</th><th>Téléphone</th><th>Médecin</th><th>Boîtier</th><th>Statut</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="patientsBody"></tbody>
           </table>
         </div>
       </div>
@@ -651,6 +666,7 @@ const titles = {
   carte: 'Carte — Tracking boîtiers en temps réel',
   demandes: 'Demandes de polygraphie — File d\'attente',
   boitiers: 'Gestion des boîtiers',
+  patients: 'Patients — Gestion et suppression',
   alertes: 'Alertes automatiques',
   revenus: 'Tableau de bord revenus',
   comptes: 'Gestion des comptes médecins',
@@ -669,6 +685,7 @@ function showSection(section, el) {
   if (section === 'carte') loadCarte();
   else if (section === 'demandes') loadDemandes();
   else if (section === 'boitiers') loadBoitiers();
+  else if (section === 'patients') loadPatients();
   else if (section === 'alertes') loadAlertes();
   else if (section === 'revenus') loadRevenus();
   else if (section === 'comptes') loadComptes();
@@ -800,6 +817,7 @@ function renderBoitiers() {
         <div style="display:flex;gap:6px">
           <button class="btn btn-secondary btn-sm" onclick="openQR(${b.id}, '${b.numero}')" title="QR Code">📱</button>
           <button class="btn btn-outline btn-sm" onclick="openEditBoitier(${b.id}, '${b.numero}', '${b.statut}')" title="Modifier">✏️</button>
+          ${b.patient_id ? `<button class="btn btn-danger btn-sm" onclick="desassignerBoitier(${b.id}, '${b.numero}')" title="Désassigner du patient">⛔</button>` : ''}
         </div>
       </td>
     </tr>
@@ -1152,6 +1170,45 @@ async function loadPrescriptions() {
         </tr>`).join('')
       : '<tr><td colspan="5" style="text-align:center;color:var(--text-light)">Aucune prescription aujourd\'hui</td></tr>';
   } catch(e) { console.error(e); }
+}
+
+// ── Patients (gestion / suppression) ─────────────────────
+async function loadPatients() {
+  try {
+    const patients = await (await fetch(`${API}/api/admin/patients`, { headers: authHeaders() })).json();
+    const stLabel = { prescrit:'Prescrit', livraison_prevue:'Livraison prévue', livraison_effectuee:'Livré', examen_en_cours:'Examen en cours', en_cours_d_analyse:'En analyse', examen_termine:'Terminé', resultat_disponible:'Résultat dispo', consultation_annonce:'Consulté' };
+    document.getElementById('patientsBody').innerHTML = patients.length
+      ? patients.map(p => `
+        <tr>
+          <td><strong>${p.prenom} ${p.nom}</strong></td>
+          <td style="font-size:.85rem">${p.telephone}</td>
+          <td style="font-size:.85rem">${p.medecin_prenom ? 'Dr. ' + p.medecin_prenom + ' ' + p.medecin_nom : '—'}</td>
+          <td style="font-size:.85rem;font-family:monospace">${p.boitier_numero || '—'}</td>
+          <td><span style="font-size:.8rem;color:var(--text-light)">${stLabel[p.statut] || p.statut}</span></td>
+          <td><button class="btn btn-danger btn-sm" onclick="deletePatient(${p.id}, ${JSON.stringify(p.prenom + ' ' + p.nom)})">🗑 Supprimer</button></td>
+        </tr>`).join('')
+      : '<tr><td colspan="6" style="text-align:center;color:var(--text-light);padding:20px">Aucun patient</td></tr>';
+  } catch (e) { showToast('Erreur chargement patients', 'error'); }
+}
+
+async function deletePatient(id, nom) {
+  if (!confirm(`Supprimer définitivement le patient « ${nom} » ?\n\nAction irréversible : ses données liées sont effacées et son boîtier libéré.`)) return;
+  try {
+    const res = await fetch(`${API}/api/admin/patients/${id}`, { method: 'DELETE', headers: authHeaders() });
+    const data = await res.json();
+    if (res.ok) { showToast('Patient supprimé', 'success'); loadPatients(); }
+    else showToast(data.error || 'Échec', 'error');
+  } catch (e) { showToast('Erreur réseau', 'error'); }
+}
+
+async function desassignerBoitier(id, numero) {
+  if (!confirm(`Désassigner le boîtier ${numero} ?\n\nIl redeviendra disponible et le patient repassera en « prescrit ».`)) return;
+  try {
+    const res = await fetch(`${API}/api/admin/boitiers/${id}/desassigner`, { method: 'POST', headers: authHeaders() });
+    const data = await res.json();
+    if (res.ok) { showToast('Boîtier désassigné', 'success'); loadBoitiers(); }
+    else showToast(data.error || 'Échec', 'error');
+  } catch (e) { showToast('Erreur réseau', 'error'); }
 }
 
 // ── Demandes (cockpit) ───────────────────────────────────

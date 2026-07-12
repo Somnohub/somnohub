@@ -556,4 +556,50 @@ router.put('/demandes/:id/statut', auth(['admin']), (req, res) => {
   res.json({ success: true });
 });
 
+// ─── Suppression patient / désassignation boîtier ───────────────────────────
+
+// Désassigner un boîtier de son patient (le boîtier redevient disponible)
+router.post('/boitiers/:id/desassigner', auth(['admin']), (req, res) => {
+  const db = getDb();
+  const boitier = db.prepare('SELECT * FROM boitiers WHERE id = ?').get(req.params.id);
+  if (!boitier) return res.status(404).json({ error: 'Boîtier introuvable' });
+  if (!boitier.patient_id) return res.status(400).json({ error: 'Ce boîtier n\'est pas assigné' });
+
+  const patientId = boitier.patient_id;
+  const tx = db.transaction(() => {
+    db.prepare(`UPDATE boitiers SET statut = 'disponible', patient_id = NULL, derniere_action = CURRENT_TIMESTAMP WHERE id = ?`).run(boitier.id);
+    db.prepare(`DELETE FROM tournee_stops WHERE boitier_id = ? AND statut = 'en_attente'`).run(boitier.id);
+    const p = db.prepare('SELECT id FROM patients WHERE id = ?').get(patientId);
+    if (p) {
+      db.prepare(`UPDATE patients SET statut = 'prescrit', updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(patientId);
+      db.prepare(`INSERT INTO historique_patient (patient_id, statut, note, created_by) VALUES (?, 'prescrit', ?, ?)`).run(patientId, `Boîtier ${boitier.numero} désassigné par l'admin`, req.user.id);
+    }
+  });
+  tx();
+  res.json({ success: true });
+});
+
+// Supprimer définitivement un patient (avec nettoyage des données liées)
+router.delete('/patients/:id', auth(['admin']), (req, res) => {
+  const db = getDb();
+  const patient = db.prepare('SELECT * FROM patients WHERE id = ?').get(req.params.id);
+  if (!patient) return res.status(404).json({ error: 'Patient introuvable' });
+
+  const tx = db.transaction(() => {
+    // Libérer les boîtiers assignés à ce patient
+    db.prepare(`UPDATE boitiers SET statut = 'disponible', patient_id = NULL, derniere_action = CURRENT_TIMESTAMP WHERE patient_id = ?`).run(patient.id);
+    // Supprimer les enregistrements dépendants (FK)
+    db.prepare('DELETE FROM tournee_stops WHERE patient_id = ?').run(patient.id);
+    db.prepare('DELETE FROM historique_patient WHERE patient_id = ?').run(patient.id);
+    db.prepare('DELETE FROM sms_log WHERE patient_id = ?').run(patient.id);
+    db.prepare('DELETE FROM revenus WHERE patient_id = ?').run(patient.id);
+    db.prepare('DELETE FROM alertes WHERE patient_id = ?').run(patient.id);
+    // Délier les demandes (on conserve la demande, sans lien patient)
+    db.prepare('UPDATE demandes SET patient_id = NULL WHERE patient_id = ?').run(patient.id);
+    db.prepare('DELETE FROM patients WHERE id = ?').run(patient.id);
+  });
+  tx();
+  res.json({ success: true });
+});
+
 module.exports = router;
