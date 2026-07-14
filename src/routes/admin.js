@@ -8,6 +8,7 @@ const auth = require('../middleware/auth');
 const { genererAlertes } = require('../services/scheduler');
 const { backupNow, dernieresSauvegardes } = require('../services/backup');
 const { creerPatientAvecBoitier } = require('./medecin');
+const { envoyerSMSTest, twilioConfigure } = require('../services/sms');
 
 // ─── Boîtiers ───────────────────────────────────────────────────────────────
 
@@ -600,6 +601,24 @@ router.delete('/patients/:id', auth(['admin']), (req, res) => {
   });
   tx();
   res.json({ success: true });
+});
+
+// ─── SMS Twilio (statut + test) ──────────────────────────────────────────────
+
+router.get('/sms-status', auth(['admin']), (req, res) => {
+  res.json({ configure: twilioConfigure() });
+});
+
+router.post('/test-sms', auth(['admin']), async (req, res) => {
+  const { telephone } = req.body;
+  if (!telephone) return res.status(400).json({ error: 'Numéro de téléphone requis' });
+  try {
+    const sid = await envoyerSMSTest(telephone, 'Test SomnoHub : votre configuration SMS (Twilio) fonctionne. ✅');
+    res.json({ success: true, sid });
+  } catch (e) {
+    console.error('[Test SMS] Erreur:', e.message);
+    res.status(500).json({ error: e.message });
+  }
 });
 
 module.exports = router;
