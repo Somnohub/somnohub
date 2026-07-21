@@ -257,7 +257,8 @@ function majResteACharge() {
     html = `Pas d'inquiétude — nous vérifierons votre prise en charge avant l'examen.`;
   }
   if (html) {
-    html += `<br><span style="color:var(--text-light);font-size:.78rem">Estimation indicative. Acte exonéré (100 %) en cas d'ALD, maternité ou accident du travail.</span>`;
+    html += `<br><span style="color:var(--text-light);font-size:.78rem">Estimation indicative. Acte exonéré (100 %) en cas d'ALD, maternité ou accident du travail.`
+      + `<br><strong>Hors Île-de-France :</strong> 7 € de frais d'envoi s'ajoutent, et le retour du boîtier par voie postale est à votre charge. En Île-de-France, livraison et récupération à domicile sans frais.</span>`;
     box.innerHTML = html;
     box.classList.remove('d-none');
   } else {
