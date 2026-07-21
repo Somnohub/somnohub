@@ -1,7 +1,6 @@
 const cron = require('node-cron');
 const { getDb } = require('../db');
 const { smsSuivi3Mois, smsSuivi6Mois, smsSuivi1An, smsRappelRecuperation } = require('./sms');
-const { backupNow } = require('./backup');
 
 function startScheduler() {
   // Vérification SMS de suivi — chaque jour à 8h00
@@ -12,7 +11,7 @@ function startScheduler() {
     const maintenant = new Date();
     const dans15Jours = new Date(maintenant.getTime() + 15 * 86400000);
 
-    const patients = db.prepare(`
+    const patients = await db.prepare(`
       SELECT p.*, u.nom as medecin_nom, u.prenom as medecin_prenom
       FROM patients p
       JOIN users u ON p.medecin_id = u.id
@@ -27,21 +26,21 @@ function startScheduler() {
       const date3Mois = new Date(dateResultat.getTime() + 90 * 86400000);
       if (!patient.suivi_3mois_envoye && date3Mois <= dans15Jours) {
         await smsSuivi3Mois(patient, medecin);
-        db.prepare('UPDATE patients SET suivi_3mois_envoye = 1 WHERE id = ?').run(patient.id);
+        await db.prepare('UPDATE patients SET suivi_3mois_envoye = 1 WHERE id = ?').run(patient.id);
       }
 
       // 6 mois = 180 jours
       const date6Mois = new Date(dateResultat.getTime() + 180 * 86400000);
       if (!patient.suivi_6mois_envoye && date6Mois <= dans15Jours) {
         await smsSuivi6Mois(patient, medecin);
-        db.prepare('UPDATE patients SET suivi_6mois_envoye = 1 WHERE id = ?').run(patient.id);
+        await db.prepare('UPDATE patients SET suivi_6mois_envoye = 1 WHERE id = ?').run(patient.id);
       }
 
       // 1 an = 365 jours
       const date1An = new Date(dateResultat.getTime() + 365 * 86400000);
       if (!patient.suivi_1an_envoye && date1An <= dans15Jours) {
         await smsSuivi1An(patient, medecin);
-        db.prepare('UPDATE patients SET suivi_1an_envoye = 1 WHERE id = ?').run(patient.id);
+        await db.prepare('UPDATE patients SET suivi_1an_envoye = 1 WHERE id = ?').run(patient.id);
       }
     }
   });
@@ -52,7 +51,7 @@ function startScheduler() {
     const db = getDb();
     const today = new Date().toISOString().split('T')[0];
 
-    const stops = db.prepare(`
+    const stops = await db.prepare(`
       SELECT ts.*, p.prenom, p.telephone, p.id as patient_id
       FROM tournee_stops ts
       JOIN patients p ON ts.patient_id = p.id
@@ -65,45 +64,33 @@ function startScheduler() {
   });
 
   // Vérification alertes — toutes les 6 heures
-  cron.schedule('0 */6 * * *', () => {
-    genererAlertes();
+  cron.schedule('0 */6 * * *', async () => {
+    try { await genererAlertes(); } catch (e) { console.error('[Alertes] Erreur :', e.message); }
   });
 
-  // Sauvegarde automatique de la base — chaque jour à 3h00
-  cron.schedule('0 3 * * *', async () => {
-    try {
-      const r = await backupNow();
-      console.log(`[Backup] Sauvegarde quotidienne : ${r.fichier} (${r.taille} o)`);
-    } catch (e) {
-      console.error('[Backup] Échec sauvegarde quotidienne :', e.message);
-    }
-  });
-
-  // Une sauvegarde au démarrage, pour toujours disposer d'un point de reprise récent
-  backupNow()
-    .then(r => console.log(`[Backup] Sauvegarde de démarrage : ${r.fichier} (${r.taille} o)`))
-    .catch(e => console.error('[Backup] Échec sauvegarde de démarrage :', e.message));
+  // NOTE : les sauvegardes de la base sont gérées par l'hébergeur (PostgreSQL
+  // managé Scalingo) — plus de sauvegarde applicative.
 
   console.log('[Scheduler] Tâches planifiées démarrées');
 }
 
-function genererAlertes() {
+async function genererAlertes() {
   const db = getDb();
 
   // Boîtier chez patient depuis +24h (relance récupération)
-  const boitiersImmobiles = db.prepare(`
+  const boitiersImmobiles = await db.prepare(`
     SELECT b.*, p.nom, p.prenom FROM boitiers b
     LEFT JOIN patients p ON b.patient_id = p.id
     WHERE b.statut = 'chez_patient'
-    AND datetime(b.derniere_action) < datetime('now', '-24 hours')
+    AND b.derniere_action < NOW() - INTERVAL '24 hours'
   `).all();
 
   for (const b of boitiersImmobiles) {
-    const existante = db.prepare(`
+    const existante = await db.prepare(`
       SELECT id FROM alertes WHERE boitier_id = ? AND type = 'boitier_immobile' AND lu = 0
     `).get(b.id);
     if (!existante) {
-      db.prepare(`INSERT INTO alertes (type, message, boitier_id, patient_id) VALUES (?, ?, ?, ?)`).run(
+      await db.prepare(`INSERT INTO alertes (type, message, boitier_id, patient_id) VALUES (?, ?, ?, ?)`).run(
         'boitier_immobile',
         `Boîtier ${b.numero} chez le patient ${b.prenom || ''} ${b.nom || ''} depuis +24h — à récupérer`,
         b.id, b.patient_id
@@ -112,17 +99,17 @@ function genererAlertes() {
   }
 
   // Maintenance +24h
-  const boitiersMaint = db.prepare(`
+  const boitiersMaint = await db.prepare(`
     SELECT * FROM boitiers WHERE statut = 'maintenance'
-    AND datetime(derniere_action) < datetime('now', '-24 hours')
+    AND derniere_action < NOW() - INTERVAL '24 hours'
   `).all();
 
   for (const b of boitiersMaint) {
-    const existante = db.prepare(`
+    const existante = await db.prepare(`
       SELECT id FROM alertes WHERE boitier_id = ? AND type = 'maintenance_longue' AND lu = 0
     `).get(b.id);
     if (!existante) {
-      db.prepare(`INSERT INTO alertes (type, message, boitier_id) VALUES (?, ?, ?)`).run(
+      await db.prepare(`INSERT INTO alertes (type, message, boitier_id) VALUES (?, ?, ?)`).run(
         'maintenance_longue',
         `Boîtier ${b.numero} en maintenance depuis +24h`,
         b.id
@@ -131,11 +118,11 @@ function genererAlertes() {
   }
 
   // Stock critique — moins de 3 disponibles
-  const nbDispo = db.prepare(`SELECT COUNT(*) as nb FROM boitiers WHERE statut = 'disponible'`).get().nb;
+  const nbDispo = (await db.prepare(`SELECT COUNT(*) as nb FROM boitiers WHERE statut = 'disponible'`).get()).nb;
   if (nbDispo < 3) {
-    const existante = db.prepare(`SELECT id FROM alertes WHERE type = 'stock_critique' AND lu = 0`).get();
+    const existante = await db.prepare(`SELECT id FROM alertes WHERE type = 'stock_critique' AND lu = 0`).get();
     if (!existante) {
-      db.prepare(`INSERT INTO alertes (type, message) VALUES (?, ?)`).run(
+      await db.prepare(`INSERT INTO alertes (type, message) VALUES (?, ?)`).run(
         'stock_critique',
         `Stock critique : seulement ${nbDispo} boîtier(s) disponible(s) au local`
       );

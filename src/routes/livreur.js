@@ -5,16 +5,17 @@ const auth = require('../middleware/auth');
 const { smsDepartTournee } = require('../services/sms');
 
 // Jours ayant des stops sur les 21 prochains jours + 7 passés
-router.get('/jours-tournees', auth(['livreur', 'admin']), (req, res) => {
+router.get('/jours-tournees', auth(['livreur', 'admin']), async (req, res) => {
   const db = getDb();
-  const jours = db.prepare(`
+  // La colonne `date` est stockée en TEXT 'YYYY-MM-DD' → comparaison textuelle
+  const jours = await db.prepare(`
     SELECT date, type,
       COUNT(*) as nb_stops,
       SUM(CASE WHEN statut = 'complete' THEN 1 ELSE 0 END) as nb_complete,
       SUM(CASE WHEN statut = 'en_attente' THEN 1 ELSE 0 END) as nb_attente
     FROM tournee_stops
-    WHERE date >= date('now', '-7 days')
-      AND date <= date('now', '+21 days')
+    WHERE date >= to_char(CURRENT_DATE - INTERVAL '7 days', 'YYYY-MM-DD')
+      AND date <= to_char(CURRENT_DATE + INTERVAL '21 days', 'YYYY-MM-DD')
     GROUP BY date, type
     ORDER BY date ASC, type ASC
   `).all();
@@ -32,9 +33,9 @@ router.get('/jours-tournees', auth(['livreur', 'admin']), (req, res) => {
 });
 
 // Prescriptions en attente d'assignation (pour seuil tournée)
-router.get('/prescriptions-en-attente', auth(['livreur', 'admin']), (req, res) => {
+router.get('/prescriptions-en-attente', auth(['livreur', 'admin']), async (req, res) => {
   const db = getDb();
-  const count = db.prepare(`SELECT COUNT(*) as nb FROM patients WHERE statut = 'prescrit'`).get();
+  const count = await db.prepare(`SELECT COUNT(*) as nb FROM patients WHERE statut = 'prescrit'`).get();
   const seuil = 20;
   res.json({ nb: count.nb, seuil, seuil_atteint: count.nb >= seuil });
 });
@@ -78,7 +79,7 @@ function optimiserRoute(stops) {
 }
 
 // Tournées du jour — inclut les stops en attente des jours précédents + ordre optimisé
-router.get('/tournees', auth(['livreur', 'admin']), (req, res) => {
+router.get('/tournees', auth(['livreur', 'admin']), async (req, res) => {
   const db = getDb();
   const date = req.query.date || new Date().toISOString().split('T')[0];
   const today = new Date().toISOString().split('T')[0];
@@ -98,7 +99,7 @@ router.get('/tournees', auth(['livreur', 'admin']), (req, res) => {
   `;
 
   // Pour aujourd'hui/passé : arrêts en attente (report inclus) + arrêts complétés du jour
-  const stops = isPastOrToday ? db.prepare(query).all(date, date) : db.prepare(query).all(date);
+  const stops = isPastOrToday ? await db.prepare(query).all(date, date) : await db.prepare(query).all(date);
   // Optimiser uniquement les stops en attente, garder les complétés à la fin
   const enAttente = stops.filter(s => s.statut !== 'complete');
   const completes = stops.filter(s => s.statut === 'complete');
@@ -106,7 +107,7 @@ router.get('/tournees', auth(['livreur', 'admin']), (req, res) => {
 });
 
 // Scanner un QR code (action livreur)
-router.post('/scan', auth(['livreur']), (req, res) => {
+router.post('/scan', auth(['livreur']), async (req, res) => {
  try {
   const { boitier_numero, stop_id } = req.body;
 
@@ -115,7 +116,7 @@ router.post('/scan', auth(['livreur']), (req, res) => {
   }
 
   const db = getDb();
-  const boitier = db.prepare('SELECT * FROM boitiers WHERE numero = ?').get(boitier_numero);
+  const boitier = await db.prepare('SELECT * FROM boitiers WHERE numero = ?').get(boitier_numero);
 
   if (!boitier) {
     return res.status(404).json({ error: `Boîtier ${boitier_numero} introuvable` });
@@ -123,7 +124,7 @@ router.post('/scan', auth(['livreur']), (req, res) => {
 
   let stop = null;
   if (stop_id) {
-    stop = db.prepare('SELECT * FROM tournee_stops WHERE id = ?').get(stop_id);
+    stop = await db.prepare('SELECT * FROM tournee_stops WHERE id = ?').get(stop_id);
   }
 
   const action = stop ? stop.action : null;
@@ -138,18 +139,18 @@ router.post('/scan', auth(['livreur']), (req, res) => {
     nouveauStatutPatient = 'examen_en_cours';
     message = `✅ Boîtier ${boitier_numero} livré chez le patient`;
 
-    db.prepare(`UPDATE boitiers SET statut = 'chez_patient', derniere_action = CURRENT_TIMESTAMP WHERE id = ?`).run(boitier.id);
+    await db.prepare(`UPDATE boitiers SET statut = 'chez_patient', derniere_action = CURRENT_TIMESTAMP WHERE id = ?`).run(boitier.id);
 
     if (boitier.patient_id) {
-      db.prepare(`UPDATE patients SET statut = 'examen_en_cours', updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(boitier.patient_id);
-      db.prepare(`INSERT INTO historique_patient (patient_id, statut, note, created_by) VALUES (?, 'livraison_effectuee', 'Boîtier déposé chez le patient', ?)`).run(boitier.patient_id, req.user.id);
-      db.prepare(`INSERT INTO historique_patient (patient_id, statut, note, created_by) VALUES (?, 'examen_en_cours', 'Examen démarré', ?)`).run(boitier.patient_id, req.user.id);
+      await db.prepare(`UPDATE patients SET statut = 'examen_en_cours', updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(boitier.patient_id);
+      await db.prepare(`INSERT INTO historique_patient (patient_id, statut, note, created_by) VALUES (?, 'livraison_effectuee', 'Boîtier déposé chez le patient', ?)`).run(boitier.patient_id, req.user.id);
+      await db.prepare(`INSERT INTO historique_patient (patient_id, statut, note, created_by) VALUES (?, 'examen_en_cours', 'Examen démarré', ?)`).run(boitier.patient_id, req.user.id);
 
       // Créer un stop de récupération pour le soir J+1
       const demain = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-      const existeStop = db.prepare(`SELECT id FROM tournee_stops WHERE date = ? AND type = 'soir' AND boitier_id = ?`).get(demain, boitier.id);
+      const existeStop = await db.prepare(`SELECT id FROM tournee_stops WHERE date = ? AND type = 'soir' AND boitier_id = ?`).get(demain, boitier.id);
       if (!existeStop) {
-        db.prepare(`INSERT INTO tournee_stops (date, type, patient_id, boitier_id, action, ordre) VALUES (?, 'soir', ?, ?, 'recuperer', 99)`).run(demain, boitier.patient_id, boitier.id);
+        await db.prepare(`INSERT INTO tournee_stops (date, type, patient_id, boitier_id, action, ordre) VALUES (?, 'soir', ?, ?, 'recuperer', 99)`).run(demain, boitier.patient_id, boitier.id);
       }
     }
 
@@ -159,18 +160,18 @@ router.post('/scan', auth(['livreur']), (req, res) => {
     nouveauStatutPatient = 'en_cours_d_analyse';
     message = `✅ Boîtier ${boitier_numero} récupéré — En cours d'analyse`;
 
-    db.prepare(`UPDATE boitiers SET statut = 'en_analyse', derniere_action = CURRENT_TIMESTAMP WHERE id = ?`).run(boitier.id);
+    await db.prepare(`UPDATE boitiers SET statut = 'en_analyse', derniere_action = CURRENT_TIMESTAMP WHERE id = ?`).run(boitier.id);
 
     if (boitier.patient_id) {
-      db.prepare(`UPDATE patients SET statut = 'en_cours_d_analyse', updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(boitier.patient_id);
-      db.prepare(`INSERT INTO historique_patient (patient_id, statut, note, created_by) VALUES (?, 'en_cours_d_analyse', ?, ?)`).run(boitier.patient_id, 'Boîtier récupéré — données en cours d\'analyse', req.user.id);
+      await db.prepare(`UPDATE patients SET statut = 'en_cours_d_analyse', updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(boitier.patient_id);
+      await db.prepare(`INSERT INTO historique_patient (patient_id, statut, note, created_by) VALUES (?, 'en_cours_d_analyse', ?, ?)`).run(boitier.patient_id, 'Boîtier récupéré — données en cours d\'analyse', req.user.id);
     }
 
   } else if (boitier.statut === 'disponible') {
     // Scan au départ du local
     nouveauStatutBoitier = 'assigne';
     message = `✅ Boîtier ${boitier_numero} scanné au départ — Assigné`;
-    db.prepare(`UPDATE boitiers SET statut = 'assigne', derniere_action = CURRENT_TIMESTAMP WHERE id = ?`).run(boitier.id);
+    await db.prepare(`UPDATE boitiers SET statut = 'assigne', derniere_action = CURRENT_TIMESTAMP WHERE id = ?`).run(boitier.id);
 
   } else {
     return res.status(400).json({
@@ -181,7 +182,7 @@ router.post('/scan', auth(['livreur']), (req, res) => {
 
   // Marquer le stop comme complété
   if (stop) {
-    db.prepare(`UPDATE tournee_stops SET statut = 'complete', completed_at = CURRENT_TIMESTAMP WHERE id = ?`).run(stop.id);
+    await db.prepare(`UPDATE tournee_stops SET statut = 'complete', completed_at = CURRENT_TIMESTAMP WHERE id = ?`).run(stop.id);
   }
 
   res.json({
@@ -202,7 +203,7 @@ router.post('/demarrer-tournee', auth(['livreur']), async (req, res) => {
   const db = getDb();
   const today = new Date().toISOString().split('T')[0];
 
-  const stops = db.prepare(`
+  const stops = await db.prepare(`
     SELECT ts.*, p.nom as patient_nom, p.prenom as patient_prenom, p.telephone as patient_telephone, p.id as patient_id
     FROM tournee_stops ts
     JOIN patients p ON ts.patient_id = p.id
@@ -227,22 +228,22 @@ router.post('/demarrer-tournee', auth(['livreur']), async (req, res) => {
 });
 
 // Signaler un problème sur un stop
-router.put('/stops/:id/echec', auth(['livreur']), (req, res) => {
+router.put('/stops/:id/echec', auth(['livreur']), async (req, res) => {
   const db = getDb();
-  db.prepare(`UPDATE tournee_stops SET statut = 'echec' WHERE id = ?`).run(req.params.id);
+  await db.prepare(`UPDATE tournee_stops SET statut = 'echec' WHERE id = ?`).run(req.params.id);
   res.json({ success: true });
 });
 
 // Journaliser les métriques d'une tournée optimisée (km, durée, nb arrêts).
 // Appelé par l'app livreur après le calcul d'itinéraire. Une ligne par
 // livreur et par jour (on remplace si recalcul).
-router.post('/tournee-log', auth(['livreur']), (req, res) => {
+router.post('/tournee-log', auth(['livreur']), async (req, res) => {
   try {
     const { date, nb_arrets, distance_km, duree_min } = req.body;
     const db = getDb();
     const jour = date || new Date().toISOString().split('T')[0];
-    db.prepare('DELETE FROM tournees_log WHERE date = ? AND livreur_id = ?').run(jour, req.user.id);
-    db.prepare(`INSERT INTO tournees_log (date, nb_arrets, distance_km, duree_min, livreur_id) VALUES (?, ?, ?, ?, ?)`)
+    await db.prepare('DELETE FROM tournees_log WHERE date = ? AND livreur_id = ?').run(jour, req.user.id);
+    await db.prepare(`INSERT INTO tournees_log (date, nb_arrets, distance_km, duree_min, livreur_id) VALUES (?, ?, ?, ?, ?)`)
       .run(jour, nb_arrets || 0, distance_km != null ? distance_km : null, duree_min != null ? duree_min : null, req.user.id);
     res.json({ success: true });
   } catch (e) {

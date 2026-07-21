@@ -53,14 +53,14 @@ async function envoyerSMS(patientId, type, message, telephone) {
         from: process.env.TWILIO_PHONE_NUMBER,
         to: toE164(telephone),
       });
-      db.prepare(`INSERT INTO sms_log (patient_id, type, message, statut) VALUES (?, ?, ?, 'envoye')`).run(patientId, type, message);
+      await db.prepare(`INSERT INTO sms_log (patient_id, type, message, statut) VALUES (?, ?, ?, 'envoye')`).run(patientId, type, message);
       console.log(`[SMS] Envoyé à ${telephone}: ${message.substring(0, 50)}...`);
     } catch (err) {
       console.error('[SMS] Erreur Twilio:', err.message);
-      db.prepare(`INSERT INTO sms_log (patient_id, type, message, statut) VALUES (?, ?, ?, 'erreur')`).run(patientId, type, message);
+      await db.prepare(`INSERT INTO sms_log (patient_id, type, message, statut) VALUES (?, ?, ?, 'erreur')`).run(patientId, type, message);
     }
   } else {
-    db.prepare(`INSERT INTO sms_log (patient_id, type, message, statut) VALUES (?, ?, ?, 'simule')`).run(patientId, type, message);
+    await db.prepare(`INSERT INTO sms_log (patient_id, type, message, statut) VALUES (?, ?, ?, 'simule')`).run(patientId, type, message);
     console.log(`[SMS SIMULÉ → ${telephone}] ${message}`);
   }
 }

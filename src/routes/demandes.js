@@ -4,7 +4,7 @@ const { getDb } = require('../db');
 
 // Réception d'une demande de polygraphie — PUBLIC, sans authentification.
 // Deux parcours : 'medecin' (avec RPPS + indication) ou 'patient' (grand public).
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const {
       source, patient_nom, patient_prenom, date_naissance,
@@ -35,7 +35,7 @@ router.post('/', (req, res) => {
     const couvertures = ['secu_seule', 'secu_mutuelle', 'css', 'ame', 'inconnu'];
     const couv = couvertures.includes(couverture) ? couverture : null;
 
-    const result = db.prepare(`
+    const result = await db.prepare(`
       INSERT INTO demandes (
         source, patient_nom, patient_prenom, date_naissance, telephone, adresse,
         medecin_nom, medecin_rpps, indication, couverture, mutuelle_nom, lat, lng, ordonnance_mode, consentement, statut

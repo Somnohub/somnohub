@@ -1,154 +1,231 @@
-const Database = require('better-sqlite3');
+const { Pool, types } = require('pg');
 const bcrypt = require('bcryptjs');
-const path = require('path');
-const fs = require('fs');
 
-const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'somnohub.db');
+// pg renvoie bigint (COUNT) et numeric (SUM) sous forme de chaînes, pour ne pas
+// perdre de précision. SQLite renvoyait des nombres : on restaure ce comportement
+// afin de ne casser ni les calculs (taux, moyennes) ni l'affichage côté client.
+types.setTypeParser(20, v => (v === null ? null : parseInt(v, 10)));   // int8 / COUNT
+types.setTypeParser(1700, v => (v === null ? null : parseFloat(v)));   // numeric / SUM
 
-// Créer le dossier parent si nécessaire (volume persistant Railway)
-const dbDir = path.dirname(DB_PATH);
-if (!fs.existsSync(dbDir)) {
-  fs.mkdirSync(dbDir, { recursive: true });
-}
+// Scalingo expose SCALINGO_POSTGRESQL_URL ; en local on utilise DATABASE_URL.
+const CONNECTION_STRING =
+  process.env.DATABASE_URL ||
+  process.env.SCALINGO_POSTGRESQL_URL ||
+  'postgres://localhost:5432/somnohub';
 
-let db;
+const estLocal = /localhost|127\.0\.0\.1/.test(CONNECTION_STRING);
 
-function getDb() {
-  if (!db) {
-    db = new Database(DB_PATH);
-    // journal_mode = DELETE + synchronous = FULL :
-    // chaque commit est fsync directement dans le fichier sur le volume.
-    // Évite la perte de données quand Railway tue le container (le WAL n'était
-    // pas checkpointé à temps → transactions perdues au redémarrage).
-    db.pragma('journal_mode = DELETE');
-    db.pragma('synchronous = FULL');
-    db.pragma('foreign_keys = ON');
+let pool = null;
+
+function getPool() {
+  if (!pool) {
+    pool = new Pool({
+      connectionString: CONNECTION_STRING,
+      // Les bases managées (Scalingo) exigent TLS ; en local on s'en passe.
+      ssl: estLocal ? false : { rejectUnauthorized: false },
+      max: 10,
+      idleTimeoutMillis: 30000,
+    });
+    pool.on('error', (e) => console.error('[DB] Erreur du pool PostgreSQL :', e.message));
   }
-  return db;
+  return pool;
 }
 
-function closeDb() {
-  if (db) {
-    try { db.close(); } catch (e) {}
-    db = null;
+// ─── Couche de compatibilité ────────────────────────────────────────────────
+// Conserve l'API historique `db.prepare(sql).get/all/run(...)` héritée de
+// better-sqlite3, mais en asynchrone. Chaque appelant doit donc faire `await`.
+
+// Convertit les placeholders `?` (SQLite) en `$1, $2…` (PostgreSQL).
+function toPg(sql) {
+  let i = 0;
+  return sql.replace(/\?/g, () => '$' + (++i));
+}
+
+// `run()` doit renvoyer l'id inséré (ex-lastInsertRowid) → on ajoute RETURNING id
+// aux INSERT qui n'en ont pas déjà un.
+function avecReturningId(sql) {
+  const s = sql.trim();
+  if (/^insert/i.test(s) && !/returning/i.test(s)) {
+    return s.replace(/;?\s*$/, '') + ' RETURNING id';
+  }
+  return s;
+}
+
+function prepare(sql) {
+  const text = toPg(sql);
+  const textRun = avecReturningId(text);
+  return {
+    async get(...params) {
+      const r = await getPool().query(text, params);
+      return r.rows[0];
+    },
+    async all(...params) {
+      const r = await getPool().query(text, params);
+      return r.rows;
+    },
+    async run(...params) {
+      const r = await getPool().query(textRun, params);
+      return {
+        lastInsertRowid: r.rows && r.rows[0] ? r.rows[0].id : undefined,
+        changes: r.rowCount,
+      };
+    },
+  };
+}
+
+// Exécution directe (DDL, scripts)
+async function exec(sql) {
+  await getPool().query(sql);
+}
+
+// Transaction : remplace `db.transaction(fn)` de better-sqlite3.
+// Le callback reçoit un objet exposant la même API prepare/get/all/run,
+// mais lié à un client unique (indispensable pour BEGIN/COMMIT).
+async function withTransaction(fn) {
+  const client = await getPool().connect();
+  const tx = {
+    prepare(sql) {
+      const text = toPg(sql);
+      const textRun = avecReturningId(text);
+      return {
+        async get(...p) { return (await client.query(text, p)).rows[0]; },
+        async all(...p) { return (await client.query(text, p)).rows; },
+        async run(...p) {
+          const r = await client.query(textRun, p);
+          return { lastInsertRowid: r.rows && r.rows[0] ? r.rows[0].id : undefined, changes: r.rowCount };
+        },
+      };
+    },
+  };
+  try {
+    await client.query('BEGIN');
+    const res = await fn(tx);
+    await client.query('COMMIT');
+    return res;
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
   }
 }
 
-function initDb() {
-  const db = getDb();
+// Objet `db` compatible avec le code existant
+const db = { prepare, exec, withTransaction };
+function getDb() { return db; }
 
-  db.exec(`
+async function closeDb() {
+  if (pool) {
+    try { await pool.end(); } catch (e) {}
+    pool = null;
+  }
+}
+
+// ─── Schéma ─────────────────────────────────────────────────────────────────
+
+async function initDb() {
+  await exec(`
     CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       nom TEXT NOT NULL,
       prenom TEXT NOT NULL,
       email TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
       role TEXT NOT NULL CHECK(role IN ('admin', 'medecin', 'livreur', 'assistante')),
       actif INTEGER DEFAULT 1,
-      derniere_connexion DATETIME,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      derniere_connexion TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT NOW()
     );
 
     CREATE TABLE IF NOT EXISTS patients (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      medecin_id INTEGER NOT NULL,
+      id SERIAL PRIMARY KEY,
+      medecin_id INTEGER NOT NULL REFERENCES users(id),
       nom TEXT NOT NULL,
       prenom TEXT NOT NULL,
       telephone TEXT NOT NULL,
       adresse TEXT NOT NULL,
-      lat REAL DEFAULT 48.8566,
-      lng REAL DEFAULT 2.3522,
+      lat DOUBLE PRECISION DEFAULT 48.8566,
+      lng DOUBLE PRECISION DEFAULT 2.3522,
       score_stop_bang INTEGER DEFAULT 0,
       statut TEXT DEFAULT 'prescrit' CHECK(statut IN (
         'prescrit','livraison_prevue','livraison_effectuee',
         'examen_en_cours','en_cours_d_analyse','examen_termine','resultat_disponible','consultation_annonce'
       )),
-      date_resultat DATETIME,
+      date_resultat TIMESTAMPTZ,
       suivi_3mois_envoye INTEGER DEFAULT 0,
       suivi_6mois_envoye INTEGER DEFAULT 0,
       suivi_1an_envoye INTEGER DEFAULT 0,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (medecin_id) REFERENCES users(id)
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
     );
 
     CREATE TABLE IF NOT EXISTS boitiers (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       numero TEXT UNIQUE NOT NULL,
       statut TEXT DEFAULT 'disponible' CHECK(statut IN (
         'disponible','assigne','chez_patient','en_analyse','maintenance','reserve','hors_service'
       )),
       tracker_gps TEXT,
-      lat REAL DEFAULT 48.8566,
-      lng REAL DEFAULT 2.3522,
-      patient_id INTEGER,
-      derniere_action DATETIME DEFAULT CURRENT_TIMESTAMP,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (patient_id) REFERENCES patients(id)
+      lat DOUBLE PRECISION DEFAULT 48.8566,
+      lng DOUBLE PRECISION DEFAULT 2.3522,
+      patient_id INTEGER REFERENCES patients(id),
+      derniere_action TIMESTAMPTZ DEFAULT NOW(),
+      created_at TIMESTAMPTZ DEFAULT NOW()
     );
 
     CREATE TABLE IF NOT EXISTS historique_patient (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      patient_id INTEGER NOT NULL,
+      id SERIAL PRIMARY KEY,
+      patient_id INTEGER NOT NULL REFERENCES patients(id),
       statut TEXT NOT NULL,
       note TEXT,
-      created_by INTEGER,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (patient_id) REFERENCES patients(id),
-      FOREIGN KEY (created_by) REFERENCES users(id)
+      created_by INTEGER REFERENCES users(id),
+      created_at TIMESTAMPTZ DEFAULT NOW()
     );
 
     CREATE TABLE IF NOT EXISTS tournee_stops (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       date TEXT NOT NULL,
       type TEXT NOT NULL CHECK(type IN ('matin','soir')),
-      patient_id INTEGER NOT NULL,
-      boitier_id INTEGER,
+      patient_id INTEGER NOT NULL REFERENCES patients(id),
+      boitier_id INTEGER REFERENCES boitiers(id),
       action TEXT NOT NULL CHECK(action IN ('livrer','recuperer')),
       ordre INTEGER DEFAULT 0,
       statut TEXT DEFAULT 'en_attente' CHECK(statut IN ('en_attente','complete','echec')),
-      completed_at DATETIME,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (patient_id) REFERENCES patients(id),
-      FOREIGN KEY (boitier_id) REFERENCES boitiers(id)
+      completed_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT NOW()
     );
 
     CREATE TABLE IF NOT EXISTS sms_log (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      patient_id INTEGER NOT NULL,
+      id SERIAL PRIMARY KEY,
+      patient_id INTEGER NOT NULL REFERENCES patients(id),
       type TEXT NOT NULL,
       message TEXT NOT NULL,
       statut TEXT DEFAULT 'envoye',
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (patient_id) REFERENCES patients(id)
+      created_at TIMESTAMPTZ DEFAULT NOW()
     );
 
     CREATE TABLE IF NOT EXISTS alertes (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       type TEXT NOT NULL,
       message TEXT NOT NULL,
-      boitier_id INTEGER,
-      patient_id INTEGER,
+      boitier_id INTEGER REFERENCES boitiers(id),
+      patient_id INTEGER REFERENCES patients(id),
       lu INTEGER DEFAULT 0,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (boitier_id) REFERENCES boitiers(id),
-      FOREIGN KEY (patient_id) REFERENCES patients(id)
+      created_at TIMESTAMPTZ DEFAULT NOW()
     );
 
     CREATE TABLE IF NOT EXISTS tournees_log (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       date TEXT NOT NULL,
       nb_arrets INTEGER DEFAULT 0,
-      distance_km REAL,
+      distance_km DOUBLE PRECISION,
       duree_min INTEGER,
-      livreur_id INTEGER,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (livreur_id) REFERENCES users(id)
+      livreur_id INTEGER REFERENCES users(id),
+      created_at TIMESTAMPTZ DEFAULT NOW()
     );
 
     CREATE TABLE IF NOT EXISTS demandes (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      id SERIAL PRIMARY KEY,
       source TEXT NOT NULL CHECK(source IN ('medecin','patient')),
       patient_nom TEXT NOT NULL,
       patient_prenom TEXT NOT NULL,
@@ -160,90 +237,56 @@ function initDb() {
       indication TEXT,
       couverture TEXT,
       mutuelle_nom TEXT,
-      lat REAL,
-      lng REAL,
+      lat DOUBLE PRECISION,
+      lng DOUBLE PRECISION,
       ordonnance_mode TEXT DEFAULT 'a_la_livraison' CHECK(ordonnance_mode IN ('transmise','a_la_livraison')),
       ordonnance_presente INTEGER DEFAULT 0,
       consentement INTEGER DEFAULT 0,
       statut TEXT DEFAULT 'recue' CHECK(statut IN ('recue','validee','programmee','realisee','cr_signe','cloturee','refusee')),
       motif_refus TEXT,
-      patient_id INTEGER,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (patient_id) REFERENCES patients(id)
+      patient_id INTEGER REFERENCES patients(id),
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
     );
 
     CREATE TABLE IF NOT EXISTS revenus (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      medecin_id INTEGER NOT NULL,
-      patient_id INTEGER NOT NULL,
-      montant REAL DEFAULT 150.0,
+      id SERIAL PRIMARY KEY,
+      medecin_id INTEGER NOT NULL REFERENCES users(id),
+      patient_id INTEGER NOT NULL REFERENCES patients(id),
+      montant DOUBLE PRECISION DEFAULT 150.0,
       date TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (medecin_id) REFERENCES users(id),
-      FOREIGN KEY (patient_id) REFERENCES patients(id)
+      created_at TIMESTAMPTZ DEFAULT NOW()
     );
   `);
 
-  migrate(db);
-  seedData(db);
+  await seedData();
   return db;
 }
 
-// Migrations idempotentes : ajoute les colonnes manquantes sur une base existante.
-// ALTER TABLE ADD COLUMN échoue si la colonne existe déjà → on ignore l'erreur.
-function migrate(db) {
-  const ajouts = [
-    `ALTER TABLE demandes ADD COLUMN lat REAL`,
-    `ALTER TABLE demandes ADD COLUMN lng REAL`,
-    `ALTER TABLE demandes ADD COLUMN couverture TEXT`,
-    `ALTER TABLE demandes ADD COLUMN mutuelle_nom TEXT`,
-  ];
-  for (const sql of ajouts) {
-    try { db.exec(sql); } catch (e) { /* colonne déjà présente */ }
-  }
-}
+// ─── Données initiales ──────────────────────────────────────────────────────
 
-function seedData(db) {
-  const existingAdmin = db.prepare('SELECT id FROM users WHERE email = ?').get('admin@somnohub.fr');
+async function seedData() {
+  const existingAdmin = await prepare('SELECT id FROM users WHERE email = ?').get('admin@somnohub.fr');
   if (existingAdmin) return;
 
   console.log('Initialisation des données de démonstration...');
 
-  // Comptes utilisateurs
-  const insertUser = db.prepare(`
-    INSERT INTO users (nom, prenom, email, password_hash, role) VALUES (?, ?, ?, ?, ?)
-  `);
+  const insertUser = prepare(
+    `INSERT INTO users (nom, prenom, email, password_hash, role) VALUES (?, ?, ?, ?, ?)`
+  );
 
-  const adminId = insertUser.run('Admin', 'SomnoHub', 'admin@somnohub.fr', '$2a$10$RH.zoOLbdbxvU2pMrtJyZ.5O9SK94eEQzvdK8DglZP11mLGe4M0lS', 'admin').lastInsertRowid;
-  const med1Id = insertUser.run('Martin', 'Sophie', 'dr.martin@somnohub.fr', '$2a$10$5xZcqK.JGP6MtOmnqdR21ur2fdxJuocf/xE6gZnnQri5oL.fjhEuO', 'medecin').lastInsertRowid;
-  const med2Id = insertUser.run('Dupont', 'Pierre', 'dr.dupont@somnohub.fr', '$2a$10$i4RHbDJ1PriW7UfuIECvZuX2zP5FC/WGU/qWqVfBN3uSb17kWRuK2', 'medecin').lastInsertRowid;
-  const livreurId = insertUser.run('Leblanc', 'Marc', 'livreur@somnohub.fr', '$2a$10$4WSmXiYAU1GKmIl.huvKGemi7HgRFV0EFhtWOraVTQq3PPmw/0Db2', 'livreur').lastInsertRowid;
-  insertUser.run('Rousseau', 'Claire', 'assistante@somnohub.fr', '$2a$10$v3zmRu.8liumWWZANBndHuhc/7EJUPwI5cAFY6qulb0clh81CgUaO', 'assistante');
+  await insertUser.run('Admin', 'SomnoHub', 'admin@somnohub.fr', '$2a$10$RH.zoOLbdbxvU2pMrtJyZ.5O9SK94eEQzvdK8DglZP11mLGe4M0lS', 'admin');
+  await insertUser.run('Martin', 'Sophie', 'dr.martin@somnohub.fr', '$2a$10$5xZcqK.JGP6MtOmnqdR21ur2fdxJuocf/xE6gZnnQri5oL.fjhEuO', 'medecin');
+  await insertUser.run('Dupont', 'Pierre', 'dr.dupont@somnohub.fr', '$2a$10$i4RHbDJ1PriW7UfuIECvZuX2zP5FC/WGU/qWqVfBN3uSb17kWRuK2', 'medecin');
+  await insertUser.run('Leblanc', 'Marc', 'livreur@somnohub.fr', '$2a$10$4WSmXiYAU1GKmIl.huvKGemi7HgRFV0EFhtWOraVTQq3PPmw/0Db2', 'livreur');
+  await insertUser.run('Rousseau', 'Claire', 'assistante@somnohub.fr', '$2a$10$v3zmRu.8liumWWZANBndHuhc/7EJUPwI5cAFY6qulb0clh81CgUaO', 'assistante');
 
-  // Boîtiers — tous disponibles, prêts à l'emploi
-  const insertBoitier = db.prepare(`
-    INSERT INTO boitiers (numero, statut, lat, lng) VALUES (?, 'disponible', ?, ?)
-  `);
-  insertBoitier.run('SL-B01', 48.8566, 2.3522);
-  insertBoitier.run('SL-B02', 48.8566, 2.3522);
-  insertBoitier.run('SL-B03', 48.8566, 2.3522);
-  insertBoitier.run('SL-B04', 48.8566, 2.3522);
-  insertBoitier.run('SL-B05', 48.8566, 2.3522);
-  insertBoitier.run('SL-B06', 48.8566, 2.3522);
-  insertBoitier.run('SL-B07', 48.8566, 2.3522);
-  insertBoitier.run('SL-B08', 48.8566, 2.3522);
-  insertBoitier.run('SL-B09', 48.8566, 2.3522);
-  insertBoitier.run('SL-B10', 48.8566, 2.3522);
+  const insertBoitier = prepare(`INSERT INTO boitiers (numero, statut, lat, lng) VALUES (?, 'disponible', ?, ?)`);
+  for (let i = 1; i <= 10; i++) {
+    await insertBoitier.run('SL-B' + String(i).padStart(2, '0'), 48.8566, 2.3522);
+  }
 
   console.log('✅ Base initialisée — comptes créés, 10 boîtiers disponibles');
-  console.log('');
-  console.log('Comptes :');
-  console.log('  admin@somnohub.fr      / Lune45!');
-  console.log('  dr.martin@somnohub.fr  / Pluie34!');
-  console.log('  dr.dupont@somnohub.fr  / Pluie56!');
-  console.log('  livreur@somnohub.fr    / Soleil45!');
-  console.log('  assistante@somnohub.fr / Pluie12!');
 }
 
-module.exports = { getDb, initDb, closeDb };
+module.exports = { getDb, initDb, closeDb, withTransaction, getPool };

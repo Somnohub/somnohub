@@ -9,13 +9,13 @@ const { genererAlertes } = require('../services/scheduler');
 // crée le stop de tournée du soir, trace l'historique et envoie le SMS.
 // Utilisé par la prescription médecin ET par la programmation d'une demande (admin).
 // Retourne la ligne patient (avec boitier_numero).
-function creerPatientAvecBoitier(db, fields, createdBy, notePrescription = 'Prescription créée') {
+async function creerPatientAvecBoitier(db, fields, createdBy, notePrescription = 'Prescription créée') {
   const { medecin_id, nom, prenom, telephone, adresse, lat, lng, score_stop_bang } = fields;
   const today = new Date().toISOString().split('T')[0];
 
-  const boitierDispo = db.prepare(`SELECT * FROM boitiers WHERE statut = 'disponible' LIMIT 1`).get();
+  const boitierDispo = await db.prepare(`SELECT * FROM boitiers WHERE statut = 'disponible' LIMIT 1`).get();
 
-  const result = db.prepare(`
+  const result = await db.prepare(`
     INSERT INTO patients (medecin_id, nom, prenom, telephone, adresse, lat, lng, score_stop_bang, statut)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
@@ -28,21 +28,21 @@ function creerPatientAvecBoitier(db, fields, createdBy, notePrescription = 'Pres
   const patientId = result.lastInsertRowid;
 
   if (boitierDispo) {
-    db.prepare(`UPDATE boitiers SET patient_id = ?, statut = 'assigne', derniere_action = CURRENT_TIMESTAMP WHERE id = ?`).run(patientId, boitierDispo.id);
-    db.prepare(`INSERT INTO tournee_stops (date, type, patient_id, boitier_id, action, ordre) VALUES (?, 'soir', ?, ?, 'livrer', ?)`).run(today, patientId, boitierDispo.id, 99);
-    db.prepare(`INSERT INTO historique_patient (patient_id, statut, note, created_by) VALUES (?, 'livraison_prevue', ?, ?)`).run(patientId, `Boîtier ${boitierDispo.numero} assigné automatiquement`, createdBy);
+    await db.prepare(`UPDATE boitiers SET patient_id = ?, statut = 'assigne', derniere_action = CURRENT_TIMESTAMP WHERE id = ?`).run(patientId, boitierDispo.id);
+    await db.prepare(`INSERT INTO tournee_stops (date, type, patient_id, boitier_id, action, ordre) VALUES (?, 'soir', ?, ?, 'livrer', ?)`).run(today, patientId, boitierDispo.id, 99);
+    await db.prepare(`INSERT INTO historique_patient (patient_id, statut, note, created_by) VALUES (?, 'livraison_prevue', ?, ?)`).run(patientId, `Boîtier ${boitierDispo.numero} assigné automatiquement`, createdBy);
   }
 
-  db.prepare(`INSERT INTO historique_patient (patient_id, statut, note, created_by) VALUES (?, 'prescrit', ?, ?)`).run(patientId, notePrescription, createdBy);
+  await db.prepare(`INSERT INTO historique_patient (patient_id, statut, note, created_by) VALUES (?, 'prescrit', ?, ?)`).run(patientId, notePrescription, createdBy);
 
   if (boitierDispo) {
-    const patient = db.prepare('SELECT * FROM patients WHERE id = ?').get(patientId);
+    const patient = await db.prepare('SELECT * FROM patients WHERE id = ?').get(patientId);
     smsPrescription(patient).catch(console.error);
   }
 
-  genererAlertes();
+  await genererAlertes();
 
-  return db.prepare(`
+  return await db.prepare(`
     SELECT p.*, b.numero as boitier_numero FROM patients p
     LEFT JOIN boitiers b ON b.patient_id = p.id
     WHERE p.id = ?
@@ -50,9 +50,9 @@ function creerPatientAvecBoitier(db, fields, createdBy, notePrescription = 'Pres
 }
 
 // Liste des patients du médecin
-router.get('/patients', auth(['medecin']), (req, res) => {
+router.get('/patients', auth(['medecin']), async (req, res) => {
   const db = getDb();
-  const patients = db.prepare(`
+  const patients = await db.prepare(`
     SELECT p.*, b.numero as boitier_numero
     FROM patients p
     LEFT JOIN boitiers b ON b.patient_id = p.id AND b.statut != 'disponible'
@@ -63,9 +63,9 @@ router.get('/patients', auth(['medecin']), (req, res) => {
 });
 
 // Dossier complet d'un patient
-router.get('/patients/:id', auth(['medecin']), (req, res) => {
+router.get('/patients/:id', auth(['medecin']), async (req, res) => {
   const db = getDb();
-  const patient = db.prepare(`
+  const patient = await db.prepare(`
     SELECT p.*, b.numero as boitier_numero, b.statut as boitier_statut
     FROM patients p
     LEFT JOIN boitiers b ON b.patient_id = p.id
@@ -74,7 +74,7 @@ router.get('/patients/:id', auth(['medecin']), (req, res) => {
 
   if (!patient) return res.status(404).json({ error: 'Patient introuvable' });
 
-  const historique = db.prepare(`
+  const historique = await db.prepare(`
     SELECT h.*, u.nom as auteur_nom, u.prenom as auteur_prenom, u.role as auteur_role
     FROM historique_patient h
     LEFT JOIN users u ON h.created_by = u.id
@@ -82,7 +82,7 @@ router.get('/patients/:id', auth(['medecin']), (req, res) => {
     ORDER BY h.created_at DESC
   `).all(patient.id);
 
-  const smsLogs = db.prepare(`
+  const smsLogs = await db.prepare(`
     SELECT * FROM sms_log WHERE patient_id = ? ORDER BY created_at DESC
   `).all(patient.id);
 
@@ -103,7 +103,7 @@ router.post('/patients', auth(['medecin']), async (req, res) => {
   }
 
   const db = getDb();
-  const patient = creerPatientAvecBoitier(db, {
+  const patient = await creerPatientAvecBoitier(db, {
     medecin_id: req.user.id,
     nom, prenom, telephone, adresse, lat, lng, score_stop_bang
   }, req.user.id);
@@ -112,26 +112,26 @@ router.post('/patients', auth(['medecin']), async (req, res) => {
 });
 
 // Mettre à jour le statut d'un patient (ex: consultation_annonce)
-router.put('/patients/:id/statut', auth(['medecin']), (req, res) => {
+router.put('/patients/:id/statut', auth(['medecin']), async (req, res) => {
   const { statut, note } = req.body;
   const db = getDb();
 
-  const patient = db.prepare('SELECT * FROM patients WHERE id = ? AND medecin_id = ?').get(req.params.id, req.user.id);
+  const patient = await db.prepare('SELECT * FROM patients WHERE id = ? AND medecin_id = ?').get(req.params.id, req.user.id);
   if (!patient) return res.status(404).json({ error: 'Patient introuvable' });
 
-  db.prepare('UPDATE patients SET statut = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(statut, patient.id);
-  db.prepare('INSERT INTO historique_patient (patient_id, statut, note, created_by) VALUES (?, ?, ?, ?)').run(patient.id, statut, note || null, req.user.id);
+  await db.prepare('UPDATE patients SET statut = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(statut, patient.id);
+  await db.prepare('INSERT INTO historique_patient (patient_id, statut, note, created_by) VALUES (?, ?, ?, ?)').run(patient.id, statut, note || null, req.user.id);
 
   res.json({ success: true });
 });
 
 // Onglet Suivi — patients en suivi long terme
-router.get('/suivi', auth(['medecin']), (req, res) => {
+router.get('/suivi', auth(['medecin']), async (req, res) => {
   const db = getDb();
   const now = new Date();
   const dans15Jours = new Date(now.getTime() + 15 * 86400000).toISOString();
 
-  const patients = db.prepare(`
+  const patients = await db.prepare(`
     SELECT * FROM patients
     WHERE medecin_id = ? AND date_resultat IS NOT NULL
     AND statut = 'consultation_annonce'
