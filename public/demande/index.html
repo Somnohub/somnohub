@@ -46,6 +46,8 @@
     .d-none { display: none !important; }
     @media (max-width: 460px) { .grid2 { grid-template-columns: 1fr; } }
   </style>
+  <!-- Umami analytics — sans cookies, aucune donnée personnelle -->
+  <script defer src="https://cloud.umami.is/script.js" data-website-id="b121a2da-ec1d-47ee-a9bd-a969fbecc6e1"></script>
 </head>
 <body>
   <div class="wrap">
@@ -61,8 +63,8 @@
 
       <div class="card">
         <div class="toggle">
-          <button type="button" id="tabPatient" class="active" onclick="setParcours('patient')"><span class="ic">🙋</span>Je suis le patient</button>
-          <button type="button" id="tabMedecin" onclick="setParcours('medecin')"><span class="ic">🩺</span>Je suis médecin</button>
+          <button type="button" id="tabPatient" class="active" onclick="setParcours('patient', true)"><span class="ic">🙋</span>Je suis le patient</button>
+          <button type="button" id="tabMedecin" onclick="setParcours('medecin', true)"><span class="ic">🩺</span>Je suis médecin</button>
         </div>
 
         <div id="formAlert" class="alert-box alert-error d-none" style="margin-bottom:16px"></div>
@@ -206,7 +208,13 @@ function initAutocomplete() {
   });
 }
 
-function setParcours(p) {
+// ── Analytics (Umami) — événements anonymes uniquement, jamais de donnée patient ──
+function trackEvt(nom, data) {
+  try { if (window.umami) window.umami.track(nom, data || {}); } catch (e) {}
+}
+
+function setParcours(p, fromUser) {
+  if (fromUser) trackEvt('parcours_choisi', { parcours: p });
   parcours = p;
   document.getElementById('tabPatient').classList.toggle('active', p === 'patient');
   document.getElementById('tabMedecin').classList.toggle('active', p === 'medecin');
@@ -313,6 +321,8 @@ async function submitDemande(e) {
     });
     const data = await res.json();
     if (res.ok) {
+      // Conversion : aucune donnée patient transmise, seulement le type de parcours
+      trackEvt('demande_envoyee', { parcours: parcours, ordonnance: payload.ordonnance_mode });
       document.getElementById('formView').classList.add('d-none');
       document.getElementById('successNum').textContent = '#' + data.numero;
       document.getElementById('successView').classList.remove('d-none');

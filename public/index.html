@@ -822,6 +822,8 @@
       .strip-inner { grid-template-columns: 1fr; }
     }
   </style>
+  <!-- Umami analytics — sans cookies, aucune donnée personnelle -->
+  <script defer src="https://cloud.umami.is/script.js" data-website-id="b121a2da-ec1d-47ee-a9bd-a969fbecc6e1"></script>
 </head>
 <body>
 
@@ -979,7 +981,7 @@
         <div>
           <button class="btn-quiz-reset" onclick="resetQuiz()">Recommencer</button>
           <button class="btn-quiz-cta" onclick="document.getElementById('teleconsult').scrollIntoView({behavior:'smooth'})">Consulter un médecin →</button>
-          <a class="btn-quiz-cta" href="/demande" style="text-decoration:none;display:inline-block">Demander ma polygraphie →</a>
+          <a class="btn-quiz-cta" href="/demande" onclick="trackEvt('cta_demande_clic', { source: 'resultat_quiz' })" style="text-decoration:none;display:inline-block">Demander ma polygraphie →</a>
         </div>
       </div>
     </div>
@@ -1486,15 +1488,23 @@
     setTimeout(() => document.getElementById('popupAccueil').classList.add('show'), 600);
   }
 })();
+// ── Analytics (Umami) — événements anonymes uniquement, jamais de donnée patient ──
+function trackEvt(nom, data) {
+  try { if (window.umami) window.umami.track(nom, data || {}); } catch (e) {}
+}
+
 function popupChoixPatient() {
+  trackEvt('popup_choix', { choix: 'patient' });
   document.getElementById('popupAccueil').classList.remove('show');
   sessionStorage.setItem('sh_accueil_vu', '1');
 }
 function popupChoixDemande() {
+  trackEvt('popup_choix', { choix: 'demande' });
   sessionStorage.setItem('sh_accueil_vu', '1');
   window.location.href = '/demande';
 }
 function popupChoixPro() {
+  trackEvt('popup_choix', { choix: 'pro' });
   document.getElementById('popupAccueil').classList.remove('show');
   sessionStorage.setItem('sh_accueil_vu', '1');
   setTimeout(() => document.getElementById('pro').scrollIntoView({behavior:'smooth'}), 300);
@@ -1598,6 +1608,7 @@ function buildQuiz() {
 }
 
 function startQuiz() {
+  trackEvt('quiz_demarre');
   document.getElementById('quizConsent').style.display = 'none';
   document.getElementById('quizBody').style.display = '';
 }
@@ -1635,6 +1646,7 @@ function updateProgress() {
 
 function showResult() {
   const score = answers.reduce((a,b) => a + b, 0);
+  trackEvt('quiz_termine', { score: score, niveau: score >= 5 ? 'eleve' : score >= 3 ? 'intermediaire' : 'faible' });
   document.getElementById('quizBody').style.display = 'none';
   document.getElementById('quizProgress').style.width = '100%';
   const res = document.getElementById('quizResult');
