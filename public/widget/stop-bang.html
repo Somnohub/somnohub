@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test STOP-BANG — Risque d'apnée du sommeil</title>
+  <meta name="robots" content="noindex, follow">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #1a3d2b; --primary-light: #2d6a4f; --accent: #52b788; --accent-light: #b7e4c7;
+      --bg: #f4f7f5; --white: #fff; --text: #1c2b22; --text-mid: #4a5e53; --text-light: #7a9186; --border: #d4e0d9;
+      --low: #40916c; --mid: #f57c00; --high: #c62828;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: transparent; color: var(--text); padding: 12px; }
+    .box { max-width: 560px; margin: 0 auto; background: var(--white); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+    .bar { height: 5px; background: var(--border); }
+    .bar-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); width: 0%; transition: width .35s ease; }
+    .body { padding: 22px 20px; }
+    .intro h1 { font-size: 1.15rem; color: var(--primary); margin-bottom: 8px; }
+    .intro p { font-size: .9rem; color: var(--text-mid); line-height: 1.6; margin-bottom: 16px; }
+    .step { display: none; } .step.on { display: block; }
+    .qnum { font-size: .72rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+    .qtext { font-size: 1.02rem; font-weight: 700; color: var(--primary); line-height: 1.4; margin-bottom: 18px; }
+    .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .opt { padding: 12px; border: 2px solid var(--border); background: var(--white); border-radius: 9px; font-family: inherit; font-size: .92rem; font-weight: 600; color: var(--text-mid); cursor: pointer; transition: all .12s; }
+    .opt:hover { border-color: var(--accent); background: #eef8f2; }
+    .opt.sel { border-color: var(--primary); background: var(--primary); color: #fff; }
+    .nav { display: flex; justify-content: space-between; align-items: center; margin-top: 18px; }
+    .btn { padding: 10px 18px; border: none; border-radius: 8px; font-family: inherit; font-size: .88rem; font-weight: 700; cursor: pointer; }
+    .btn-back { background: none; border: 1px solid var(--border); color: var(--text-light); }
+    .btn-next { background: var(--primary); color: #fff; }
+    .btn-next:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-cta { background: var(--accent); color: #fff; text-decoration: none; display: inline-block; padding: 12px 22px; border-radius: 9px; font-weight: 700; font-size: .92rem; }
+    .result { display: none; text-align: center; padding: 26px 20px; }
+    .result.on { display: block; }
+    .gauge { width: 96px; height: 96px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto 14px; border: 5px solid; }
+    .gauge .n { font-size: 2rem; font-weight: 800; line-height: 1; }
+    .gauge .d { font-size: .72rem; color: var(--text-light); }
+    .rtitle { font-size: 1.05rem; font-weight: 800; margin-bottom: 8px; }
+    .rmsg { font-size: .88rem; color: var(--text-mid); line-height: 1.6; margin-bottom: 18px; }
+    .credit { text-align: center; padding: 11px; background: var(--bg); border-top: 1px solid var(--border); font-size: .76rem; color: var(--text-light); }
+    .credit a { color: var(--primary); font-weight: 700; text-decoration: none; }
+    .credit a:hover { text-decoration: underline; }
+    @media (max-width: 420px) { .opts { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <div class="bar"><div class="bar-fill" id="bar"></div></div>
+
+    <div class="body" id="intro">
+      <div class="intro">
+        <h1>Évaluez votre risque d'apnée du sommeil</h1>
+        <p>Le questionnaire STOP-BANG comporte 8 questions validées cliniquement. Gratuit, anonyme et instantané : vos réponses ne sont ni enregistrées ni transmises, le score est calculé dans votre navigateur.</p>
+        <button class="btn btn-next" onclick="start()">Commencer le test →</button>
+      </div>
+    </div>
+
+    <div class="body" id="quiz" style="display:none"></div>
+
+    <div class="result" id="result">
+      <div class="gauge" id="gauge"><div class="n" id="score"></div><div class="d">/ 8</div></div>
+      <div class="rtitle" id="rtitle"></div>
+      <p class="rmsg" id="rmsg"></p>
+      <a class="btn-cta" id="cta" href="https://somnohub.fr/demande" target="_blank" rel="noopener">En savoir plus →</a>
+      <div style="margin-top:12px"><button class="btn btn-back" onclick="reset()">Recommencer</button></div>
+    </div>
+
+    <div class="credit">
+      Test proposé par <a href="https://somnohub.fr" target="_blank" rel="noopener">SomnoHub</a> — dépistage de l'apnée du sommeil à domicile
+    </div>
+  </div>
+
+<script>
+const QUESTIONS = [
+  { letter:'S', text:'Ronflez-vous fort (assez pour être entendu à travers une porte fermée) ?' },
+  { letter:'T', text:'Vous sentez-vous souvent fatigué(e), épuisé(e) ou somnolent(e) pendant la journée ?' },
+  { letter:'O', text:'A-t-on déjà observé que vous cessiez de respirer pendant votre sommeil ?' },
+  { letter:'P', text:'Avez-vous ou êtes-vous traité(e) pour une hypertension artérielle ?' },
+  { letter:'B', text:'Votre indice de masse corporelle (IMC) est-il supérieur à 35 ?' },
+  { letter:'A', text:'Avez-vous plus de 50 ans ?' },
+  { letter:'N', text:'Votre tour de cou est-il supérieur à 40 cm ?' },
+  { letter:'G', text:'Êtes-vous de sexe masculin ?' },
+];
+
+let answers = new Array(8).fill(null);
+let step = 0;
+
+function build() {
+  document.getElementById('quiz').innerHTML = QUESTIONS.map((q, i) => `
+    <div class="step ${i === 0 ? 'on' : ''}" id="s${i}">
+      <div class="qnum">Question ${i + 1}/8 — Critère ${q.letter}</div>
+      <div class="qtext">${q.text}</div>
+      <div class="opts">
+        <button class="opt" onclick="pick(${i},1,this)">Oui</button>
+        <button class="opt" onclick="pick(${i},0,this)">Non</button>
+      </div>
+      <div class="nav">
+        <button class="btn btn-back" onclick="prev()" ${i === 0 ? 'style="visibility:hidden"' : ''}>← Retour</button>
+        <button class="btn btn-next" id="n${i}" onclick="next()" disabled>${i < 7 ? 'Suivant →' : 'Voir mon résultat →'}</button>
+      </div>
+    </div>`).join('');
+}
+
+function start() {
+  document.getElementById('intro').style.display = 'none';
+  document.getElementById('quiz').style.display = '';
+  progress();
+}
+
+function pick(i, val, btn) {
+  answers[i] = val;
+  btn.parentNode.querySelectorAll('.opt').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  document.getElementById('n' + i).disabled = false;
+}
+
+function next() {
+  if (step < 7) {
+    document.getElementById('s' + step).classList.remove('on');
+    step++;
+    document.getElementById('s' + step).classList.add('on');
+    progress();
+  } else { show(); }
+}
+
+function prev() {
+  if (step > 0) {
+    document.getElementById('s' + step).classList.remove('on');
+    step--;
+    document.getElementById('s' + step).classList.add('on');
+    progress();
+  }
+}
+
+function progress() { document.getElementById('bar').style.width = (step / 8) * 100 + '%'; }
+
+function show() {
+  const score = answers.reduce((a, b) => a + (b || 0), 0);
+  document.getElementById('quiz').style.display = 'none';
+  document.getElementById('bar').style.width = '100%';
+  document.getElementById('result').classList.add('on');
+  document.getElementById('score').textContent = score;
+
+  let color, titre, msg;
+  if (score <= 2) {
+    color = 'var(--low)'; titre = "Risque faible d'apnée du sommeil";
+    msg = "Votre score suggère un risque faible. Si vous ressentez néanmoins une fatigue persistante ou des troubles du sommeil, parlez-en à votre médecin.";
+  } else if (score <= 4) {
+    color = 'var(--mid)'; titre = 'Risque intermédiaire — consultation recommandée';
+    msg = "Votre score indique un risque intermédiaire. Une consultation médicale, et éventuellement un examen du sommeil, permettront d'y voir clair.";
+  } else {
+    color = 'var(--high)'; titre = 'Risque élevé — examen recommandé';
+    msg = "Votre score est élevé. Une polygraphie ventilatoire est fortement recommandée pour confirmer ou écarter une apnée du sommeil. Consultez rapidement un médecin.";
+  }
+  const g = document.getElementById('gauge');
+  g.style.borderColor = color; g.querySelector('.n').style.color = color;
+  document.getElementById('rtitle').textContent = titre;
+  document.getElementById('rtitle').style.color = color;
+  document.getElementById('rmsg').textContent = msg;
+  document.getElementById('cta').href = 'https://somnohub.fr/score-stop-bang?score=' + score;
+  document.getElementById('cta').textContent = 'Comprendre mon score →';
+
+  // Ajuste la hauteur de l'iframe chez le site hôte
+  postHeight();
+}
+
+function reset() {
+  answers = new Array(8).fill(null); step = 0;
+  document.getElementById('result').classList.remove('on');
+  document.getElementById('quiz').style.display = '';
+  document.getElementById('bar').style.width = '0%';
+  build(); progress(); postHeight();
+}
+
+// Permet au site hôte d'ajuster automatiquement la hauteur de l'iframe
+function postHeight() {
+  try {
+    const h = document.body.scrollHeight;
+    window.parent.postMessage({ somnohubHeight: h }, '*');
+  } catch (e) {}
+}
+window.addEventListener('load', postHeight);
+new ResizeObserver(postHeight).observe(document.body);
+
+build();
+</script>
+</body>
+</html>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Intégrer le test STOP-BANG sur votre site | SomnoHub</title>
+  <meta name="description" content="Professionnels de santé : intégrez gratuitement le questionnaire STOP-BANG de dépistage de l'apnée du sommeil sur votre site en copiant une ligne de code.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://somnohub.fr/integrer-le-test">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/somnohub.css">
+  <!-- Umami analytics — sans cookies, aucune donnée personnelle -->
+  <script defer src="https://cloud.umami.is/script.js" data-website-id="b121a2da-ec1d-47ee-a9bd-a969fbecc6e1"></script>
+  <style>
+    body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--text); margin: 0; line-height: 1.65; }
+    .topbar { background: var(--white); border-bottom: 1px solid var(--border); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; }
+    .topbar .logo { font-size: 1.25rem; font-weight: 800; color: var(--primary); text-decoration: none; }
+    .topbar .logo span { color: var(--accent); }
+    article { max-width: 820px; margin: 0 auto; padding: 32px 20px 60px; }
+    h1 { font-size: 2rem; color: var(--primary); line-height: 1.25; margin: 0 0 14px; }
+    h2 { font-size: 1.3rem; color: var(--primary); margin: 34px 0 12px; }
+    p, li { color: var(--text-mid); font-size: 1rem; }
+    ul { padding-left: 22px; }
+    li { margin-bottom: 6px; }
+    .lead { font-size: 1.1rem; color: var(--text); }
+    .code-wrap { position: relative; margin: 14px 0 8px; }
+    pre { background: #1a2b22; color: #b7e4c7; padding: 18px 16px; border-radius: 10px; overflow-x: auto; font-size: .82rem; line-height: 1.6; margin: 0; }
+    .copy { position: absolute; top: 10px; right: 10px; background: var(--accent); color: #fff; border: none; border-radius: 7px; padding: 7px 13px; font-family: inherit; font-size: .78rem; font-weight: 700; cursor: pointer; }
+    .copy:hover { opacity: .9; }
+    .preview { background: var(--white); border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin: 18px 0; }
+    .preview-label { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--text-light); margin-bottom: 12px; }
+    iframe { width: 100%; border: 0; }
+    .why { background: var(--white); border: 1px solid var(--accent-light); border-radius: 12px; padding: 18px 20px; margin: 20px 0; }
+    .footer { background: var(--primary); color: rgba(255,255,255,.85); padding: 30px 20px; text-align: center; font-size: .85rem; margin-top: 40px; }
+    .footer a { color: var(--accent-light); text-decoration: none; margin: 0 8px; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a href="/" class="logo">Somno<span>Hub</span></a>
+    <a href="/#pro" style="color:var(--text-light);text-decoration:none;font-size:.88rem">Espace professionnels</a>
+  </div>
+
+  <article>
+    <h1>Intégrez le test STOP-BANG sur votre site</h1>
+    <p class="lead">Vous êtes médecin, pharmacien, ou vous animez un site sur le sommeil ? Proposez à vos visiteurs d'évaluer leur risque d'apnée du sommeil en 2 minutes. <strong>Gratuit, sans inscription, une seule ligne de code.</strong></p>
+
+    <div class="why">
+      <strong>Pourquoi l'ajouter à votre site ?</strong>
+      <ul style="margin-top:8px;margin-bottom:0">
+        <li>Un outil concret et utile pour vos patients, plutôt qu'un simple texte</li>
+        <li>Le questionnaire STOP-BANG est validé cliniquement et utilisé en pratique courante</li>
+        <li>Vos visiteurs restent chez vous : le test s'affiche dans votre page</li>
+        <li>Aucune donnée collectée : le score est calculé dans le navigateur du visiteur</li>
+      </ul>
+    </div>
+
+    <h2>Aperçu</h2>
+    <div class="preview">
+      <div class="preview-label">Voici ce que verront vos visiteurs</div>
+      <iframe src="/widget/stop-bang.html" height="420" title="Test STOP-BANG"></iframe>
+    </div>
+
+    <h2>Le code à copier</h2>
+    <p>Collez ce code à l'endroit de votre page où le test doit apparaître :</p>
+    <div class="code-wrap">
+      <button class="copy" onclick="copier()">Copier</button>
+      <pre id="code">&lt;iframe src="https://somnohub.fr/widget/stop-bang.html"
+        width="100%" height="440" style="border:0;max-width:580px"
+        title="Test STOP-BANG — risque d'apnée du sommeil"
+        loading="lazy"&gt;&lt;/iframe&gt;</pre>
+    </div>
+    <p style="font-size:.85rem;color:var(--text-light)">Compatible avec WordPress, Wix, Squarespace, Doctolib Site, ou tout site acceptant du HTML.</p>
+
+    <h2>Hauteur automatique (optionnel)</h2>
+    <p>Pour que le cadre s'ajuste tout seul à mesure que le visiteur avance dans le test, ajoutez ce petit script :</p>
+    <div class="code-wrap">
+      <button class="copy" onclick="copier2()">Copier</button>
+      <pre id="code2">&lt;script&gt;
+window.addEventListener('message', function (e) {
+  if (e.data &amp;&amp; e.data.somnohubHeight) {
+    var f = document.querySelector('iframe[src*="somnohub.fr/widget"]');
+    if (f) f.style.height = (e.data.somnohubHeight + 20) + 'px';
+  }
+});
+&lt;/script&gt;</pre>
+    </div>
+
+    <h2>Conditions d'utilisation</h2>
+    <ul>
+      <li>L'intégration est <strong>libre et gratuite</strong>, y compris sur un site professionnel</li>
+      <li>Merci de <strong>conserver la mention « Test proposé par SomnoHub »</strong> affichée sous le test</li>
+      <li>Ne modifiez pas les questions : le score ne serait plus celui du questionnaire validé</li>
+      <li>Le test est un outil de <strong>dépistage</strong>, il ne pose aucun diagnostic</li>
+    </ul>
+
+    <h2>Une question ?</h2>
+    <p>Écrivez-nous à <a href="mailto:admin@somnohub.fr" style="color:var(--accent);font-weight:600">admin@somnohub.fr</a> — nous pouvons aussi vous aider à l'intégrer, ou adapter le format à votre site.</p>
+  </article>
+
+  <div class="footer">
+    <div style="margin-bottom:8px"><a href="/">Accueil</a><a href="/polygraphie-ventilatoire">La polygraphie</a><a href="/apnee-du-sommeil">Apnée du sommeil</a><a href="/mentions-legales.html">Mentions légales</a></div>
+    © SomnoHub — Dépistage de l'apnée du sommeil à domicile partout en France
+  </div>
+
+<script>
+function copier() {
+  const t = document.getElementById('code').textContent;
+  navigator.clipboard.writeText(t).then(() => {
+    const b = document.querySelector('.copy'); const o = b.textContent;
+    b.textContent = '✓ Copié'; setTimeout(() => b.textContent = o, 1800);
+    if (window.umami) window.umami.track('widget_code_copie');
+  });
+}
+function copier2() {
+  const t = document.getElementById('code2').textContent;
+  navigator.clipboard.writeText(t).then(() => {
+    const b = document.querySelectorAll('.copy')[1]; const o = b.textContent;
+    b.textContent = '✓ Copié'; setTimeout(() => b.textContent = o, 1800);
+  });
+}
+// Ajustement de l'aperçu
+window.addEventListener('message', function (e) {
+  if (e.data && e.data.somnohubHeight) {
+    const f = document.querySelector('iframe');
+    if (f) f.style.height = (e.data.somnohubHeight + 20) + 'px';
+  }
+});
+</script>
+</body>
+</html>
