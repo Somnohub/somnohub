@@ -40,6 +40,11 @@ app.get('/score-stop-bang', (req, res) => res.sendFile(path.join(__dirname, 'pub
 app.get('/apnee-du-sommeil-fatigue', (req, res) => res.sendFile(path.join(__dirname, 'public/apnee-du-sommeil-fatigue/index.html')));
 app.get('/apnee-du-sommeil-femme', (req, res) => res.sendFile(path.join(__dirname, 'public/apnee-du-sommeil-femme/index.html')));
 
+// Pages locales (villes)
+app.get('/polygraphie-ventilatoire-paris', (req, res) => res.sendFile(path.join(__dirname, 'public/polygraphie-ventilatoire-paris/index.html')));
+app.get('/polygraphie-ventilatoire-lyon', (req, res) => res.sendFile(path.join(__dirname, 'public/polygraphie-ventilatoire-lyon/index.html')));
+app.get('/polygraphie-ventilatoire-marseille', (req, res) => res.sendFile(path.join(__dirname, 'public/polygraphie-ventilatoire-marseille/index.html')));
+
 // ── DIAGNOSTIC PERSISTANCE VOLUME ───────────────────────
 // Écrit un fichier témoin et relit le précédent : si le témoin ne survit
 // pas au redémarrage, c'est le volume Railway qui ne persiste pas.
