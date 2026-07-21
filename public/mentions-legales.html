@@ -79,7 +79,7 @@
 
 <div class="hero-legal">
   <h1>Mentions légales &amp; Politique de confidentialité</h1>
-  <p>Dernière mise à jour : mai 2025</p>
+  <p>Dernière mise à jour : juillet 2026</p>
 </div>
 
 <div class="legal-wrap">
@@ -156,11 +156,48 @@
         <td>Intérêt légitime (Art. 6.1.f RGPD)</td>
         <td>13 mois maximum</td>
       </tr>
+      <tr>
+        <td>Identité et coordonnées du patient (nom, prénom, date de naissance, téléphone, adresse de livraison)</td>
+        <td>Organisation de l'examen et de la livraison du dispositif</td>
+        <td>Consentement (Art. 6.1.a) et Art. 9.2.h RGPD</td>
+        <td>Durée légale de conservation du dossier médical</td>
+      </tr>
+      <tr>
+        <td><strong>Données de santé</strong> : indication clinique, score STOP-BANG, taille et poids, statuts et résultats d'examen</td>
+        <td>Réalisation et interprétation de la polygraphie ventilatoire</td>
+        <td>Consentement explicite (Art. 9.2.a) et finalité de soins (Art. 9.2.h RGPD)</td>
+        <td>Durée légale de conservation du dossier médical</td>
+      </tr>
+      <tr>
+        <td>Situation de couverture santé (régime, mutuelle)</td>
+        <td>Information du patient sur son reste à charge</td>
+        <td>Consentement (Art. 6.1.a RGPD)</td>
+        <td>Durée du dossier</td>
+      </tr>
+      <tr>
+        <td>Historique des SMS d'information envoyés</td>
+        <td>Traçabilité des communications liées à l'examen</td>
+        <td>Intérêt légitime (Art. 6.1.f RGPD)</td>
+        <td>1 an</td>
+      </tr>
     </table>
 
     <h3>Données de santé</h3>
     <p>Les données de santé (résultats polygraphiques, prescriptions) font l'objet d'une protection renforcée au titre de l'article 9 du RGPD. Elles sont traitées uniquement avec le consentement explicite du patient et accessibles exclusivement au médecin prescripteur et aux médecins partenaires habilités.</p>
-    <p>⚠️ <strong>Note importante :</strong> SomnoHub est en cours de démarche de conformité HDS (Hébergeur de Données de Santé). En attendant la certification, aucune donnée médicale identifiante n'est stockée sur les serveurs de production.</p>
+    <h3>Hébergement des données et transferts hors Union européenne</h3>
+    <p>Les données de la plateforme, y compris les données de santé identifiantes, sont hébergées par <strong>Railway Corp</strong> (San Francisco, États-Unis). Certains de nos prestataires techniques étant établis hors de l'Union européenne, cela implique un <strong>transfert de données vers les États-Unis</strong>, encadré par les garanties contractuelles prévues au chapitre V du RGPD.</p>
+    <p><strong>Démarche HDS :</strong> l'hébergement de données de santé en France requiert un hébergeur certifié « Hébergeur de Données de Santé » (HDS). SomnoHub a engagé cette démarche et la migration vers un hébergeur certifié est planifiée. Dans l'intervalle, l'accès aux données est strictement limité aux personnes habilitées, les accès sont authentifiés et les mots de passe chiffrés.</p>
+
+    <h3>Sous-traitants</h3>
+    <p>Nous faisons appel aux prestataires suivants, soumis à des obligations contractuelles de confidentialité et de sécurité :</p>
+    <table>
+      <tr><th>Prestataire</th><th>Rôle</th><th>Localisation</th></tr>
+      <tr><td>Railway Corp</td><td>Hébergement de l'application et de la base de données</td><td>États-Unis</td></tr>
+      <tr><td>Cloudflare</td><td>Diffusion et protection du site (CDN, sécurité)</td><td>États-Unis</td></tr>
+      <tr><td>Google (Maps / Places)</td><td>Autocomplétion des adresses de livraison</td><td>États-Unis</td></tr>
+      <tr><td>Umami Cloud</td><td>Mesure d'audience sans cookies ni donnée personnelle</td><td>Union européenne</td></tr>
+      <tr><td>Twilio</td><td>Envoi des SMS d'information aux patients</td><td>États-Unis</td></tr>
+    </table>
 
     <h3>Destinataires des données</h3>
     <p>Vos données ne sont jamais vendues ni cédées à des tiers à des fins commerciales. Elles peuvent être transmises à :</p>
@@ -191,8 +228,9 @@
     <h3>Cookies strictement nécessaires</h3>
     <p>Ces cookies assurent le fonctionnement de base du site (session de connexion, préférences d'affichage). Ils ne nécessitent pas votre consentement.</p>
 
-    <h3>Cookies analytics</h3>
-    <p>Si vous avez accepté les cookies analytics, des données anonymisées de navigation peuvent être collectées pour améliorer le service. Vous pouvez retirer votre consentement à tout moment.</p>
+    <h3>Mesure d'audience</h3>
+    <p>Nous utilisons <strong>Umami</strong>, une solution de mesure d'audience <strong>sans cookies</strong>, hébergée dans l'Union européenne. Elle ne dépose aucun traceur sur votre appareil, ne collecte aucune donnée personnelle et ne permet pas de vous identifier : seules des statistiques agrégées et anonymes sont enregistrées (pages consultées, provenance, type d'appareil).</p>
+    <p>Aucune donnée de santé, ni aucune information vous concernant (nom, téléphone, adresse, indication médicale), n'est transmise à cet outil. Conformément aux recommandations de la CNIL, cette mesure d'audience anonyme ne nécessite pas votre consentement.</p>
 
     <h3>Gérer vos préférences</h3>
     <p>
@@ -223,7 +261,7 @@
 </div>
 
 <div class="legal-footer">
-  © 2025 SomnoHub — <a href="/">Retour à l'accueil</a>
+  © 2026 SomnoHub — <a href="/">Retour à l'accueil</a>
 </div>
 
 <script>
