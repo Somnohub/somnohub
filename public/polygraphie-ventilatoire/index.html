@@ -26,6 +26,36 @@
         "about": { "@type": "MedicalTest", "name": "Polygraphie ventilatoire nocturne" }
       },
       {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "La polygraphie ventilatoire est-elle douloureuse ?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Non, l'examen est totalement indolore et non invasif. Aucune aiguille, aucun produit : uniquement des capteurs posés sur la peau, dans les narines et au bout du doigt." }
+          },
+          {
+            "@type": "Question",
+            "name": "Puis-je faire une polygraphie sans ordonnance ?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Non. La polygraphie ventilatoire est un acte médical qui doit être prescrit par un médecin : médecin traitant, pneumologue, ORL, cardiologue ou médecin consulté en téléconsultation. C'est aussi cette prescription qui ouvre droit au remboursement." }
+          },
+          {
+            "@type": "Question",
+            "name": "Est-ce que je vais réussir à dormir avec le boîtier ?",
+            "acceptedAnswer": { "@type": "Answer", "text": "La grande majorité des patients dorment normalement. Le dispositif est léger et conçu pour être le moins gênant possible. Même une nuit un peu perturbée reste exploitable dès lors que l'enregistrement dure au moins 6 heures." }
+          },
+          {
+            "@type": "Question",
+            "name": "Sous combien de temps ai-je mes résultats ?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Les données sont analysées par un médecin du sommeil et le compte-rendu est transmis à votre médecin prescripteur sous quelques jours après réception du boîtier." }
+          },
+          {
+            "@type": "Question",
+            "name": "Combien coûte une polygraphie ventilatoire ?",
+            "acceptedAnswer": { "@type": "Answer", "text": "L'acte (code CCAM GLQP007, tarif 151,68 euros) est pris en charge par l'Assurance Maladie sur prescription. Il reste une participation forfaitaire de 32 euros, généralement couverte par la mutuelle." }
+          }
+        ]
+      },
+      {
         "@type": "BreadcrumbList",
         "itemListElement": [
           { "@type": "ListItem", "position": 1, "name": "Accueil", "item": "https://somnohub.fr/" },
@@ -56,6 +86,13 @@
     .steps { counter-reset: s; list-style: none; padding: 0; }
     .steps li { position: relative; padding: 4px 0 14px 44px; }
     .steps li::before { counter-increment: s; content: counter(s); position: absolute; left: 0; top: 2px; width: 30px; height: 30px; background: var(--accent); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: .9rem; }
+    table.cap { width: 100%; border-collapse: collapse; margin: 16px 0; background: var(--white); border-radius: 10px; overflow: hidden; display: block; overflow-x: auto; }
+    table.cap th, table.cap td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--border); font-size: .93rem; }
+    table.cap th { background: var(--primary); color: #fff; font-weight: 700; white-space: nowrap; }
+    .faq-q { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; }
+    .faq-q h3 { font-size: 1rem; color: var(--primary); margin: 0 0 6px; }
+    .faq-q p { margin: 0; font-size: .95rem; }
+    video { width: 100%; border-radius: 12px; border: 1px solid var(--border); background: #000; margin: 16px 0; }
     .cta-box { background: var(--white); border: 1px solid var(--accent-light); border-radius: 14px; padding: 26px 24px; margin: 36px 0; text-align: center; }
     .cta-box h2 { margin-top: 0; }
     .cta-box .btn { display: inline-block; margin: 8px 6px 0; }
@@ -88,14 +125,90 @@
       <li><strong>Résultats.</strong> Vos données sont analysées et le compte-rendu est transmis sous quelques jours.</li>
     </ol>
 
+    <h2>Que mesurent exactement les capteurs ?</h2>
+    <p>Le dispositif comporte plusieurs capteurs, tous non invasifs et indolores :</p>
+    <table class="cap">
+      <thead><tr><th>Capteur</th><th>Où il se place</th><th>Ce qu'il enregistre</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Lunettes nasales</strong></td><td>À l'entrée des narines</td><td>Le flux d'air : c'est lui qui détecte les apnées et hypopnées</td></tr>
+        <tr><td><strong>Oxymètre</strong></td><td>Au bout du doigt</td><td>La saturation en oxygène du sang et la fréquence cardiaque</td></tr>
+        <tr><td><strong>Sangles thoracique et abdominale</strong></td><td>Autour du torse et du ventre</td><td>Les mouvements respiratoires — ils distinguent une apnée obstructive d'une apnée centrale</td></tr>
+        <tr><td><strong>Capteur de position</strong></td><td>Dans le boîtier</td><td>Votre position de sommeil (dos, côté) — déterminant, car les apnées sont souvent aggravées sur le dos</td></tr>
+        <tr><td><strong>Micro</strong></td><td>Dans le boîtier</td><td>Les ronflements et leur intensité</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Comment se préparer à la nuit d'examen</h2>
+    <ul>
+      <li>Gardez vos <strong>habitudes de sommeil habituelles</strong> : l'examen doit refléter une nuit typique</li>
+      <li>Évitez l'alcool et les somnifères ce soir-là, sauf avis contraire de votre médecin — ils modifieraient les résultats</li>
+      <li>Ne prenez pas de café en fin de journée</li>
+      <li>Installez le boîtier <strong>juste avant de vous coucher</strong>, en suivant la vidéo</li>
+      <li>Si un capteur se détache pendant la nuit, remettez-le simplement en place</li>
+      <li>Visez au moins <strong>6 heures d'enregistrement</strong> pour que l'examen soit exploitable</li>
+    </ul>
+
+    <h2>Comment lit-on les résultats ? L'index IAH</h2>
+    <p>Le résultat principal est l'<strong>IAH</strong> (index d'apnées-hypopnées) : le nombre moyen d'événements respiratoires par heure de sommeil. C'est lui qui détermine la sévérité :</p>
+    <table class="cap">
+      <thead><tr><th>IAH (événements/heure)</th><th>Interprétation</th></tr></thead>
+      <tbody>
+        <tr><td>Moins de 5</td><td>Pas d'apnée du sommeil significative</td></tr>
+        <tr><td>5 à 15</td><td>Apnée du sommeil légère</td></tr>
+        <tr><td>15 à 30</td><td>Apnée du sommeil modérée</td></tr>
+        <tr><td>Plus de 30</td><td>Apnée du sommeil sévère</td></tr>
+      </tbody>
+    </table>
+    <p>Le médecin ne s'arrête pas à ce chiffre : il tient compte de vos symptômes, de la durée des désaturations en oxygène, de votre position pendant les événements et de vos antécédents. Un IAH modéré très symptomatique peut justifier un <a href="/traitement-apnee-du-sommeil">traitement</a>, alors qu'un IAH limite chez une personne sans symptôme sera surveillé.</p>
+
     <h2>Est-ce fiable et confortable ?</h2>
-    <p>Le boîtier est léger, discret et peu contraignant. La polygraphie ventilatoire est un examen validé, recommandé en première intention pour le dépistage de l'apnée obstructive du sommeil chez l'adulte sans comorbidité majeure. Réalisé dans votre lit, dans votre environnement habituel, il reflète une nuit de sommeil représentative.</p>
+    <p>Le boîtier est léger, discret et peu contraignant. La polygraphie ventilatoire est un examen validé, recommandé en première intention pour le dépistage de l'apnée obstructive du sommeil chez l'adulte sans comorbidité majeure. Réalisé dans votre lit, dans votre environnement habituel, il reflète une nuit de sommeil représentative — parfois mieux qu'une nuit passée en laboratoire, dans un lit inhabituel.</p>
+
+    <h2>Dans quels cas la polygraphie ne suffit-elle pas ?</h2>
+    <p>La polygraphie ventilatoire explore la respiration, mais pas le sommeil lui-même (elle n'enregistre pas l'activité cérébrale). Une <strong>polysomnographie</strong> en laboratoire sera préférée si l'on suspecte une apnée centrale, une insuffisance cardiaque ou respiratoire, une narcolepsie, un syndrome des jambes sans repos, ou si la polygraphie revient négative alors que les symptômes persistent.</p>
+    <p>Votre médecin détermine l'examen adapté à votre situation.</p>
 
     <h2>Prix et remboursement</h2>
     <p>La polygraphie ventilatoire nocturne (code CCAM <strong>GLQP007</strong>) est <strong>prise en charge par l'Assurance Maladie</strong> lorsqu'elle est prescrite. Le reste à charge se limite le plus souvent à une participation forfaitaire, généralement couverte par votre mutuelle. Voir le détail sur notre page dédiée au <a href="/remboursement-polygraphie">remboursement de la polygraphie</a>.</p>
 
     <h2>Polygraphie ventilatoire ou polysomnographie ?</h2>
     <p>La <strong>polygraphie ventilatoire</strong> se concentre sur les paramètres respiratoires et se réalise à domicile. La <strong>polysomnographie</strong> est plus complète (elle enregistre aussi l'activité cérébrale et le sommeil lui-même) mais se fait généralement en laboratoire. Pour le dépistage de l'apnée obstructive, la polygraphie à domicile est souvent l'examen de première intention.</p>
+
+    <h2>L'examen en vidéo</h2>
+    <p>Voici comment se déroule concrètement un examen de polygraphie ventilatoire à domicile :</p>
+    <video src="/SomnoHub-Patient.mp4" controls playsinline preload="metadata"></video>
+
+    <h2>Questions fréquentes</h2>
+
+    <div class="faq-q">
+      <h3>La polygraphie ventilatoire est-elle douloureuse ?</h3>
+      <p>Non, l'examen est totalement indolore et non invasif. Aucune aiguille, aucun produit : uniquement des capteurs posés sur la peau, dans les narines et au bout du doigt.</p>
+    </div>
+
+    <div class="faq-q">
+      <h3>Puis-je faire une polygraphie sans ordonnance ?</h3>
+      <p>Non. La polygraphie ventilatoire est un acte médical qui doit être prescrit par un médecin : médecin traitant, pneumologue, ORL, cardiologue ou médecin consulté en téléconsultation. C'est aussi cette prescription qui ouvre droit au remboursement.</p>
+    </div>
+
+    <div class="faq-q">
+      <h3>Est-ce que je vais réussir à dormir avec le boîtier ?</h3>
+      <p>La grande majorité des patients dorment normalement. Le dispositif est léger et conçu pour être le moins gênant possible. Même une nuit un peu perturbée reste exploitable dès lors que l'enregistrement dure au moins 6 heures.</p>
+    </div>
+
+    <div class="faq-q">
+      <h3>Que se passe-t-il si l'enregistrement échoue ?</h3>
+      <p>Si un capteur s'est détaché ou si la durée d'enregistrement est insuffisante, l'examen peut être refait. Mieux vaut nous le signaler dès le lendemain plutôt que d'attendre l'analyse.</p>
+    </div>
+
+    <div class="faq-q">
+      <h3>Sous combien de temps ai-je mes résultats ?</h3>
+      <p>Les données sont analysées par un médecin du sommeil et le compte-rendu est transmis à votre médecin prescripteur sous quelques jours après réception du boîtier.</p>
+    </div>
+
+    <div class="faq-q">
+      <h3>Combien coûte une polygraphie ventilatoire ?</h3>
+      <p>L'acte (code CCAM GLQP007, tarif 151,68 €) est pris en charge par l'Assurance Maladie sur prescription. Il reste une participation forfaitaire de 32 €, généralement couverte par la mutuelle. Voir le détail sur la page <a href="/remboursement-polygraphie">remboursement</a>.</p>
+    </div>
 
     <div class="cta-box">
       <h2>Besoin d'une polygraphie ?</h2>
