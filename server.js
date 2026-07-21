@@ -36,6 +36,9 @@ app.get('/polygraphie-ventilatoire', (req, res) => res.sendFile(path.join(__dirn
 app.get('/remboursement-polygraphie', (req, res) => res.sendFile(path.join(__dirname, 'public/remboursement-polygraphie/index.html')));
 app.get('/ronflements', (req, res) => res.sendFile(path.join(__dirname, 'public/ronflements/index.html')));
 app.get('/traitement-apnee-du-sommeil', (req, res) => res.sendFile(path.join(__dirname, 'public/traitement-apnee-du-sommeil/index.html')));
+app.get('/score-stop-bang', (req, res) => res.sendFile(path.join(__dirname, 'public/score-stop-bang/index.html')));
+app.get('/apnee-du-sommeil-fatigue', (req, res) => res.sendFile(path.join(__dirname, 'public/apnee-du-sommeil-fatigue/index.html')));
+app.get('/apnee-du-sommeil-femme', (req, res) => res.sendFile(path.join(__dirname, 'public/apnee-du-sommeil-femme/index.html')));
 
 // ── DIAGNOSTIC PERSISTANCE VOLUME ───────────────────────
 // Écrit un fichier témoin et relit le précédent : si le témoin ne survit
