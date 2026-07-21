@@ -59,6 +59,8 @@ function initDb() {
       adresse TEXT NOT NULL,
       lat REAL DEFAULT 48.8566,
       lng REAL DEFAULT 2.3522,
+      taille INTEGER,
+      poids REAL,
       score_stop_bang INTEGER DEFAULT 0,
       statut TEXT DEFAULT 'prescrit' CHECK(statut IN (
         'prescrit','livraison_prevue','livraison_effectuee',
@@ -198,6 +200,8 @@ function migrate(db) {
     `ALTER TABLE demandes ADD COLUMN lng REAL`,
     `ALTER TABLE demandes ADD COLUMN couverture TEXT`,
     `ALTER TABLE demandes ADD COLUMN mutuelle_nom TEXT`,
+    `ALTER TABLE patients ADD COLUMN taille INTEGER`,
+    `ALTER TABLE patients ADD COLUMN poids REAL`,
   ];
   for (const sql of ajouts) {
     try { db.exec(sql); } catch (e) { /* colonne déjà présente */ }

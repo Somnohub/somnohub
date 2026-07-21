@@ -10,18 +10,23 @@ const { genererAlertes } = require('../services/scheduler');
 // Utilisé par la prescription médecin ET par la programmation d'une demande (admin).
 // Retourne la ligne patient (avec boitier_numero).
 function creerPatientAvecBoitier(db, fields, createdBy, notePrescription = 'Prescription créée') {
-  const { medecin_id, nom, prenom, telephone, adresse, lat, lng, score_stop_bang } = fields;
+  const { medecin_id, nom, prenom, telephone, adresse, lat, lng, score_stop_bang, taille, poids } = fields;
   const today = new Date().toISOString().split('T')[0];
 
   const boitierDispo = db.prepare(`SELECT * FROM boitiers WHERE statut = 'disponible' LIMIT 1`).get();
 
+  // Taille (cm) et poids (kg) sont facultatifs
+  const tailleNum = (taille !== undefined && taille !== null && taille !== '' && isFinite(taille)) ? Math.round(Number(taille)) : null;
+  const poidsNum = (poids !== undefined && poids !== null && poids !== '' && isFinite(poids)) ? Number(poids) : null;
+
   const result = db.prepare(`
-    INSERT INTO patients (medecin_id, nom, prenom, telephone, adresse, lat, lng, score_stop_bang, statut)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO patients (medecin_id, nom, prenom, telephone, adresse, lat, lng, taille, poids, score_stop_bang, statut)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     medecin_id,
     nom.trim(), prenom.trim(), telephone.trim(), adresse.trim(),
     lat || 48.8566, lng || 2.3522,
+    tailleNum, poidsNum,
     score_stop_bang || 0,
     boitierDispo ? 'livraison_prevue' : 'prescrit'
   );
@@ -91,7 +96,7 @@ router.get('/patients/:id', auth(['medecin']), (req, res) => {
 
 // Créer une prescription
 router.post('/patients', auth(['medecin']), async (req, res) => {
-  const { nom, prenom, telephone, adresse, lat, lng, score_stop_bang } = req.body;
+  const { nom, prenom, telephone, adresse, lat, lng, score_stop_bang, taille, poids } = req.body;
 
   if (!nom || !prenom || !telephone || !adresse) {
     return res.status(400).json({ error: 'Champs obligatoires manquants' });
@@ -105,7 +110,7 @@ router.post('/patients', auth(['medecin']), async (req, res) => {
   const db = getDb();
   const patient = creerPatientAvecBoitier(db, {
     medecin_id: req.user.id,
-    nom, prenom, telephone, adresse, lat, lng, score_stop_bang
+    nom, prenom, telephone, adresse, lat, lng, score_stop_bang, taille, poids
   }, req.user.id);
 
   res.status(201).json(patient);
