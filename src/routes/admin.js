@@ -9,7 +9,7 @@ const { genererAlertes } = require('../services/scheduler');
 const { backupNow, dernieresSauvegardes } = require('../services/backup');
 const { creerPatientAvecBoitier } = require('./medecin');
 const { envoyerSMSTest, twilioConfigure } = require('../services/sms');
-const { emailDemandeValidee } = require('../services/email');
+const { emailDemandeValidee, emailConfigure, envoyerEmail, adminEmail } = require('../services/email');
 
 // ─── Boîtiers ───────────────────────────────────────────────────────────────
 
@@ -627,6 +627,27 @@ router.post('/test-sms', auth(['admin']), async (req, res) => {
     res.json({ success: true, sid });
   } catch (e) {
     console.error('[Test SMS] Erreur:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ─── Email (statut + test) ────────────────────────────────────────────────────
+
+router.get('/email-status', auth(['admin']), (req, res) => {
+  res.json({ configure: emailConfigure(), admin: adminEmail() });
+});
+
+router.post('/test-email', auth(['admin']), async (req, res) => {
+  const to = (req.body.email || adminEmail());
+  try {
+    const r = await envoyerEmail(to, 'Test SomnoHub — configuration email',
+      'Ceci est un email de test.\n\nVotre configuration SMTP fonctionne : les notifications aux patients et à l\'administrateur seront bien envoyées.\n\nL\'équipe SomnoHub');
+    if (r && r.simule) {
+      return res.status(400).json({ error: 'SMTP non configuré — email seulement simulé. Renseignez les variables EMAIL_HOST / EMAIL_USER / EMAIL_PASS sur Railway, puis redéployez.' });
+    }
+    res.json({ success: true, to });
+  } catch (e) {
+    console.error('[Test Email] Erreur:', e.message);
     res.status(500).json({ error: e.message });
   }
 });

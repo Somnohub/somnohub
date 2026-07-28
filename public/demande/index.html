@@ -115,7 +115,7 @@
           <!-- Médecin prescripteur (parcours patient uniquement) -->
           <div id="blocPrescripteurPatient">
             <div class="form-group">
-              <label>Nom de votre médecin prescripteur</label>
+              <label>Nom de votre médecin prescripteur <span class="req">*</span></label>
               <input type="text" class="form-control" id="medecin_nom_patient" placeholder="Dr Dupont">
             </div>
           </div>
@@ -334,9 +334,16 @@ async function submitDemande(e) {
     return false;
   }
 
-  const medecinNom = parcours === 'medecin'
+  const medecinNom = (parcours === 'medecin'
     ? document.getElementById('medecin_nom').value
-    : document.getElementById('medecin_nom_patient').value;
+    : document.getElementById('medecin_nom_patient').value).trim();
+
+  if (!medecinNom) {
+    showAlert(parcours === 'medecin'
+      ? 'Merci d\'indiquer votre nom de médecin.'
+      : 'Merci d\'indiquer le nom de votre médecin prescripteur.');
+    return false;
+  }
 
   const payload = {
     source: parcours,

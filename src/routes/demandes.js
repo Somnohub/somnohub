@@ -19,6 +19,9 @@ router.post('/', (req, res) => {
     if (!patient_nom || !patient_prenom || !telephone || !adresse) {
       return res.status(400).json({ error: 'Champs obligatoires manquants' });
     }
+    if (!medecin_nom || !String(medecin_nom).trim()) {
+      return res.status(400).json({ error: 'Le nom du médecin prescripteur est obligatoire' });
+    }
     if (!consentement) {
       return res.status(400).json({ error: 'Le consentement est obligatoire' });
     }
