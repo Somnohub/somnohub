@@ -101,10 +101,15 @@
             </div>
           </div>
           <div class="form-group">
+            <label>Email <span style="font-weight:400;color:var(--text-light);font-size:.8rem">(pour suivre votre demande)</span></label>
+            <input type="email" class="form-control" id="email" placeholder="vous@email.fr" inputmode="email" autocomplete="email">
+          </div>
+          <div class="form-group">
             <label>Adresse de livraison <span class="req">*</span></label>
             <input type="text" class="form-control" id="adresse" placeholder="Commencez à taper, puis choisissez dans la liste" autocomplete="off" required>
-            <input type="hidden" id="lat"><input type="hidden" id="lng">
+            <input type="hidden" id="lat"><input type="hidden" id="lng"><input type="hidden" id="code_postal">
             <small id="adresseHint" style="display:none;color:var(--accent);font-size:.78rem">✓ Adresse localisée</small>
+            <small id="adresseErr" style="display:none;color:var(--hors-service);font-size:.78rem">⚠️ Choisissez votre adresse dans la liste qui s'affiche.</small>
           </div>
 
           <!-- Médecin prescripteur (parcours patient uniquement) -->
@@ -132,7 +137,7 @@
               </label>
               <label class="radio-opt">
                 <input type="radio" name="ordonnance_mode" value="a_la_livraison" onchange="syncOrdo()">
-                <span><strong>À remettre à la livraison</strong><small>Vous donnerez l'ordonnance au livreur lors du dépôt du boîtier.</small></span>
+                <span><strong id="ordoLabelMateriel">À remettre à la livraison</strong><small id="ordoSubMateriel">Vous donnerez l'ordonnance au livreur lors du dépôt du boîtier.</small></span>
               </label>
             </div>
           </div>
@@ -182,13 +187,31 @@ const API = '';
 const GOOGLE_KEY = 'AIzaSyBPL4FZ6litzOBAW2aRiiDxHqmWy2kMySw';
 let parcours = 'patient';
 
+// Départements d'Île-de-France
+const DEPTS_IDF = ['75', '77', '78', '91', '92', '93', '94', '95'];
+let adresseIDF = null; // null = inconnu, true/false une fois une adresse choisie
+
+// Adapte l'option « ordonnance » selon la zone (IDF = remise en main propre,
+// hors IDF = jointe au renvoi postal du matériel).
+function majOrdonnanceLabels() {
+  const lab = document.getElementById('ordoLabelMateriel');
+  const sub = document.getElementById('ordoSubMateriel');
+  if (adresseIDF === false) {
+    lab.textContent = 'Je la joindrai au retour du matériel';
+    sub.textContent = 'Vous glisserez l\'ordonnance avec le boîtier lors de son renvoi par la poste.';
+  } else {
+    lab.textContent = 'À remettre à la livraison';
+    sub.textContent = 'Vous donnerez l\'ordonnance au livreur lors du dépôt du boîtier.';
+  }
+}
+
 // Autocomplétion d'adresse Google (restreinte à la France)
 function initAutocomplete() {
   if (!(window.google && google.maps && google.maps.places)) return;
   const input = document.getElementById('adresse');
   const ac = new google.maps.places.Autocomplete(input, {
     componentRestrictions: { country: 'fr' },
-    fields: ['formatted_address', 'geometry'],
+    fields: ['formatted_address', 'geometry', 'address_components'],
     types: ['address']
   });
   ac.addListener('place_changed', () => {
@@ -198,13 +221,26 @@ function initAutocomplete() {
       document.getElementById('lat').value = place.geometry.location.lat();
       document.getElementById('lng').value = place.geometry.location.lng();
       document.getElementById('adresseHint').style.display = 'block';
+      document.getElementById('adresseErr').style.display = 'none';
+
+      // Code postal → détection Île-de-France
+      let cp = '';
+      (place.address_components || []).forEach(c => {
+        if (c.types.includes('postal_code')) cp = c.long_name;
+      });
+      document.getElementById('code_postal').value = cp;
+      adresseIDF = cp ? DEPTS_IDF.includes(cp.slice(0, 2)) : null;
+      majOrdonnanceLabels();
     }
   });
   // Si l'utilisateur modifie l'adresse à la main, on invalide les coordonnées
   input.addEventListener('input', () => {
     document.getElementById('lat').value = '';
     document.getElementById('lng').value = '';
+    document.getElementById('code_postal').value = '';
+    adresseIDF = null;
     document.getElementById('adresseHint').style.display = 'none';
+    majOrdonnanceLabels();
   });
 }
 
@@ -288,6 +324,16 @@ async function submitDemande(e) {
     return false;
   }
 
+  // Adresse : obligatoirement choisie dans la liste Google (coordonnées présentes)
+  const latV = parseFloat(document.getElementById('lat').value);
+  const lngV = parseFloat(document.getElementById('lng').value);
+  if (!isFinite(latV) || !isFinite(lngV)) {
+    document.getElementById('adresseErr').style.display = 'block';
+    document.getElementById('adresse').focus();
+    showAlert('Merci de sélectionner votre adresse dans la liste proposée sous le champ.');
+    return false;
+  }
+
   const medecinNom = parcours === 'medecin'
     ? document.getElementById('medecin_nom').value
     : document.getElementById('medecin_nom_patient').value;
@@ -298,19 +344,18 @@ async function submitDemande(e) {
     patient_prenom: document.getElementById('patient_prenom').value,
     date_naissance: document.getElementById('date_naissance').value,
     telephone: document.getElementById('telephone').value,
+    email: document.getElementById('email').value,
     adresse: document.getElementById('adresse').value,
+    code_postal: document.getElementById('code_postal').value,
     medecin_nom: medecinNom,
     medecin_rpps: parcours === 'medecin' ? document.getElementById('medecin_rpps').value : '',
     indication: parcours === 'medecin' ? document.getElementById('indication').value : '',
     ordonnance_mode: document.querySelector('input[name="ordonnance_mode"]:checked').value,
     couverture: document.getElementById('couverture').value,
     mutuelle_nom: document.getElementById('mutuelle_nom').value,
-    consentement: true
+    consentement: true,
+    lat: latV, lng: lngV
   };
-
-  const latV = parseFloat(document.getElementById('lat').value);
-  const lngV = parseFloat(document.getElementById('lng').value);
-  if (isFinite(latV) && isFinite(lngV)) { payload.lat = latV; payload.lng = lngV; }
 
   const btn = document.getElementById('btnSubmit');
   btn.disabled = true; btn.textContent = 'Envoi…';

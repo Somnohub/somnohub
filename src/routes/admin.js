@@ -9,6 +9,7 @@ const { genererAlertes } = require('../services/scheduler');
 const { backupNow, dernieresSauvegardes } = require('../services/backup');
 const { creerPatientAvecBoitier } = require('./medecin');
 const { envoyerSMSTest, twilioConfigure } = require('../services/sms');
+const { emailDemandeValidee } = require('../services/email');
 
 // ─── Boîtiers ───────────────────────────────────────────────────────────────
 
@@ -497,6 +498,15 @@ router.put('/demandes/:id/valider', auth(['admin']), (req, res) => {
   if (!d) return res.status(404).json({ error: 'Demande introuvable' });
   if (d.statut !== 'recue') return res.status(400).json({ error: 'Seule une demande reçue peut être validée' });
   db.prepare(`UPDATE demandes SET statut = 'validee', updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(d.id);
+
+  // Notifier le patient : email si disponible, sinon SMS (best-effort)
+  if (d.email) {
+    emailDemandeValidee(d).catch(e => console.error('[Valider] Email patient échoué:', e.message));
+  } else if (d.telephone) {
+    envoyerSMSTest(d.telephone, `Bonjour ${d.patient_prenom}, votre demande de polygraphie a été validée par SomnoHub. Nous organisons l'acheminement du boîtier et vous recontactons. À bientôt.`)
+      .catch(e => console.error('[Valider] SMS patient échoué:', e.message));
+  }
+
   res.json({ success: true });
 });
 

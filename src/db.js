@@ -156,7 +156,9 @@ function initDb() {
       patient_prenom TEXT NOT NULL,
       date_naissance TEXT,
       telephone TEXT NOT NULL,
+      email TEXT,
       adresse TEXT NOT NULL,
+      code_postal TEXT,
       medecin_nom TEXT,
       medecin_rpps TEXT,
       indication TEXT,
@@ -202,6 +204,8 @@ function migrate(db) {
     `ALTER TABLE demandes ADD COLUMN mutuelle_nom TEXT`,
     `ALTER TABLE patients ADD COLUMN taille INTEGER`,
     `ALTER TABLE patients ADD COLUMN poids REAL`,
+    `ALTER TABLE demandes ADD COLUMN email TEXT`,
+    `ALTER TABLE demandes ADD COLUMN code_postal TEXT`,
   ];
   for (const sql of ajouts) {
     try { db.exec(sql); } catch (e) { /* colonne déjà présente */ }
