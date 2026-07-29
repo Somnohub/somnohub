@@ -262,6 +262,28 @@
     .hero-video-badge span { font-size: .78rem; font-weight: 700; color: var(--primary); }
 
     /* ── STRIP AVANTAGES ── */
+    /* ── ORIENTATION : aiguillage par profil, juste sous le hero ── */
+    .orient { background: var(--white); padding: 44px 5% 40px; border-bottom: 1px solid var(--border); }
+    .orient-inner { max-width: 1100px; margin: 0 auto; }
+    .orient-title {
+      text-align: center; font-size: 1.35rem; font-weight: 800; color: var(--primary);
+      margin-bottom: 26px; letter-spacing: -.2px;
+    }
+    .orient-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    .orient-card {
+      display: flex; flex-direction: column; text-decoration: none;
+      background: var(--bg); border: 2px solid var(--border); border-radius: 16px;
+      padding: 24px 22px; transition: all .18s;
+    }
+    .orient-card:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: 0 10px 28px rgba(26,61,43,.10); }
+    .orient-card--main { background: #f0faf4; border-color: var(--accent-light); }
+    .orient-ic { font-size: 1.9rem; margin-bottom: 10px; }
+    .orient-h { font-size: 1.05rem; font-weight: 800; color: var(--primary); margin-bottom: 7px; }
+    .orient-card p { font-size: .9rem; color: var(--text-mid); line-height: 1.55; flex: 1; margin-bottom: 14px; }
+    .orient-go { font-size: .88rem; font-weight: 700; color: var(--accent); }
+    .orient-card:hover .orient-go { color: var(--primary-light); }
+    @media (max-width: 860px) { .orient-grid { grid-template-columns: 1fr; } .orient { padding: 32px 5%; } }
+
     .strip {
       background: var(--primary); padding: 28px 5%;
     }
@@ -885,6 +907,33 @@
   </div>
 </section>
 
+<!-- ORIENTATION — trois portes d'entrée selon le profil du visiteur -->
+<section class="orient">
+  <div class="orient-inner">
+    <h2 class="orient-title">Que souhaitez-vous faire ?</h2>
+    <div class="orient-grid">
+      <a href="/demande?profil=medecin" class="orient-card" onclick="trackEvt('orientation_clic',{profil:'medecin'})">
+        <div class="orient-ic">🩺</div>
+        <div class="orient-h">Je suis médecin</div>
+        <p>J'adresse un patient pour une polygraphie ventilatoire. Sans inscription, en 2 minutes.</p>
+        <span class="orient-go">Adresser un patient →</span>
+      </a>
+      <a href="/demande?profil=patient" class="orient-card orient-card--main" onclick="trackEvt('orientation_clic',{profil:'patient'})">
+        <div class="orient-ic">📄</div>
+        <div class="orient-h">J'ai mon ordonnance</div>
+        <p>Je veux faire réaliser mon examen du sommeil à domicile, sans me déplacer.</p>
+        <span class="orient-go">Demander mon examen →</span>
+      </a>
+      <a href="#stopbang" class="orient-card" onclick="trackEvt('orientation_clic',{profil:'informe'})">
+        <div class="orient-ic">❓</div>
+        <div class="orient-h">Je m'informe</div>
+        <p>Je ne sais pas si je suis concerné. J'évalue mon risque avec le test STOP-BANG.</p>
+        <span class="orient-go">Faire le test gratuit →</span>
+      </a>
+    </div>
+  </div>
+</section>
+
 <!-- STRIP -->
 <div class="strip">
   <div class="strip-inner">
@@ -1318,8 +1367,11 @@
         <span class="pro-target">Pneumologues</span>
         <span class="pro-target">Médecine du travail</span>
       </div>
-      <button class="btn-pro" onclick="openProModal()">Rejoindre le réseau →</button>
-      <p style="font-size:.78rem;color:var(--text-light);margin-top:12px">Un simple échange suffit pour démarrer.</p>
+      <a href="/demande?profil=medecin" class="btn-pro" style="text-decoration:none;display:inline-block" onclick="trackEvt('cta_demande_clic',{source:'section_pro'})">Adresser un patient maintenant →</a>
+      <p style="font-size:.78rem;color:var(--text-light);margin-top:12px">Sans inscription, en 2 minutes. Vous n'avez pas besoin de compte pour adresser un patient.</p>
+      <p style="font-size:.82rem;margin-top:14px">
+        <a href="#" onclick="openProModal();return false;" style="color:var(--accent-light);font-weight:600">Vous prescrivez régulièrement ? Demandez votre espace partenaire →</a>
+      </p>
       <p style="font-size:.82rem;margin-top:14px"><a href="/integrer-le-test" style="color:var(--accent-light);font-weight:600">🔗 Intégrez gratuitement le test STOP-BANG sur votre site →</a></p>
     </div>
     <div class="pro-avantages">
@@ -1469,16 +1521,16 @@
   <div class="popup-accueil-box">
     <div class="popup-logo">Somno<span>Hub</span></div>
     <h2>Bienvenue sur SomnoHub</h2>
-    <p>Pour vous orienter vers les informations les plus adaptées, dites-nous qui vous êtes.</p>
+    <p>Dites-nous en un clic ce que vous cherchez — nous vous amenons directement au bon endroit.</p>
     <div class="popup-choices">
-      <button class="popup-btn-patient" onclick="popupChoixDemande()">
-        📨 Je veux réaliser une polygraphie ventilatoire
+      <button class="popup-btn-patient" onclick="popupVersDemande('medecin')">
+        🩺 Je suis médecin — j'adresse un patient
       </button>
-      <button class="popup-btn-patient" onclick="popupChoixPatient()">
-        😴 Je suis patient — je cherche de l'aide pour mon sommeil
+      <button class="popup-btn-patient" onclick="popupVersDemande('patient')">
+        📄 J'ai mon ordonnance — je veux réaliser l'examen
       </button>
-      <button class="popup-btn-pro" onclick="popupChoixPro()">
-        🩺 Je suis professionnel de santé
+      <button class="popup-btn-pro" onclick="popupChoixPatient()">
+        ❓ Je m'informe — je ne sais pas si je suis concerné
       </button>
     </div>
     <div class="popup-skip" onclick="popupChoixPatient()">Passer cette étape</div>
@@ -1527,16 +1579,11 @@ function popupChoixPatient() {
   document.getElementById('popupAccueil').classList.remove('show');
   sessionStorage.setItem('sh_accueil_vu', '1');
 }
-function popupChoixDemande() {
-  trackEvt('popup_choix', { choix: 'demande' });
+// Routage direct vers la page de demande, avec le bon parcours pré-sélectionné
+function popupVersDemande(profil) {
+  trackEvt('popup_choix', { choix: profil });
   sessionStorage.setItem('sh_accueil_vu', '1');
-  window.location.href = '/demande';
-}
-function popupChoixPro() {
-  trackEvt('popup_choix', { choix: 'pro' });
-  document.getElementById('popupAccueil').classList.remove('show');
-  sessionStorage.setItem('sh_accueil_vu', '1');
-  setTimeout(() => document.getElementById('pro').scrollIntoView({behavior:'smooth'}), 300);
+  window.location.href = '/demande?profil=' + profil;
 }
 
 // ── MODAL PRO ──

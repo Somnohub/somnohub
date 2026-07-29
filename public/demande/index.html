@@ -35,6 +35,10 @@
     .radio-opt.sel { border-color: var(--accent); background: #f0faf4; }
     .radio-opt input { margin-top: 3px; }
     .radio-opt small { display: block; color: var(--text-light); font-weight: 400; margin-top: 2px; }
+    /* Sortie pour le patient sans ordonnance : on l'oriente au lieu de le bloquer */
+    .pas-ordo { background: #fff8ee; border: 1px solid #ffd9a0; border-radius: var(--radius-sm); padding: 14px 16px; margin: -6px 0 18px; }
+    .pas-ordo strong { display: block; color: #b25e00; font-size: .9rem; margin-bottom: 5px; }
+    .pas-ordo p { font-size: .84rem; color: var(--text-mid); line-height: 1.55; margin: 0 0 10px; }
     .consent { display: flex; align-items: flex-start; gap: 10px; font-size: .88rem; color: var(--text-mid); margin: 20px 0 6px; cursor: pointer; }
     .consent input { margin-top: 3px; width: 18px; height: 18px; flex-shrink: 0; }
     .consent a { color: var(--accent); font-weight: 600; }
@@ -121,6 +125,14 @@
             <div class="form-group">
               <label>Nom de votre médecin prescripteur <span class="req">*</span></label>
               <input type="text" class="form-control" id="medecin_nom_patient" placeholder="Dr Dupont">
+              <small style="display:block;color:var(--text-light);font-size:.78rem;margin-top:6px">
+                Le médecin qui vous a prescrit l'examen. Une ordonnance est indispensable pour réaliser une polygraphie.
+              </small>
+            </div>
+            <div class="pas-ordo">
+              <strong>Vous n'avez pas encore d'ordonnance ?</strong>
+              <p>La polygraphie ventilatoire est un acte médical : elle doit être prescrite par un médecin. Commencez par évaluer votre risque avec le test STOP-BANG — vous saurez en 2 minutes si une consultation est justifiée, et comment obtenir votre prescription rapidement.</p>
+              <a href="/#stopbang" class="btn btn-outline btn-sm">Faire le test STOP-BANG gratuit →</a>
             </div>
           </div>
 
@@ -396,7 +408,13 @@ async function submitDemande(e) {
   return false;
 }
 
-setParcours('patient');
+// Pré-sélection du parcours via l'URL (?profil=medecin|patient), utilisée par les
+// portes d'entrée de l'accueil. On ne déclenche pas l'événement `parcours_choisi`,
+// réservé à un choix explicite du visiteur.
+(function initParcours() {
+  const p = new URLSearchParams(window.location.search).get('profil');
+  setParcours(p === 'medecin' ? 'medecin' : 'patient');
+})();
 </script>
 <script async defer
   src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBPL4FZ6litzOBAW2aRiiDxHqmWy2kMySw&libraries=places&language=fr&region=FR&callback=initAutocomplete"></script>
