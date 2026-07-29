@@ -163,6 +163,13 @@
       text-decoration: none; transition: all .2s;
     }
     .btn-pro-nav:hover { border-color: var(--accent); color: var(--primary) !important; background: var(--bg); }
+    /* CTA de conversion : la demande d'examen doit ressortir dans la navigation */
+    .btn-demande-nav {
+      font-size: .82rem !important; font-weight: 700; color: #fff !important;
+      background: var(--accent); border-radius: 20px; padding: 8px 16px;
+      text-decoration: none; transition: all .2s; white-space: nowrap;
+    }
+    .btn-demande-nav:hover { background: var(--primary-light); transform: translateY(-1px); }
     .nav-burger { display: none; background: none; border: none; cursor: pointer; padding: 8px; }
     .nav-burger span { display: block; width: 22px; height: 2px; background: var(--primary); margin: 5px 0; border-radius: 2px; transition: all .3s; }
     .mobile-menu {
@@ -838,7 +845,7 @@
     <a href="#stopbang">Test STOP-BANG</a>
     <a href="#teleconsult">Téléconsultation</a>
     <a href="#faq">FAQ</a>
-    <a href="/demande">Demander une polygraphie</a>
+    <a href="/demande" class="btn-demande-nav" onclick="trackEvt('cta_demande_clic',{source:'nav'})">Demander ma polygraphie</a>
     <a href="#pro" class="btn-pro-nav">Professionnels de santé</a>
     <button class="btn-connexion" onclick="openLogin()">Connexion →</button>
   </div>
@@ -861,8 +868,8 @@
       <h1>Vous ronflez ? Vous vous réveillez <em>épuisé</em> chaque matin ?</h1>
       <p class="hero-desc">L'apnée du sommeil touche 3 millions de Français — dont 80 % ne sont pas diagnostiqués. Un simple test à domicile peut changer votre qualité de vie.</p>
       <div class="hero-actions">
-        <button class="btn-hero-primary" onclick="document.getElementById('stopbang').scrollIntoView({behavior:'smooth'})">Faire le test gratuit →</button>
-        <a href="#apnee" class="btn-hero-ghost">▶ En savoir plus</a>
+        <a href="/demande" class="btn-hero-primary" style="text-decoration:none;display:inline-block" onclick="trackEvt('cta_demande_clic',{source:'hero'})">Demander ma polygraphie →</a>
+        <button class="btn-hero-ghost" onclick="document.getElementById('stopbang').scrollIntoView({behavior:'smooth'})">Je ne suis pas sûr — faire le test gratuit</button>
       </div>
       <div class="hero-stats">
         <div class="hero-stat"><div class="val">1 nuit</div><div class="lbl">pour un diagnostic précis</div></div>
