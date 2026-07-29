@@ -9,7 +9,7 @@ const { genererAlertes } = require('../services/scheduler');
 const { backupNow, dernieresSauvegardes } = require('../services/backup');
 const { creerPatientAvecBoitier } = require('./medecin');
 const { envoyerSMSTest, twilioConfigure } = require('../services/sms');
-const { emailDemandeValidee, emailConfigure, envoyerEmail, adminEmail } = require('../services/email');
+const { emailDemandeValidee, emailConfigure, emailMode, envoyerEmail, adminEmail } = require('../services/email');
 
 // ─── Boîtiers ───────────────────────────────────────────────────────────────
 
@@ -529,10 +529,12 @@ router.put('/demandes/:id/programmer', auth(['admin']), (req, res) => {
   // Réutilise le pipeline existant : crée le patient, assigne un boîtier, crée le stop, SMS.
   // Le prescripteur réel reste tracé en texte dans la demande ; medecin_id = admin.
   const note = d.medecin_nom ? `Demande programmée — prescripteur ${d.medecin_nom}` : 'Demande programmée';
+  // Le complément d'adresse est concaténé pour que le livreur en dispose
+  const adresseComplete = d.complement ? `${d.adresse} — ${d.complement}` : d.adresse;
   const patient = creerPatientAvecBoitier(db, {
     medecin_id: req.user.id,
     nom: d.patient_nom, prenom: d.patient_prenom,
-    telephone: d.telephone, adresse: d.adresse,
+    telephone: d.telephone, adresse: adresseComplete,
     lat: d.lat, lng: d.lng, score_stop_bang: 0
   }, req.user.id, note);
 
@@ -634,7 +636,7 @@ router.post('/test-sms', auth(['admin']), async (req, res) => {
 // ─── Email (statut + test) ────────────────────────────────────────────────────
 
 router.get('/email-status', auth(['admin']), (req, res) => {
-  res.json({ configure: emailConfigure(), admin: adminEmail() });
+  res.json({ configure: emailConfigure(), mode: emailMode(), admin: adminEmail() });
 });
 
 router.post('/test-email', auth(['admin']), async (req, res) => {

@@ -9,7 +9,7 @@ router.post('/', (req, res) => {
   try {
     const {
       source, patient_nom, patient_prenom, date_naissance,
-      telephone, email, adresse, code_postal, medecin_nom, medecin_rpps, indication,
+      telephone, email, adresse, complement, code_postal, medecin_nom, medecin_rpps, indication,
       ordonnance_mode, consentement, lat, lng, couverture, mutuelle_nom
     } = req.body;
 
@@ -52,13 +52,13 @@ router.post('/', (req, res) => {
     const db = getDb();
     const result = db.prepare(`
       INSERT INTO demandes (
-        source, patient_nom, patient_prenom, date_naissance, telephone, email, adresse, code_postal,
+        source, patient_nom, patient_prenom, date_naissance, telephone, email, adresse, complement, code_postal,
         medecin_nom, medecin_rpps, indication, couverture, mutuelle_nom, lat, lng, ordonnance_mode, consentement, statut
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'recue')
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'recue')
     `).run(
       source,
       patient_nom.trim(), patient_prenom.trim(), (date_naissance || '').trim() || null,
-      telClean, emailClean || null, adresse.trim(), cp,
+      telClean, emailClean || null, adresse.trim(), (complement || '').trim() || null, cp,
       (medecin_nom || '').trim() || null, (medecin_rpps || '').trim() || null,
       (indication || '').trim() || null,
       couv, couv === 'secu_mutuelle' ? ((mutuelle_nom || '').trim() || null) : null,

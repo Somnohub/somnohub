@@ -1319,6 +1319,7 @@ async function openDemande(id) {
       ${row('Téléphone', d.telephone)}
       ${row('Email', d.email)}
       ${row('Adresse', d.adresse)}
+      ${row('Complément', d.complement)}
       ${row('Médecin prescripteur', d.medecin_nom)}
       ${row('RPPS', d.medecin_rpps)}
       ${row('Indication', d.indication)}
@@ -1516,10 +1517,12 @@ async function loadEmailStatus() {
   const el = document.getElementById('emailStatus');
   try {
     const d = await (await fetch(`${API}/api/admin/email-status`, { headers: authHeaders() })).json();
-    if (d.configure) {
-      el.innerHTML = `✅ <strong style="color:#2e7d32">SMTP configuré</strong> — notifications actives (admin : ${d.admin}).`;
+    if (d.mode === 'api') {
+      el.innerHTML = `✅ <strong style="color:#2e7d32">Envoi par API HTTPS</strong> — notifications actives (admin : ${d.admin}).`;
+    } else if (d.mode === 'smtp') {
+      el.innerHTML = `⚠️ <strong style="color:#e65100">Mode SMTP</strong> — attention : les ports SMTP sortants sont bloqués par l'hébergeur, l'envoi risque d'échouer. Préférez une clé API (BREVO_API_KEY).`;
     } else {
-      el.innerHTML = '⚠️ <strong style="color:#e65100">SMTP non configuré</strong> — les emails sont seulement simulés. Renseigne les variables EMAIL_* sur Railway.';
+      el.innerHTML = '⚠️ <strong style="color:#e65100">Non configuré</strong> — les emails sont seulement simulés. Renseignez BREVO_API_KEY et EMAIL_FROM sur Railway.';
     }
   } catch (e) { el.textContent = 'Statut indisponible'; }
 }

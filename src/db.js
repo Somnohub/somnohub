@@ -158,6 +158,7 @@ function initDb() {
       telephone TEXT NOT NULL,
       email TEXT,
       adresse TEXT NOT NULL,
+      complement TEXT,
       code_postal TEXT,
       medecin_nom TEXT,
       medecin_rpps TEXT,
@@ -206,6 +207,7 @@ function migrate(db) {
     `ALTER TABLE patients ADD COLUMN poids REAL`,
     `ALTER TABLE demandes ADD COLUMN email TEXT`,
     `ALTER TABLE demandes ADD COLUMN code_postal TEXT`,
+    `ALTER TABLE demandes ADD COLUMN complement TEXT`,
   ];
   for (const sql of ajouts) {
     try { db.exec(sql); } catch (e) { /* colonne déjà présente */ }

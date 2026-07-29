@@ -111,6 +111,10 @@
             <small id="adresseHint" style="display:none;color:var(--accent);font-size:.78rem">✓ Adresse localisée</small>
             <small id="adresseErr" style="display:none;color:var(--hors-service);font-size:.78rem">⚠️ Choisissez votre adresse dans la liste qui s'affiche.</small>
           </div>
+          <div class="form-group">
+            <label>Complément d'adresse <span style="font-weight:400;color:var(--text-light);font-size:.8rem">(bâtiment, étage, code, interphone…)</span></label>
+            <input type="text" class="form-control" id="complement" placeholder="Bât. B, 3e étage, code 1234A">
+          </div>
 
           <!-- Médecin prescripteur (parcours patient uniquement) -->
           <div id="blocPrescripteurPatient">
@@ -353,6 +357,7 @@ async function submitDemande(e) {
     telephone: document.getElementById('telephone').value,
     email: document.getElementById('email').value,
     adresse: document.getElementById('adresse').value,
+    complement: document.getElementById('complement').value,
     code_postal: document.getElementById('code_postal').value,
     medecin_nom: medecinNom,
     medecin_rpps: parcours === 'medecin' ? document.getElementById('medecin_rpps').value : '',
