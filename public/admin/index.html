@@ -1318,7 +1318,7 @@ async function openDemande(id) {
       ${row('Date de naissance', d.date_naissance)}
       ${row('Téléphone', d.telephone)}
       ${row('Email', d.email)}
-      ${row('Adresse', d.adresse)}
+      ${row('Adresse', d.adresse + (d.adresse_verifiee === 0 ? ' <span style="color:#e65100;font-weight:700">⚠️ saisie manuelle — à vérifier</span>' : ''))}
       ${row('Complément', d.complement)}
       ${row('Médecin prescripteur', d.medecin_nom)}
       ${row('RPPS', d.medecin_rpps)}

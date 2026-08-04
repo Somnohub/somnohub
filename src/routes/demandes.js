@@ -47,11 +47,14 @@ router.post('/', (req, res) => {
       return res.status(400).json({ error: 'Adresse email invalide' });
     }
 
-    // Adresse obligatoirement géolocalisée (choisie dans la liste Google)
+    // Adresse : normalement géolocalisée via la liste Google. Si l'autocomplétion
+    // est indisponible côté visiteur (bloqueur, extension, réseau restreint), on
+    // accepte une saisie manuelle suffisamment détaillée, marquée « à vérifier ».
     const latNum = (typeof lat === 'number' && isFinite(lat)) ? lat : null;
     const lngNum = (typeof lng === 'number' && isFinite(lng)) ? lng : null;
-    if (latNum === null || lngNum === null) {
-      return res.status(400).json({ error: 'Merci de sélectionner votre adresse dans la liste proposée.' });
+    const geolocalisee = latNum !== null && lngNum !== null;
+    if (!geolocalisee && String(adresse).trim().length < 12) {
+      return res.status(400).json({ error: 'Merci d\'indiquer votre adresse complète, avec le code postal et la ville.' });
     }
 
     const mode = ordonnance_mode === 'transmise' ? 'transmise' : 'a_la_livraison';
@@ -64,8 +67,8 @@ router.post('/', (req, res) => {
       INSERT INTO demandes (
         source, patient_nom, patient_prenom, date_naissance, telephone, email, adresse, complement, code_postal,
         medecin_nom, medecin_rpps, indication, couverture, mutuelle_nom, lat, lng, ordonnance_mode,
-        ordonnance_confirmee, avis_sommeil, consentement, statut
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'recue')
+        ordonnance_confirmee, avis_sommeil, adresse_verifiee, consentement, statut
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'recue')
     `).run(
       source,
       patient_nom.trim(), patient_prenom.trim(), (date_naissance || '').trim() || null,
@@ -74,7 +77,7 @@ router.post('/', (req, res) => {
       (indication || '').trim() || null,
       couv, couv === 'secu_mutuelle' ? ((mutuelle_nom || '').trim() || null) : null,
       latNum, lngNum, mode,
-      ordonnance_confirmee ? 1 : 0, avis_sommeil ? 1 : 0
+      ordonnance_confirmee ? 1 : 0, avis_sommeil ? 1 : 0, geolocalisee ? 1 : 0
     );
 
     const numero = result.lastInsertRowid;

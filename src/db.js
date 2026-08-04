@@ -171,6 +171,7 @@ function initDb() {
       ordonnance_presente INTEGER DEFAULT 0,
       ordonnance_confirmee INTEGER DEFAULT 0,
       avis_sommeil INTEGER DEFAULT 0,
+      adresse_verifiee INTEGER DEFAULT 1,
       consentement INTEGER DEFAULT 0,
       statut TEXT DEFAULT 'recue' CHECK(statut IN ('recue','validee','programmee','realisee','cr_signe','cloturee','refusee')),
       motif_refus TEXT,
@@ -212,6 +213,7 @@ function migrate(db) {
     `ALTER TABLE demandes ADD COLUMN complement TEXT`,
     `ALTER TABLE demandes ADD COLUMN ordonnance_confirmee INTEGER DEFAULT 0`,
     `ALTER TABLE demandes ADD COLUMN avis_sommeil INTEGER DEFAULT 0`,
+    `ALTER TABLE demandes ADD COLUMN adresse_verifiee INTEGER DEFAULT 1`,
   ];
   for (const sql of ajouts) {
     try { db.exec(sql); } catch (e) { /* colonne déjà présente */ }

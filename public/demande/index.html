@@ -132,6 +132,15 @@
             <input type="hidden" id="lat"><input type="hidden" id="lng"><input type="hidden" id="code_postal">
             <small id="adresseHint" style="display:none;color:var(--accent);font-size:.78rem">✓ Adresse localisée</small>
             <small id="adresseErr" style="display:none;color:var(--hors-service);font-size:.78rem">⚠️ Choisissez votre adresse dans la liste qui s'affiche.</small>
+            <!-- Filet de sécurité : si la liste Google ne s'affiche pas (bloqueur de
+                 publicité, extension, réseau d'entreprise), le visiteur ne doit pas
+                 rester bloqué. L'adresse sera signalée « à vérifier » à l'admin. -->
+            <small id="adresseManuelleLien" style="display:none;font-size:.78rem;margin-top:4px">
+              <a href="#" onclick="activerAdresseManuelle();return false;" style="color:var(--text-light);text-decoration:underline">La liste ne s'affiche pas ? Saisir mon adresse manuellement</a>
+            </small>
+            <small id="adresseManuelleInfo" style="display:none;color:#b25e00;font-size:.78rem;margin-top:4px">
+              ✍️ Saisie manuelle activée — indiquez votre adresse complète avec le code postal et la ville. Nous la vérifierons avant la livraison.
+            </small>
           </div>
           <div class="form-group">
             <label>Complément d'adresse <span style="font-weight:400;color:var(--text-light);font-size:.8rem">(bâtiment, étage, code, interphone…)</span></label>
@@ -240,6 +249,19 @@ let parcours = 'patient';
 // Départements d'Île-de-France
 const DEPTS_IDF = ['75', '77', '78', '91', '92', '93', '94', '95'];
 let adresseIDF = null; // null = inconnu, true/false une fois une adresse choisie
+let adresseManuelle = false; // filet de sécurité si la liste Google ne s'affiche pas
+
+// Permet de saisir l'adresse à la main quand l'autocomplétion est indisponible
+// (bloqueur de publicité, extension, réseau restreint). La demande est alors
+// signalée « adresse à vérifier » côté admin.
+function activerAdresseManuelle() {
+  adresseManuelle = true;
+  document.getElementById('adresseManuelleLien').style.display = 'none';
+  document.getElementById('adresseErr').style.display = 'none';
+  document.getElementById('adresseManuelleInfo').style.display = 'block';
+  document.getElementById('adresse').focus();
+  trackEvt('adresse_manuelle');
+}
 
 // Adapte l'option « ordonnance » selon la zone (IDF = remise en main propre,
 // hors IDF = jointe au renvoi postal du matériel).
@@ -272,6 +294,10 @@ function initAutocomplete() {
       document.getElementById('lng').value = place.geometry.location.lng();
       document.getElementById('adresseHint').style.display = 'block';
       document.getElementById('adresseErr').style.display = 'none';
+      // Une adresse validée par Google annule le mode de saisie manuelle
+      adresseManuelle = false;
+      document.getElementById('adresseManuelleLien').style.display = 'none';
+      document.getElementById('adresseManuelleInfo').style.display = 'none';
 
       // Code postal → détection Île-de-France
       let cp = '';
@@ -290,6 +316,11 @@ function initAutocomplete() {
     document.getElementById('code_postal').value = '';
     adresseIDF = null;
     document.getElementById('adresseHint').style.display = 'none';
+    // Proposer la saisie manuelle si le visiteur a tapé sans que rien ne soit
+    // sélectionné — c'est le symptôme d'une liste Google indisponible.
+    if (!adresseManuelle && input.value.trim().length >= 8) {
+      document.getElementById('adresseManuelleLien').style.display = 'block';
+    }
     majOrdonnanceLabels();
   });
 }
@@ -392,13 +423,23 @@ async function submitDemande(e) {
     return false;
   }
 
-  // Adresse : obligatoirement choisie dans la liste Google (coordonnées présentes)
+  // Adresse : sélection dans la liste Google attendue. En mode manuel (liste
+  // indisponible), on accepte la saisie mais la demande sera marquée à vérifier.
   const latV = parseFloat(document.getElementById('lat').value);
   const lngV = parseFloat(document.getElementById('lng').value);
-  if (!isFinite(latV) || !isFinite(lngV)) {
+  const adresseGeoloc = isFinite(latV) && isFinite(lngV);
+
+  if (!adresseGeoloc && !adresseManuelle) {
     document.getElementById('adresseErr').style.display = 'block';
+    document.getElementById('adresseManuelleLien').style.display = 'block';
     document.getElementById('adresse').focus();
-    showAlert('Merci de sélectionner votre adresse dans la liste proposée sous le champ.');
+    showAlert('Merci de sélectionner votre adresse dans la liste proposée. Si aucune liste n\'apparaît, utilisez le lien de saisie manuelle sous le champ.');
+    return false;
+  }
+
+  if (!adresseGeoloc && document.getElementById('adresse').value.trim().length < 12) {
+    document.getElementById('adresse').focus();
+    showAlert('Merci d\'indiquer votre adresse complète, avec le code postal et la ville.');
     return false;
   }
 
@@ -447,8 +488,9 @@ async function submitDemande(e) {
     couverture: document.getElementById('couverture').value,
     mutuelle_nom: document.getElementById('mutuelle_nom').value,
     consentement: true,
-    lat: latV, lng: lngV
+    adresse_verifiee: adresseGeoloc
   };
+  if (adresseGeoloc) { payload.lat = latV; payload.lng = lngV; }
 
   const btn = document.getElementById('btnSubmit');
   btn.disabled = true; btn.textContent = 'Envoi…';
