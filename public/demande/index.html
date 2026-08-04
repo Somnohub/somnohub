@@ -39,6 +39,17 @@
     .pas-ordo { background: #fff8ee; border: 1px solid #ffd9a0; border-radius: var(--radius-sm); padding: 14px 16px; margin: -6px 0 18px; }
     .pas-ordo strong { display: block; color: #b25e00; font-size: .9rem; margin-bottom: 5px; }
     .pas-ordo p { font-size: .84rem; color: var(--text-mid); line-height: 1.55; margin: 0 0 10px; }
+    /* Déclarations du médecin prescripteur (portée médico-légale) */
+    .declaration {
+      display: flex; align-items: flex-start; gap: 10px; cursor: pointer;
+      background: #f0faf4; border: 1px solid var(--accent-light); border-radius: var(--radius-sm);
+      padding: 13px 15px; font-size: .88rem; color: var(--text-mid); line-height: 1.5;
+    }
+    .declaration input { margin-top: 3px; width: 18px; height: 18px; flex-shrink: 0; }
+    .declaration-avis {
+      background: #f0faf4; border: 1px solid var(--accent-light); border-radius: var(--radius-sm);
+      padding: 13px 15px; margin-top: 12px;
+    }
     .consent { display: flex; align-items: flex-start; gap: 10px; font-size: .88rem; color: var(--text-mid); margin: 20px 0 6px; cursor: pointer; }
     .consent input { margin-top: 3px; width: 18px; height: 18px; flex-shrink: 0; }
     .consent a { color: var(--accent); font-weight: 600; }
@@ -94,11 +105,11 @@
           <div class="grid2">
             <div class="form-group">
               <label>Nom <span class="req">*</span></label>
-              <input type="text" class="form-control" id="patient_nom" required>
+              <input type="text" class="form-control" id="patient_nom" oninput="majDeclarationOrdonnance()" required>
             </div>
             <div class="form-group">
               <label>Prénom <span class="req">*</span></label>
-              <input type="text" class="form-control" id="patient_prenom" required>
+              <input type="text" class="form-control" id="patient_prenom" oninput="majDeclarationOrdonnance()" required>
             </div>
           </div>
           <div class="grid2">
@@ -151,7 +162,8 @@
             </div>
           </div>
 
-          <div class="form-group">
+          <!-- Ordonnance — parcours patient : comment il nous la fait parvenir -->
+          <div class="form-group" id="blocOrdoPatient">
             <label>Ordonnance</label>
             <div class="radio-group" id="ordoGroup">
               <label class="radio-opt sel">
@@ -163,6 +175,15 @@
                 <span><strong id="ordoLabelMateriel">À remettre à la livraison</strong><small id="ordoSubMateriel">Vous donnerez l'ordonnance au livreur lors du dépôt du boîtier.</small></span>
               </label>
             </div>
+          </div>
+
+          <!-- Ordonnance — parcours médecin : déclaration du prescripteur -->
+          <div class="form-group d-none" id="blocOrdoMedecin">
+            <label>Ordonnance</label>
+            <label class="declaration">
+              <input type="checkbox" id="ordonnanceConfirmee">
+              <span id="labelOrdoMedecin">Je confirme avoir remis à mon patient une ordonnance prescrivant la réalisation d'une polygraphie ventilatoire. <span class="req">*</span></span>
+            </label>
           </div>
 
           <p class="section-hint" style="margin-top:6px">Couverture santé <span style="font-weight:400">(pour estimer votre reste à charge)</span></p>
@@ -186,6 +207,12 @@
           <label class="consent">
             <input type="checkbox" id="consentement">
             <span>J'accepte que mes données soient traitées pour organiser l'examen, conformément à la <a href="/mentions-legales.html" target="_blank" rel="noopener">politique de confidentialité (RGPD)</a>. <span class="req">*</span></span>
+          </label>
+
+          <!-- Demande d'avis spécialisé — parcours médecin uniquement -->
+          <label class="consent declaration-avis d-none" id="blocAvisSommeil">
+            <input type="checkbox" id="avisSommeil">
+            <span>Je sollicite l'avis d'un médecin compétent en médecine du sommeil pour mon patient et demande la réalisation d'une polygraphie ventilatoire. Je serai destinataire du compte-rendu. <span class="req">*</span></span>
           </label>
 
           <button type="submit" class="btn btn-primary btn-full btn-lg" id="btnSubmit" style="margin-top:16px">Envoyer ma demande</button>
@@ -272,6 +299,19 @@ function trackEvt(nom, data) {
   try { if (window.umami) window.umami.track(nom, data || {}); } catch (e) {}
 }
 
+// Personnalise la déclaration du prescripteur avec le nom du patient saisi.
+// Échappe le texte pour éviter toute injection HTML.
+function majDeclarationOrdonnance() {
+  const el = document.getElementById('labelOrdoMedecin');
+  if (!el) return;
+  const prenom = document.getElementById('patient_prenom').value.trim();
+  const nom = document.getElementById('patient_nom').value.trim();
+  const ident = [prenom, nom].filter(Boolean).join(' ');
+  const echappe = s => s.replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  const cible = ident ? `mon patient <strong>${echappe(ident)}</strong>` : 'mon patient';
+  el.innerHTML = `Je confirme avoir remis à ${cible} une ordonnance prescrivant la réalisation d'une polygraphie ventilatoire. <span class="req">*</span>`;
+}
+
 function setParcours(p, fromUser) {
   if (fromUser) trackEvt('parcours_choisi', { parcours: p });
   parcours = p;
@@ -280,6 +320,11 @@ function setParcours(p, fromUser) {
   document.getElementById('blocMedecin').classList.toggle('d-none', p !== 'medecin');
   document.getElementById('blocIndication').classList.toggle('d-none', p !== 'medecin');
   document.getElementById('blocPrescripteurPatient').classList.toggle('d-none', p !== 'patient');
+  // Ordonnance : choix d'acheminement côté patient, déclaration côté médecin
+  document.getElementById('blocOrdoPatient').classList.toggle('d-none', p !== 'patient');
+  document.getElementById('blocOrdoMedecin').classList.toggle('d-none', p !== 'medecin');
+  document.getElementById('blocAvisSommeil').classList.toggle('d-none', p !== 'medecin');
+  majDeclarationOrdonnance();
   document.getElementById('hintPatient').textContent = p === 'medecin' ? 'Coordonnées du patient' : 'Vos coordonnées';
   // Adapter le langage de l'option "transmise"
   if (p === 'patient') {
@@ -368,6 +413,18 @@ async function submitDemande(e) {
     return false;
   }
 
+  // Déclarations obligatoires du prescripteur
+  if (parcours === 'medecin') {
+    if (!document.getElementById('ordonnanceConfirmee').checked) {
+      showAlert('Merci de confirmer avoir remis l\'ordonnance à votre patient.');
+      return false;
+    }
+    if (!document.getElementById('avisSommeil').checked) {
+      showAlert('Merci de confirmer votre demande d\'avis auprès d\'un médecin du sommeil.');
+      return false;
+    }
+  }
+
   const payload = {
     source: parcours,
     patient_nom: document.getElementById('patient_nom').value,
@@ -379,9 +436,14 @@ async function submitDemande(e) {
     complement: document.getElementById('complement').value,
     code_postal: document.getElementById('code_postal').value,
     medecin_nom: medecinNom,
-    medecin_rpps: parcours === 'medecin' ? document.getElementById('medecin_rpps').value : '',
     indication: parcours === 'medecin' ? document.getElementById('indication').value : '',
-    ordonnance_mode: document.querySelector('input[name="ordonnance_mode"]:checked').value,
+    // Côté médecin, l'ordonnance est remise en main propre au patient : elle
+    // nous parviendra donc via lui, d'où le mode « transmise ».
+    ordonnance_mode: parcours === 'medecin'
+      ? 'transmise'
+      : document.querySelector('input[name="ordonnance_mode"]:checked').value,
+    ordonnance_confirmee: parcours === 'medecin' && document.getElementById('ordonnanceConfirmee').checked,
+    avis_sommeil: parcours === 'medecin' && document.getElementById('avisSommeil').checked,
     couverture: document.getElementById('couverture').value,
     mutuelle_nom: document.getElementById('mutuelle_nom').value,
     consentement: true,

@@ -1326,6 +1326,9 @@ async function openDemande(id) {
       ${row('Couverture', couvTxt)}
       ${row('Reste à charge estimé', resteTxt)}
       ${row('Ordonnance', ordoTxt)}
+      ${d.source === 'medecin' ? row('Déclarations du prescripteur',
+        (d.ordonnance_confirmee ? '✅ Ordonnance remise au patient' : '⚠️ Non confirmée')
+        + '<br>' + (d.avis_sommeil ? '✅ Avis sommeil sollicité, CR à lui transmettre' : '⚠️ Non sollicité')) : ''}
       ${row('Boîtier assigné', d.boitier_numero)}
       ${row('Reçue le', formatDatetime(d.created_at))}`;
 

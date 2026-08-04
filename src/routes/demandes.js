@@ -10,7 +10,8 @@ router.post('/', (req, res) => {
     const {
       source, patient_nom, patient_prenom, date_naissance,
       telephone, email, adresse, complement, code_postal, medecin_nom, medecin_rpps, indication,
-      ordonnance_mode, consentement, lat, lng, couverture, mutuelle_nom
+      ordonnance_mode, consentement, lat, lng, couverture, mutuelle_nom,
+      ordonnance_confirmee, avis_sommeil
     } = req.body;
 
     if (!['medecin', 'patient'].includes(source)) {
@@ -21,6 +22,15 @@ router.post('/', (req, res) => {
     }
     if (!medecin_nom || !String(medecin_nom).trim()) {
       return res.status(400).json({ error: 'Le nom du médecin prescripteur est obligatoire' });
+    }
+    // Déclarations du prescripteur : obligatoires et conservées (portée médico-légale)
+    if (source === 'medecin') {
+      if (!ordonnance_confirmee) {
+        return res.status(400).json({ error: 'La confirmation de remise de l\'ordonnance est obligatoire' });
+      }
+      if (!avis_sommeil) {
+        return res.status(400).json({ error: 'La demande d\'avis auprès d\'un médecin du sommeil est obligatoire' });
+      }
     }
     if (!consentement) {
       return res.status(400).json({ error: 'Le consentement est obligatoire' });
@@ -53,8 +63,9 @@ router.post('/', (req, res) => {
     const result = db.prepare(`
       INSERT INTO demandes (
         source, patient_nom, patient_prenom, date_naissance, telephone, email, adresse, complement, code_postal,
-        medecin_nom, medecin_rpps, indication, couverture, mutuelle_nom, lat, lng, ordonnance_mode, consentement, statut
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'recue')
+        medecin_nom, medecin_rpps, indication, couverture, mutuelle_nom, lat, lng, ordonnance_mode,
+        ordonnance_confirmee, avis_sommeil, consentement, statut
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'recue')
     `).run(
       source,
       patient_nom.trim(), patient_prenom.trim(), (date_naissance || '').trim() || null,
@@ -62,7 +73,8 @@ router.post('/', (req, res) => {
       (medecin_nom || '').trim() || null, (medecin_rpps || '').trim() || null,
       (indication || '').trim() || null,
       couv, couv === 'secu_mutuelle' ? ((mutuelle_nom || '').trim() || null) : null,
-      latNum, lngNum, mode
+      latNum, lngNum, mode,
+      ordonnance_confirmee ? 1 : 0, avis_sommeil ? 1 : 0
     );
 
     const numero = result.lastInsertRowid;
