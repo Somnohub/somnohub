@@ -34,11 +34,6 @@
   gtag('js', new Date());
   gtag('config', GOOGLE_ADS_ID, { anonymize_ip: true });
 
-  var s = document.createElement('script');
-  s.async = true;
-  s.src = 'https://www.googletagmanager.com/gtag/js?id=' + GOOGLE_ADS_ID;
-  document.head.appendChild(s);
-
   // ── Mémorisation du choix ──
   function lire() {
     try {
