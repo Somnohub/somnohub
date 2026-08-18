@@ -106,6 +106,8 @@
   </style>
   <!-- Umami analytics — sans cookies, aucune donnée personnelle -->
   <script defer src="https://cloud.umami.is/script.js" data-website-id="b121a2da-ec1d-47ee-a9bd-a969fbecc6e1"></script>
+  <!-- Google Ads — chargé avec consentement (Consent Mode v2) -->
+  <script src="/js/somnohub-tag.js"></script>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icons/icon-192.svg">
 </head>
@@ -228,7 +230,7 @@
   </article>
 
   <div class="footer">
-    <div style="margin-bottom:8px"><a href="/">Accueil</a><a href="/apnee-du-sommeil">Apnée du sommeil</a><a href="/remboursement-polygraphie">Remboursement</a><a href="/mentions-legales.html">Mentions légales</a></div>
+    <div style="margin-bottom:8px"><a href="/">Accueil</a><a href="/apnee-du-sommeil">Apnée du sommeil</a><a href="/remboursement-polygraphie">Remboursement</a><a href="/mentions-legales.html">Mentions légales</a><a href="#" onclick="somnohubCookies();return false">Gérer mes cookies</a></div>
     © SomnoHub — Dépistage de l'apnée du sommeil à domicile partout en France
   </div>
 </body>

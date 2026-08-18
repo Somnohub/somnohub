@@ -44,6 +44,8 @@
   <link rel="stylesheet" href="/css/somnohub.css">
   <!-- Umami analytics — sans cookies, aucune donnée personnelle -->
   <script defer src="https://cloud.umami.is/script.js" data-website-id="b121a2da-ec1d-47ee-a9bd-a969fbecc6e1"></script>
+  <!-- Google Ads — chargé avec consentement (Consent Mode v2) -->
+  <script src="/js/somnohub-tag.js"></script>
   <style>
     body { background: var(--bg); font-family: 'Inter', sans-serif; color: var(--text); margin: 0; line-height: 1.65; }
     .topbar { background: var(--white); border-bottom: 1px solid var(--border); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; }
@@ -124,7 +126,7 @@
   </article>
 
   <div class="footer">
-    <div style="margin-bottom:8px"><a href="/">Accueil</a><a href="/apnee-du-sommeil">Apnée du sommeil</a><a href="/ronflements">Ronflements</a><a href="/score-stop-bang">Score STOP-BANG</a><a href="/mentions-legales.html">Mentions légales</a></div>
+    <div style="margin-bottom:8px"><a href="/">Accueil</a><a href="/apnee-du-sommeil">Apnée du sommeil</a><a href="/ronflements">Ronflements</a><a href="/score-stop-bang">Score STOP-BANG</a><a href="/mentions-legales.html">Mentions légales</a><a href="#" onclick="somnohubCookies();return false">Gérer mes cookies</a></div>
     © SomnoHub — Dépistage de l'apnée du sommeil à domicile partout en France
   </div>
 </body>

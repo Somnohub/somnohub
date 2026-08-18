@@ -63,6 +63,8 @@
   </style>
   <!-- Umami analytics — sans cookies, aucune donnée personnelle -->
   <script defer src="https://cloud.umami.is/script.js" data-website-id="b121a2da-ec1d-47ee-a9bd-a969fbecc6e1"></script>
+  <!-- Google Ads — chargé avec consentement (Consent Mode v2) -->
+  <script src="/js/somnohub-tag.js"></script>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icons/icon-192.svg">
   <meta property="og:image" content="https://somnohub.fr/og-somnohub.png">
@@ -504,6 +506,8 @@ async function submitDemande(e) {
     if (res.ok) {
       // Conversion : aucune donnée patient transmise, seulement le type de parcours
       trackEvt('demande_envoyee', { parcours: parcours, ordonnance: payload.ordonnance_mode });
+      // Conversion Google Ads — ne part que si le visiteur a accepté les cookies
+      try { if (window.somnohubConversion) window.somnohubConversion(); } catch (e) {}
       document.getElementById('formView').classList.add('d-none');
       document.getElementById('successNum').textContent = '#' + data.numero;
       document.getElementById('successView').classList.remove('d-none');

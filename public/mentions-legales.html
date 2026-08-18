@@ -69,6 +69,8 @@
   </style>
   <!-- Umami analytics — sans cookies, aucune donnée personnelle -->
   <script defer src="https://cloud.umami.is/script.js" data-website-id="b121a2da-ec1d-47ee-a9bd-a969fbecc6e1"></script>
+  <!-- Google Ads — chargé avec consentement (Consent Mode v2) -->
+  <script src="/js/somnohub-tag.js"></script>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icons/icon-192.svg">
   <meta property="og:image" content="https://somnohub.fr/og-somnohub.png">
@@ -202,6 +204,7 @@
       <tr><td>Railway Corp</td><td>Hébergement de l'application et de la base de données</td><td>États-Unis</td></tr>
       <tr><td>Cloudflare</td><td>Diffusion et protection du site (CDN, sécurité)</td><td>États-Unis</td></tr>
       <tr><td>Google (Maps / Places)</td><td>Autocomplétion des adresses de livraison</td><td>États-Unis</td></tr>
+      <tr><td>Google Ireland Ltd (Google Ads)</td><td>Mesure de l'efficacité de nos campagnes publicitaires — uniquement si vous y avez consenti</td><td>Irlande / États-Unis</td></tr>
       <tr><td>Umami Cloud</td><td>Mesure d'audience sans cookies ni donnée personnelle</td><td>Union européenne</td></tr>
       <tr><td>Twilio</td><td>Envoi des SMS d'information aux patients</td><td>États-Unis</td></tr>
     </table>
@@ -239,9 +242,15 @@
     <p>Nous utilisons <strong>Umami</strong>, une solution de mesure d'audience <strong>sans cookies</strong>, hébergée dans l'Union européenne. Elle ne dépose aucun traceur sur votre appareil, ne collecte aucune donnée personnelle et ne permet pas de vous identifier : seules des statistiques agrégées et anonymes sont enregistrées (pages consultées, provenance, type d'appareil).</p>
     <p>Aucune donnée de santé, ni aucune information vous concernant (nom, téléphone, adresse, indication médicale), n'est transmise à cet outil. Conformément aux recommandations de la CNIL, cette mesure d'audience anonyme ne nécessite pas votre consentement.</p>
 
+    <h3>Cookies publicitaires</h3>
+    <p>Nous diffusons des annonces sur Google afin de faire connaître notre service. Pour savoir quelles annonces amènent réellement des visiteurs sur le site, <strong>Google Ads</strong> peut déposer des cookies de mesure sur votre appareil.</p>
+    <p>Ces cookies <strong>ne sont déposés qu'après votre accord explicite</strong>, donné via le bandeau affiché lors de votre première visite. Tant que vous n'avez pas accepté, aucun traceur publicitaire n'est activé. Vous pouvez refuser sans aucune conséquence sur l'utilisation du site.</p>
+    <p><strong>Aucune donnée de santé n'est concernée.</strong> La mesure de conversion se limite au fait qu'une demande a été envoyée : ni votre nom, ni votre adresse, ni votre téléphone, ni l'indication médicale ne sont transmis à Google. Les données de navigation associées peuvent être transférées aux États-Unis sur la base des clauses contractuelles types de la Commission européenne.</p>
+    <p>Durée de conservation : 13 mois maximum, conformément aux recommandations de la CNIL.</p>
+
     <h3>Gérer vos préférences</h3>
     <p>
-      <button onclick="resetCookieConsent()" style="background:#1a3d2b;color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:.85rem;font-weight:600;">
+      <button onclick="somnohubCookies()" style="background:#1a3d2b;color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:.85rem;font-weight:600;">
         Modifier mes préférences cookies
       </button>
     </p>
@@ -271,13 +280,6 @@
   © 2026 SomnoHub — <a href="/">Retour à l'accueil</a>
 </div>
 
-<script>
-  function resetCookieConsent() {
-    localStorage.removeItem('sh_cookie_consent');
-    alert('Vos préférences ont été réinitialisées. Rechargez la page pour choisir à nouveau.');
-    window.location.href = '/';
-  }
-</script>
 
 </body>
 </html>
