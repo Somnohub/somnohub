@@ -1,4 +1,10 @@
 User-agent: *
 Allow: /
 
+# Interfaces internes — sans intérêt pour la recherche
+Disallow: /admin
+Disallow: /livreur
+Disallow: /assistante
+Disallow: /medecin
+
 Sitemap: https://somnohub.fr/sitemap.xml
