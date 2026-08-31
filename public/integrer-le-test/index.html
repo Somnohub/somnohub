@@ -44,6 +44,54 @@
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="SomnoHub — polygraphie ventilatoire à domicile">
   <meta name="twitter:image" content="https://somnohub.fr/og-somnohub.png">
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "L'intégration du test est-elle vraiment gratuite ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Oui, y compris sur un site professionnel. Aucune inscription, aucun compte, aucune limite d'utilisation."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Les données de mes visiteurs sont-elles collectées ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Non. Le score est calculé directement dans le navigateur du visiteur. Aucune réponse n'est transmise ni enregistrée : vous n'avez donc aucune formalité RGPD à accomplir pour ce test."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Puis-je l'intégrer sur WordPress, Wix ou Squarespace ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Oui. Le code est une simple balise iframe, acceptée par tous les éditeurs de site permettant d'insérer du HTML."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Le test fonctionne-t-il sur mobile ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Oui, l'affichage s'adapte à la largeur disponible. Le script de hauteur automatique, optionnel, évite l'apparition d'une barre de défilement interne."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Puis-je modifier les questions ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Non — le score ne correspondrait plus au questionnaire STOP-BANG validé. Vous pouvez en revanche nous écrire pour adapter le format ou les couleurs à votre site."
+      }
+    }
+  ]
+}
+  </script>
 </head>
 <body>
   <div class="topbar">
@@ -107,6 +155,40 @@ window.addEventListener('message', function (e) {
     <h2>Une question ?</h2>
     <p>Écrivez-nous à <a href="mailto:admin@somnohub.fr" style="color:var(--accent);font-weight:600">admin@somnohub.fr</a> — nous pouvons aussi vous aider à l'intégrer, ou adapter le format à votre site.</p>
   </article>
+
+  <section class="faq-sec">
+    <h2>Questions fréquentes</h2>
+    <div class="faq-q">
+      <h3>L'intégration du test est-elle vraiment gratuite ?</h3>
+      <p>Oui, y compris sur un site professionnel. Aucune inscription, aucun compte, aucune limite d'utilisation.</p>
+    </div>
+    <div class="faq-q">
+      <h3>Les données de mes visiteurs sont-elles collectées ?</h3>
+      <p>Non. Le score est calculé directement dans le navigateur du visiteur. Aucune réponse n'est transmise ni enregistrée : vous n'avez donc aucune formalité RGPD à accomplir pour ce test.</p>
+    </div>
+    <div class="faq-q">
+      <h3>Puis-je l'intégrer sur WordPress, Wix ou Squarespace ?</h3>
+      <p>Oui. Le code est une simple balise iframe, acceptée par tous les éditeurs de site permettant d'insérer du HTML.</p>
+    </div>
+    <div class="faq-q">
+      <h3>Le test fonctionne-t-il sur mobile ?</h3>
+      <p>Oui, l'affichage s'adapte à la largeur disponible. Le script de hauteur automatique, optionnel, évite l'apparition d'une barre de défilement interne.</p>
+    </div>
+    <div class="faq-q">
+      <h3>Puis-je modifier les questions ?</h3>
+      <p>Non — le score ne correspondrait plus au questionnaire STOP-BANG validé. Vous pouvez en revanche nous écrire pour adapter le format ou les couleurs à votre site.</p>
+    </div>
+  </section>
+
+  <section class="aussi">
+    <h2>À lire aussi</h2>
+    <div class="aussi-grid">
+      <a href="/score-stop-bang">Score STOP-BANG<span>Interpréter votre résultat</span></a>
+      <a href="/apnee-du-sommeil">Apnée du sommeil<span>Symptômes, causes et risques</span></a>
+      <a href="/polygraphie-ventilatoire">La polygraphie ventilatoire<span>Comment se déroule l'examen</span></a>
+      <a href="/ronflements">Ronflements<span>Quand faut-il s'en inquiéter ?</span></a>
+    </div>
+  </section>
 
   <div class="footer">
     <div style="margin-bottom:8px"><a href="/">Accueil</a><a href="/polygraphie-ventilatoire">La polygraphie</a><a href="/apnee-du-sommeil">Apnée du sommeil</a><a href="/mentions-legales.html">Mentions légales</a><a href="#" onclick="somnohubCookies();return false">Gérer mes cookies</a></div>

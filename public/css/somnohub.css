@@ -340,3 +340,24 @@ select.form-control {
   .login-card { padding: 32px 24px; }
   thead th, tbody td { padding: 10px 12px; font-size: .8rem; }
 }
+
+/* ── Maillage interne : bloc « à lire aussi » en fin d'article ──────── */
+.aussi { max-width: 760px; margin: 44px auto 0; padding: 0 20px; }
+.aussi h2 { font-size: 1.15rem; color: var(--primary); margin: 0 0 14px; }
+.aussi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.aussi-grid a {
+  display: block; background: var(--white); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 13px 15px; text-decoration: none;
+  color: var(--text-mid); font-size: .92rem; font-weight: 600; line-height: 1.4;
+  transition: border-color .15s, transform .15s;
+}
+.aussi-grid a:hover { border-color: var(--accent); transform: translateY(-1px); }
+.aussi-grid a span { display: block; font-weight: 400; font-size: .82rem; color: var(--text-light); margin-top: 3px; }
+
+/* ── Questions fréquentes en fin d'article ─────────────────────────── */
+.faq-sec { max-width: 760px; margin: 0 auto; padding: 0 20px; }
+.faq-sec > h2 { font-size: 1.35rem; color: var(--primary); margin: 34px 0 14px; }
+.faq-q { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; }
+.faq-q h3 { font-size: 1rem; color: var(--primary); margin: 0 0 6px; }
+.faq-q p { margin: 0; font-size: .95rem; color: var(--text-mid); line-height: 1.6; }
+.faq-q a { color: var(--accent); font-weight: 600; }
