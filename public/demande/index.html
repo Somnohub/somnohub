@@ -53,6 +53,13 @@
     .depot-retirer { margin-top: 8px; background: none; border: none; padding: 0; cursor: pointer;
       font-family: inherit; font-size: .82rem; color: var(--text-light); text-decoration: underline; }
     .depot-retirer:hover { color: #b23b3b; }
+    /* Alternative Doctolib */
+    .alt-dl { display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      flex-wrap: wrap; background: #f2f9fd; border: 1px solid #bfe2f6;
+      border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 18px; }
+    .alt-dl-txt { display: flex; flex-direction: column; min-width: 200px; flex: 1 1 auto; }
+    .alt-dl-txt strong { font-size: .93rem; color: #0a5680; }
+    .alt-dl-txt small { font-size: .82rem; color: var(--text-mid); margin-top: 2px; line-height: 1.45; }
     /* Déclarations du médecin prescripteur (portée médico-légale) */
     .declaration {
       display: flex; align-items: flex-start; gap: 10px; cursor: pointer;
@@ -104,6 +111,18 @@
         <div class="toggle">
           <button type="button" id="tabPatient" class="active" onclick="setParcours('patient', true)"><span class="ic">🙋</span>Je suis le patient</button>
           <button type="button" id="tabMedecin" onclick="setParcours('medecin', true)"><span class="ic">🩺</span>Je suis médecin</button>
+        </div>
+
+        <!-- Alternative pour le patient qui a déjà son ordonnance et préfère Doctolib -->
+        <div class="alt-dl" id="altDoctolib">
+          <div class="alt-dl-txt">
+            <strong>Vous avez déjà votre ordonnance ?</strong>
+            <small>Vous pouvez aussi réserver directement votre polygraphie sur Doctolib.</small>
+          </div>
+          <a class="btn-doctolib dl-sm" href="https://www.doctolib.fr/cabinet-medical/pierrelaye/somnohub" target="_blank" rel="noopener"
+             onclick="if(window.umami)umami.track('doctolib_rdv',{ origine:'demande_somnohub' })">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3" stroke="#fff" stroke-width="1.9"/><path d="M3 10h18" stroke="#fff" stroke-width="1.9"/><path d="M8 3v4M16 3v4" stroke="#fff" stroke-width="1.9" stroke-linecap="round"/><path d="M9 15.5l2 2 4-4" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="dl-txt"><span class="dl-sur">Réserver sur</span><span class="dl-nom">Doctolib</span></span>
+          </a>
         </div>
 
         <div id="formAlert" class="alert-box alert-error d-none" style="margin-bottom:16px"></div>
@@ -440,6 +459,8 @@ function setParcours(p, fromUser) {
   document.getElementById('blocOrdoPatient').classList.toggle('d-none', p !== 'patient');
   document.getElementById('blocOrdoMedecin').classList.toggle('d-none', p !== 'medecin');
   document.getElementById('blocAvisSommeil').classList.toggle('d-none', p !== 'medecin');
+  // Réserver soi-même sur Doctolib n'a de sens que pour le patient.
+  document.getElementById('altDoctolib').classList.toggle('d-none', p !== 'patient');
   majDeclarationOrdonnance();
   document.getElementById('hintPatient').textContent = p === 'medecin' ? 'Coordonnées du patient' : 'Vos coordonnées';
   // Adapter le langage de l'option "transmise"
