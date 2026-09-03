@@ -2,6 +2,49 @@ const { getDb } = require('../db');
 
 let twilioClient = null;
 
+// ── Brevo (voie principale) ──────────────────────────────────────────
+// Les numéros français de Twilio ne portent pas le SMS : Brevo envoie sous un
+// nom d'expéditeur alphanumérique, ce qui contourne la contrainte. Même compte
+// et même clé que les emails, sur un port HTTPS que Railway ne bloque pas.
+function cleBrevo() {
+  return process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY || '';
+}
+
+// Nom affiché à la place du numéro. 11 caractères maximum, lettres et chiffres.
+function expediteurBrevo() {
+  return (process.env.BREVO_SMS_SENDER || 'SomnoHub').slice(0, 11);
+}
+
+function brevoSmsConfigure() {
+  return !!cleBrevo();
+}
+
+// Brevo attend le numéro sans le « + » : 33612345678
+function toBrevo(tel) {
+  return toE164(tel).replace(/^\+/, '');
+}
+
+async function envoyerViaBrevo(telephone, message) {
+  const res = await fetch('https://api.brevo.com/v3/transactionalSMS/sms', {
+    method: 'POST',
+    headers: { 'api-key': cleBrevo(), 'content-type': 'application/json', accept: 'application/json' },
+    body: JSON.stringify({
+      sender: expediteurBrevo(),
+      recipient: toBrevo(telephone),
+      content: message,
+      type: 'transactional',
+    }),
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!res.ok) {
+    const corps = await res.text().catch(() => '');
+    throw new Error(`API SMS ${res.status} : ${corps.slice(0, 300)}`);
+  }
+  const data = await res.json().catch(() => ({}));
+  return data.messageId || data.reference || 'ok';
+}
+
+
 function getTwilioClient() {
   if (twilioClient) return twilioClient;
   const sid = process.env.TWILIO_ACCOUNT_SID;
@@ -18,6 +61,17 @@ function twilioConfigure() {
   return !!(getTwilioClient() && process.env.TWILIO_PHONE_NUMBER);
 }
 
+// Un canal, quel qu'il soit, est-il disponible ?
+function smsConfigure() {
+  return brevoSmsConfigure() || twilioConfigure();
+}
+
+function smsMode() {
+  if (brevoSmsConfigure()) return `Brevo (expéditeur « ${expediteurBrevo()} »)`;
+  if (twilioConfigure()) return 'Twilio';
+  return 'aucun — les SMS sont simulés';
+}
+
 // Normalise un numéro français au format international E.164 (+33…)
 function toE164(tel) {
   const s = String(tel || '').replace(/[^\d+]/g, '');
@@ -30,9 +84,11 @@ function toE164(tel) {
 
 // Envoi de test (sans lien patient) — utilisé pour vérifier la config
 async function envoyerSMSTest(to, message) {
+  if (brevoSmsConfigure()) return envoyerViaBrevo(to, message);
+
   const client = getTwilioClient();
   if (!client || !process.env.TWILIO_PHONE_NUMBER) {
-    throw new Error('Twilio non configuré (TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN / TWILIO_PHONE_NUMBER manquants)');
+    throw new Error('Aucun canal SMS configuré (BREVO_API_KEY, ou TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN / TWILIO_PHONE_NUMBER)');
   }
   const res = await client.messages.create({
     body: message,
@@ -44,6 +100,22 @@ async function envoyerSMSTest(to, message) {
 
 async function envoyerSMS(patientId, type, message, telephone) {
   const db = getDb();
+  const trace = (statut) =>
+    db.prepare(`INSERT INTO sms_log (patient_id, type, message, statut) VALUES (?, ?, ?, ?)`)
+      .run(patientId, type, message, statut);
+
+  if (brevoSmsConfigure()) {
+    try {
+      await envoyerViaBrevo(telephone, message);
+      trace('envoye');
+      console.log(`[SMS] Envoyé (Brevo) à ${telephone} : ${message.substring(0, 50)}…`);
+    } catch (err) {
+      console.error('[SMS] Erreur Brevo :', err.message);
+      trace('erreur');
+    }
+    return;
+  }
+
   const client = getTwilioClient();
 
   if (client && process.env.TWILIO_PHONE_NUMBER) {
@@ -107,4 +179,4 @@ async function smsResultatsDisponibles(patient) {
   await envoyerSMS(patient.id, 'resultats_disponibles', msg, patient.telephone);
 }
 
-module.exports = { smsResultatsDisponibles, smsPrescription, smsRappelRecuperation, smsSuivi3Mois, smsSuivi6Mois, smsSuivi1An, smsDepartTournee, envoyerSMSTest, twilioConfigure, toE164 };
+module.exports = { smsResultatsDisponibles, smsConfigure, smsMode, smsPrescription, smsRappelRecuperation, smsSuivi3Mois, smsSuivi6Mois, smsSuivi1An, smsDepartTournee, envoyerSMSTest, twilioConfigure, toE164 };

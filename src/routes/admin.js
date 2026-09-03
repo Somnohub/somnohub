@@ -8,7 +8,7 @@ const auth = require('../middleware/auth');
 const { genererAlertes } = require('../services/scheduler');
 const { backupNow, dernieresSauvegardes } = require('../services/backup');
 const { creerPatientAvecBoitier } = require('./medecin');
-const { envoyerSMSTest, twilioConfigure, smsResultatsDisponibles } = require('../services/sms');
+const { envoyerSMSTest, twilioConfigure, smsConfigure, smsMode, smsResultatsDisponibles } = require('../services/sms');
 const { emailDemandeValidee, emailDemandeRefusee, emailResultatsDisponibles, emailConfigure, emailMode, envoyerEmail, adminEmail } = require('../services/email');
 const ordo = require('../services/ordonnances');
 
@@ -664,7 +664,7 @@ router.delete('/patients/:id', auth(['admin']), (req, res) => {
 // ─── SMS Twilio (statut + test) ──────────────────────────────────────────────
 
 router.get('/sms-status', auth(['admin']), (req, res) => {
-  res.json({ configure: twilioConfigure() });
+  res.json({ configure: smsConfigure(), mode: smsMode(), twilio: twilioConfigure() });
 });
 
 router.post('/test-sms', auth(['admin']), async (req, res) => {
