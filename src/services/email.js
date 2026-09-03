@@ -125,6 +125,7 @@ async function envoyerEmail(to, sujet, texte, html) {
 // Tableaux et styles en ligne : c'est la seule mise en forme que les clients
 // de messagerie rendent de façon fiable (Outlook, Gmail, Apple Mail).
 const DOCTOLIB_PARTENAIRE = 'https://www.doctolib.fr/medecin-generaliste/eragny/yassine-oumamar-eragny';
+const TEL_SUPPORT = '06 48 88 82 22';
 
 function ech(t) {
   return String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
@@ -223,6 +224,8 @@ async function emailResultatsDisponibles(patient) {
     ``,
     `Le médecin vous expliquera vos résultats et, si une prise en charge est nécessaire, la marche à suivre.`,
     ``,
+    `En cas de problème ou de question, appelez le ${TEL_SUPPORT}.`,
+    ``,
     `L'équipe SomnoHub`,
   ].join('\n');
 
@@ -238,6 +241,8 @@ async function emailResultatsDisponibles(patient) {
     p(`<strong style="color:#1a3d2b">Prenez dès maintenant votre rendez-vous</strong>, en cabinet ou en téléconsultation :`),
     bouton(DOCTOLIB_PARTENAIRE, 'Prendre rendez-vous sur Doctolib', '#0596DE'),
     p(`Le médecin vous expliquera vos résultats et, si une prise en charge est nécessaire, la marche à suivre.`),
+    p(`<span style="color:#7a9186;font-size:13px">En cas de problème ou de question, appelez le
+       <a href="tel:+33648888222" style="color:#52b788;font-weight:600;text-decoration:none">${TEL_SUPPORT}</a>.</span>`),
   ].join(''));
 
   return envoyerEmail(patient.email, sujet, texte, html);

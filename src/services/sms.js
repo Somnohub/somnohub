@@ -168,6 +168,7 @@ async function smsDepartTournee(patient) {
 }
 
 const DOCTOLIB_PARTENAIRE = 'https://www.doctolib.fr/medecin-generaliste/eragny/yassine-oumamar-eragny';
+const TEL_SUPPORT = '06 48 88 82 22';
 
 // Rédigé sans accent circonflexe ni tréma : hors du jeu GSM-7, un seul de ces
 // caractères ferait basculer le SMS en UCS-2, soit 70 caractères par segment
@@ -175,7 +176,8 @@ const DOCTOLIB_PARTENAIRE = 'https://www.doctolib.fr/medecin-generaliste/eragny/
 async function smsResultatsDisponibles(patient) {
   const msg = `Bonjour ${patient.prenom}, les résultats de votre polygraphie ventilatoire (test du sommeil) sont disponibles. `
     + `Ils vous seront remis uniquement lors d'une consultation ou téléconsultation. `
-    + `Prenez RDV : ${DOCTOLIB_PARTENAIRE}`;
+    + `Prenez RDV : ${DOCTOLIB_PARTENAIRE} `
+    + `En cas de problème ou de question, appelez le ${TEL_SUPPORT}.`;
   await envoyerSMS(patient.id, 'resultats_disponibles', msg, patient.telephone);
 }
 
