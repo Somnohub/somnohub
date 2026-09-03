@@ -95,4 +95,16 @@ async function smsDepartTournee(patient) {
   await envoyerSMS(patient.id, 'depart_tournee', msg, patient.telephone);
 }
 
-module.exports = { smsPrescription, smsRappelRecuperation, smsSuivi3Mois, smsSuivi6Mois, smsSuivi1An, smsDepartTournee, envoyerSMSTest, twilioConfigure, toE164 };
+const DOCTOLIB_PARTENAIRE = 'https://www.doctolib.fr/medecin-generaliste/eragny/yassine-oumamar-eragny';
+
+// Rédigé sans accent circonflexe ni tréma : hors du jeu GSM-7, un seul de ces
+// caractères ferait basculer le SMS en UCS-2, soit 70 caractères par segment
+// au lieu de 160 — et donc un segment facturé de plus.
+async function smsResultatsDisponibles(patient) {
+  const msg = `Bonjour ${patient.prenom}, les résultats de votre polygraphie ventilatoire (test du sommeil) sont disponibles. `
+    + `Ils vous seront remis uniquement lors d'une consultation ou téléconsultation. `
+    + `Prenez RDV : ${DOCTOLIB_PARTENAIRE}`;
+  await envoyerSMS(patient.id, 'resultats_disponibles', msg, patient.telephone);
+}
+
+module.exports = { smsResultatsDisponibles, smsPrescription, smsRappelRecuperation, smsSuivi3Mois, smsSuivi6Mois, smsSuivi1An, smsDepartTournee, envoyerSMSTest, twilioConfigure, toE164 };

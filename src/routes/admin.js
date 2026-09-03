@@ -8,7 +8,7 @@ const auth = require('../middleware/auth');
 const { genererAlertes } = require('../services/scheduler');
 const { backupNow, dernieresSauvegardes } = require('../services/backup');
 const { creerPatientAvecBoitier } = require('./medecin');
-const { envoyerSMSTest, twilioConfigure } = require('../services/sms');
+const { envoyerSMSTest, twilioConfigure, smsResultatsDisponibles } = require('../services/sms');
 const { emailDemandeValidee, emailDemandeRefusee, emailExamenRealise, emailConfigure, emailMode, envoyerEmail, adminEmail } = require('../services/email');
 const ordo = require('../services/ordonnances');
 
@@ -600,9 +600,19 @@ router.put('/demandes/:id/statut', auth(['admin']), (req, res) => {
   if (passageExamenTermine) {
     emailExamenRealise({ prenom: d.patient_prenom, email: d.email })
       .catch(e => console.error('[Examen terminé] Email patient échoué:', e.message));
+    // Le SMS double l'email : beaucoup de patients ne consultent pas leur boîte.
+    // Il exige un patient_id, présent dès la programmation de la demande.
+    if (d.patient_id) {
+      smsResultatsDisponibles({ id: d.patient_id, prenom: d.patient_prenom, telephone: d.telephone })
+        .catch(e => console.error('[Examen terminé] SMS patient échoué:', e.message));
+    }
   }
 
-  res.json({ success: true, email_envoye: passageExamenTermine && !!d.email });
+  res.json({
+    success: true,
+    email_envoye: passageExamenTermine && !!d.email,
+    sms_envoye: passageExamenTermine && !!d.patient_id,
+  });
 });
 
 // ─── Suppression patient / désassignation boîtier ───────────────────────────

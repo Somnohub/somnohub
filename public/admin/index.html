@@ -1398,8 +1398,8 @@ async function refuserDemande(id) {
 // on le confirme avant.
 async function terminerExamen(id, email) {
   const avert = email
-    ? `Un email sera envoyé à ${email} pour l'inviter à prendre rendez-vous.`
-    : "⚠️ Aucune adresse email au dossier : le patient ne sera pas prévenu automatiquement.";
+    ? `Le patient sera prévenu par SMS et par email (${email}) et invité à prendre rendez-vous.`
+    : "Le patient sera prévenu par SMS.\n⚠️ Aucune adresse email au dossier : pas d'email.";
   if (!confirm(`Marquer l'examen comme terminé ?\n\n${avert}`)) return;
   try {
     const res = await fetch(`${API}/api/admin/demandes/${id}/statut`, {
@@ -1407,7 +1407,8 @@ async function terminerExamen(id, email) {
     });
     const data = await res.json();
     if (!res.ok) { showToast(data.error || 'Échec', 'error'); return; }
-    showToast(data.email_envoye ? 'Examen terminé — patient prévenu par email' : 'Examen terminé', 'success');
+    const canaux = [data.sms_envoye && 'SMS', data.email_envoye && 'email'].filter(Boolean);
+    showToast(canaux.length ? `Examen terminé — patient prévenu par ${canaux.join(' et ')}` : 'Examen terminé', 'success');
     closeModal('demandeModal');
     loadDemandes();
   } catch (e) { showToast('Erreur réseau', 'error'); }
