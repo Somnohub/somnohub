@@ -855,6 +855,21 @@
       .quiz-body { padding: 24px 22px; }
       .strip-inner { grid-template-columns: 1fr; }
     }
+    /* ── Bouton de prise de rendez-vous Doctolib ── */
+    .btn-doctolib {
+      display: inline-flex; align-items: center; gap: 11px;
+      background: #0596DE; color: #fff; text-decoration: none;
+      padding: 12px 20px; border-radius: 10px; border: none; cursor: pointer;
+      font-family: 'Inter', sans-serif; line-height: 1.25; white-space: nowrap;
+      box-shadow: 0 2px 10px rgba(5,150,222,.28);
+      transition: background .15s, transform .15s, box-shadow .15s;
+    }
+    .btn-doctolib:hover { background: #047fbc; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(5,150,222,.34); }
+    .btn-doctolib:focus-visible { outline: 3px solid rgba(5,150,222,.45); outline-offset: 2px; }
+    .btn-doctolib svg { flex: 0 0 auto; }
+    .btn-doctolib .dl-txt { display: flex; flex-direction: column; text-align: left; }
+    .btn-doctolib .dl-sur { font-size: .72rem; font-weight: 500; opacity: .9; }
+    .btn-doctolib .dl-nom { font-size: 1.02rem; font-weight: 700; letter-spacing: -.01em; }
   </style>
   <!-- Umami analytics — sans cookies, aucune donnée personnelle -->
   <script defer src="https://cloud.umami.is/script.js" data-website-id="b121a2da-ec1d-47ee-a9bd-a969fbecc6e1"></script>
@@ -1235,10 +1250,10 @@
         <div class="tc-eyebrow">Notre médecin partenaire</div>
         <h2>Consultez un médecin depuis chez vous</h2>
         <p>Votre score STOP-BANG est élevé ou vous avez des doutes ? Notre médecin partenaire analysera votre situation et vous prescrira l'examen si nécessaire — en vidéo, depuis votre domicile. Le rendez-vous se prend en ligne sur Doctolib.</p>
-        <button class="btn-tc" onclick="window.open('https://www.doctolib.fr/medecin-generaliste/eragny/yassine-oumamar-eragny','_blank')">Prendre RDV en téléconsultation →</button>
+        <a class="btn-doctolib" href="https://www.doctolib.fr/medecin-generaliste/eragny/yassine-oumamar-eragny" target="_blank" rel="noopener" onclick="if(window.umami)umami.track('doctolib_rdv')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3" stroke="#fff" stroke-width="1.9"/><path d="M3 10h18" stroke="#fff" stroke-width="1.9"/><path d="M8 3v4M16 3v4" stroke="#fff" stroke-width="1.9" stroke-linecap="round"/><path d="M9 15.5l2 2 4-4" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="dl-txt"><span class="dl-sur">Prendre rendez-vous sur</span><span class="dl-nom">Doctolib</span></span></a>
         <div class="tc-partner">
           <span>En partenariat avec</span>
-          <span class="tc-partner-badge">🩺 RDV sur Doctolib</span>
+          <span class="tc-partner-badge">🩺 Médecin partenaire</span>
           <span class="tc-partner-badge">🔒 Remboursé Sécu</span>
         </div>
       </div>
@@ -1355,7 +1370,7 @@
       <p>Faites le test en 2 minutes et découvrez si vous êtes à risque. Gratuit, anonyme, sans engagement.</p>
       <div class="cta-actions">
         <button class="btn-cta-primary" onclick="document.getElementById('stopbang').scrollIntoView({behavior:'smooth'})">Faire le test STOP-BANG →</button>
-        <button class="btn-cta-ghost" onclick="window.open('https://www.doctolib.fr/medecin-generaliste/eragny/yassine-oumamar-eragny','_blank')">Prendre RDV en téléconsultation</button>
+        <a class="btn-doctolib" href="https://www.doctolib.fr/medecin-generaliste/eragny/yassine-oumamar-eragny" target="_blank" rel="noopener" onclick="if(window.umami)umami.track('doctolib_rdv')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3" stroke="#fff" stroke-width="1.9"/><path d="M3 10h18" stroke="#fff" stroke-width="1.9"/><path d="M8 3v4M16 3v4" stroke="#fff" stroke-width="1.9" stroke-linecap="round"/><path d="M9 15.5l2 2 4-4" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="dl-txt"><span class="dl-sur">Prendre rendez-vous sur</span><span class="dl-nom">Doctolib</span></span></a>
       </div>
     </div>
   </div>

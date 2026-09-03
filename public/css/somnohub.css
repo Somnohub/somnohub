@@ -361,3 +361,31 @@ select.form-control {
 .faq-q h3 { font-size: 1rem; color: var(--primary); margin: 0 0 6px; }
 .faq-q p { margin: 0; font-size: .95rem; color: var(--text-mid); line-height: 1.6; }
 .faq-q a { color: var(--accent); font-weight: 600; }
+
+/* ── Bouton de prise de rendez-vous Doctolib ───────────────────────── */
+.btn-doctolib {
+  --dl-blue: #0596DE;
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  background: var(--dl-blue);
+  color: #fff;
+  text-decoration: none;
+  padding: 12px 20px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1.25;
+  box-shadow: 0 2px 10px rgba(5, 150, 222, .28);
+  transition: background .15s, transform .15s, box-shadow .15s;
+}
+.btn-doctolib:hover { background: #047fbc; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(5,150,222,.34); }
+.btn-doctolib:focus-visible { outline: 3px solid rgba(5,150,222,.45); outline-offset: 2px; }
+.btn-doctolib svg { flex: 0 0 auto; }
+.btn-doctolib .dl-txt { display: flex; flex-direction: column; text-align: left; }
+.btn-doctolib .dl-sur { font-size: .72rem; font-weight: 500; opacity: .9; letter-spacing: .01em; }
+.btn-doctolib .dl-nom { font-size: 1.02rem; font-weight: 700; letter-spacing: -.01em; }
+.btn-doctolib.dl-sm { padding: 10px 16px; gap: 9px; }
+.btn-doctolib.dl-sm .dl-nom { font-size: .92rem; }
+.btn-doctolib.dl-sm .dl-sur { font-size: .68rem; }
