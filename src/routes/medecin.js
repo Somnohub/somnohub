@@ -10,7 +10,7 @@ const { genererAlertes } = require('../services/scheduler');
 // Utilisé par la prescription médecin ET par la programmation d'une demande (admin).
 // Retourne la ligne patient (avec boitier_numero).
 function creerPatientAvecBoitier(db, fields, createdBy, notePrescription = 'Prescription créée') {
-  const { medecin_id, nom, prenom, telephone, adresse, lat, lng, score_stop_bang, taille, poids } = fields;
+  const { medecin_id, nom, prenom, telephone, adresse, lat, lng, score_stop_bang, taille, poids, email } = fields;
   const today = new Date().toISOString().split('T')[0];
 
   const boitierDispo = db.prepare(`SELECT * FROM boitiers WHERE statut = 'disponible' LIMIT 1`).get();
@@ -20,15 +20,16 @@ function creerPatientAvecBoitier(db, fields, createdBy, notePrescription = 'Pres
   const poidsNum = (poids !== undefined && poids !== null && poids !== '' && isFinite(poids)) ? Number(poids) : null;
 
   const result = db.prepare(`
-    INSERT INTO patients (medecin_id, nom, prenom, telephone, adresse, lat, lng, taille, poids, score_stop_bang, statut)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO patients (medecin_id, nom, prenom, telephone, adresse, lat, lng, taille, poids, score_stop_bang, statut, email)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     medecin_id,
     nom.trim(), prenom.trim(), telephone.trim(), adresse.trim(),
     lat || 48.8566, lng || 2.3522,
     tailleNum, poidsNum,
     score_stop_bang || 0,
-    boitierDispo ? 'livraison_prevue' : 'prescrit'
+    boitierDispo ? 'livraison_prevue' : 'prescrit',
+    (email || '').trim() || null
   );
   const patientId = result.lastInsertRowid;
 

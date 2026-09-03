@@ -216,6 +216,8 @@ function migrate(db) {
     `ALTER TABLE demandes ADD COLUMN adresse_verifiee INTEGER DEFAULT 1`,
     // Ordonnance jointe par le demandeur : nom du fichier sur le volume,
     // type MIME, et jeton d'envoi à usage unique.
+    // Email du patient, repris de sa demande : sert aux notifications de parcours.
+    `ALTER TABLE patients ADD COLUMN email TEXT`,
     `ALTER TABLE demandes ADD COLUMN ordonnance_fichier TEXT`,
     `ALTER TABLE demandes ADD COLUMN ordonnance_mime TEXT`,
     `ALTER TABLE demandes ADD COLUMN ordonnance_token TEXT`,

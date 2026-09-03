@@ -9,7 +9,7 @@ const { genererAlertes } = require('../services/scheduler');
 const { backupNow, dernieresSauvegardes } = require('../services/backup');
 const { creerPatientAvecBoitier } = require('./medecin');
 const { envoyerSMSTest, twilioConfigure } = require('../services/sms');
-const { emailDemandeValidee, emailConfigure, emailMode, envoyerEmail, adminEmail } = require('../services/email');
+const { emailDemandeValidee, emailDemandeRefusee, emailConfigure, emailMode, envoyerEmail, adminEmail } = require('../services/email');
 const ordo = require('../services/ordonnances');
 
 // ─── Boîtiers ───────────────────────────────────────────────────────────────
@@ -541,6 +541,9 @@ router.put('/demandes/:id/refuser', auth(['admin']), (req, res) => {
   if (d.statut !== 'recue') return res.status(400).json({ error: 'Seule une demande reçue peut être refusée' });
   const { motif } = req.body;
   db.prepare(`UPDATE demandes SET statut = 'refusee', motif_refus = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(motif || null, d.id);
+  // Le demandeur attendait une réponse : la lui donner, même négative.
+  emailDemandeRefusee({ ...d, motif_refus: motif || null })
+    .catch(e => console.error('[Refuser] Email patient échoué:', e.message));
   res.json({ success: true });
 });
 
@@ -559,7 +562,7 @@ router.put('/demandes/:id/programmer', auth(['admin']), (req, res) => {
     medecin_id: req.user.id,
     nom: d.patient_nom, prenom: d.patient_prenom,
     telephone: d.telephone, adresse: adresseComplete,
-    lat: d.lat, lng: d.lng, score_stop_bang: 0
+    lat: d.lat, lng: d.lng, score_stop_bang: 0, email: d.email
   }, req.user.id, note);
 
   db.prepare(`UPDATE demandes SET statut = 'programmee', patient_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(patient.id, d.id);

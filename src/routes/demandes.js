@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getDb } = require('../db');
-const { emailNouvelleDemande } = require('../services/email');
+const { emailNouvelleDemande, emailDemandeRecue } = require('../services/email');
 const express_raw = express.raw;
 const ordo = require('../services/ordonnances');
 
@@ -92,6 +92,8 @@ router.post('/', (req, res) => {
     // Notification interne à l'admin (best-effort, ne bloque pas la réponse)
     const demande = db.prepare('SELECT * FROM demandes WHERE id = ?').get(numero);
     emailNouvelleDemande(demande).catch(e => console.error('[Demande] Notif admin échouée:', e.message));
+    // Accusé de réception au demandeur — sans lui, il n'a aucune trace écrite.
+    emailDemandeRecue(demande).catch(e => console.error('[Demande] Accusé de réception échoué:', e.message));
 
     res.status(201).json({ success: true, numero, upload_token: jeton });
   } catch (e) {

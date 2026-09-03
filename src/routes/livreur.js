@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getDb } = require('../db');
+const { emailExamenRealise } = require('../services/email');
 const auth = require('../middleware/auth');
 const { smsDepartTournee } = require('../services/sms');
 
@@ -164,6 +165,11 @@ router.post('/scan', auth(['livreur']), (req, res) => {
     if (boitier.patient_id) {
       db.prepare(`UPDATE patients SET statut = 'en_cours_d_analyse', updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(boitier.patient_id);
       db.prepare(`INSERT INTO historique_patient (patient_id, statut, note, created_by) VALUES (?, 'en_cours_d_analyse', ?, ?)`).run(boitier.patient_id, 'Boîtier récupéré — données en cours d\'analyse', req.user.id);
+
+      // Le patient vient de terminer son examen : on le lui confirme et on
+      // l'invite à réserver la consultation de remise des résultats.
+      const pat = db.prepare('SELECT * FROM patients WHERE id = ?').get(boitier.patient_id);
+      if (pat) emailExamenRealise(pat).catch(e => console.error('[Scan] Email examen réalisé échoué:', e.message));
     }
 
   } else if (boitier.statut === 'disponible') {
