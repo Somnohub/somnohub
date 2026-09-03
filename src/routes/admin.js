@@ -10,6 +10,7 @@ const { backupNow, dernieresSauvegardes } = require('../services/backup');
 const { creerPatientAvecBoitier } = require('./medecin');
 const { envoyerSMSTest, twilioConfigure } = require('../services/sms');
 const { emailDemandeValidee, emailConfigure, emailMode, envoyerEmail, adminEmail } = require('../services/email');
+const ordo = require('../services/ordonnances');
 
 // ─── Boîtiers ───────────────────────────────────────────────────────────────
 
@@ -463,6 +464,27 @@ router.get('/tournees-historique', auth(['admin']), (req, res) => {
 
 // ─── Demandes de polygraphie (cockpit) ──────────────────────────────────────
 
+// Consultation d'une ordonnance jointe. Réservée à l'admin : le fichier n'est
+// servi par aucune route statique, il n'existe pas d'URL publique vers lui.
+router.get('/demandes/:id/ordonnance', auth(['admin']), (req, res) => {
+  try {
+    const d = getDb().prepare('SELECT ordonnance_fichier, ordonnance_mime FROM demandes WHERE id = ?')
+      .get(parseInt(req.params.id, 10));
+    if (!d || !d.ordonnance_fichier) return res.status(404).json({ error: 'Aucune ordonnance jointe' });
+
+    const p = ordo.chemin(d.ordonnance_fichier);
+    if (!p) return res.status(404).json({ error: 'Fichier introuvable' });
+
+    res.setHeader('Content-Type', d.ordonnance_mime || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `inline; filename="ordonnance-demande-${parseInt(req.params.id, 10)}"`);
+    res.setHeader('Cache-Control', 'no-store');
+    res.sendFile(p);
+  } catch (e) {
+    console.error('[Admin] Ordonnance:', e);
+    res.status(500).json({ error: 'Erreur de lecture' });
+  }
+});
+
 router.get('/demandes', auth(['admin']), (req, res) => {
   const db = getDb();
   const { statut } = req.query;
@@ -476,7 +498,8 @@ router.get('/demandes', auth(['admin']), (req, res) => {
   for (const r of db.prepare(`SELECT statut, COUNT(*) as nb FROM demandes GROUP BY statut`).all()) {
     compteurs[r.statut] = r.nb;
   }
-  res.json({ demandes, compteurs, recues: compteurs.recue || 0 });
+  const nettoyees = demandes.map(({ ordonnance_token, ...reste }) => reste);
+  res.json({ demandes: nettoyees, compteurs, recues: compteurs.recue || 0 });
 });
 
 router.get('/demandes/:id', auth(['admin']), (req, res) => {
@@ -489,7 +512,8 @@ router.get('/demandes/:id', auth(['admin']), (req, res) => {
     WHERE d.id = ?
   `).get(req.params.id);
   if (!demande) return res.status(404).json({ error: 'Demande introuvable' });
-  res.json(demande);
+  const { ordonnance_token, ...reste } = demande;
+  res.json(reste);
 });
 
 router.put('/demandes/:id/valider', auth(['admin']), (req, res) => {

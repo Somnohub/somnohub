@@ -214,6 +214,11 @@ function migrate(db) {
     `ALTER TABLE demandes ADD COLUMN ordonnance_confirmee INTEGER DEFAULT 0`,
     `ALTER TABLE demandes ADD COLUMN avis_sommeil INTEGER DEFAULT 0`,
     `ALTER TABLE demandes ADD COLUMN adresse_verifiee INTEGER DEFAULT 1`,
+    // Ordonnance jointe par le demandeur : nom du fichier sur le volume,
+    // type MIME, et jeton d'envoi à usage unique.
+    `ALTER TABLE demandes ADD COLUMN ordonnance_fichier TEXT`,
+    `ALTER TABLE demandes ADD COLUMN ordonnance_mime TEXT`,
+    `ALTER TABLE demandes ADD COLUMN ordonnance_token TEXT`,
   ];
   for (const sql of ajouts) {
     try { db.exec(sql); } catch (e) { /* colonne déjà présente */ }

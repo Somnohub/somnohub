@@ -1282,12 +1282,24 @@ async function loadDemandes() {
           <td>${d.source === 'medecin' ? '🩺 Médecin' : '🙋 Patient'}</td>
           <td><strong>${d.patient_prenom} ${d.patient_nom}</strong></td>
           <td style="font-size:.85rem">${d.telephone}</td>
-          <td style="text-align:center">${d.ordonnance_presente ? '✅' : (d.ordonnance_mode === 'transmise' ? '📄 à venir' : '🚚 livraison')}</td>
+          <td style="text-align:center">${d.ordonnance_fichier ? '📎 jointe' : (d.ordonnance_presente ? '✅' : (d.ordonnance_mode === 'transmise' ? '📄 à venir' : '🚚 livraison'))}</td>
           <td>${statutChip(d.statut)}</td>
           <td><button class="btn btn-secondary btn-sm" onclick="openDemande(${d.id})">Ouvrir</button></td>
         </tr>`).join('')
       : '<tr><td colspan="8" style="text-align:center;color:var(--text-light);padding:20px">Aucune demande</td></tr>';
   } catch (e) { showToast('Erreur chargement demandes', 'error'); }
+}
+
+// Le document n'est accessible qu'authentifié : on le récupère puis on l'ouvre
+// depuis la mémoire du navigateur, sans jamais exposer d'adresse directe.
+async function voirOrdonnance(id) {
+  try {
+    const res = await fetch(`${API}/api/admin/demandes/${id}/ordonnance`, { headers: authHeaders() });
+    if (!res.ok) { showToast('Ordonnance introuvable', 'error'); return; }
+    const url = URL.createObjectURL(await res.blob());
+    window.open(url, '_blank', 'noopener');
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch (e) { showToast('Erreur de lecture', 'error'); }
 }
 
 async function openDemande(id) {
@@ -1296,8 +1308,10 @@ async function openDemande(id) {
     document.getElementById('demandeModalTitle').textContent = `Demande #${d.id} · ${d.source === 'medecin' ? 'Parcours médecin' : 'Parcours patient'}`;
 
     const row = (k, v) => v ? `<div style="display:flex;justify-content:space-between;gap:14px;padding:7px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-light);font-size:.85rem">${k}</span><span style="font-weight:600;text-align:right">${v}</span></div>` : '';
-    const ordoTxt = d.ordonnance_presente ? '✅ Présente au dossier'
-      : (d.ordonnance_mode === 'transmise' ? '📄 À transmettre' : '🚚 À remettre à la livraison');
+    const ordoTxt = d.ordonnance_fichier
+      ? `📎 Pièce jointe reçue <button class="btn btn-secondary btn-sm" style="margin-left:8px" onclick="voirOrdonnance(${d.id})">Ouvrir</button>`
+      : (d.ordonnance_presente ? '✅ Présente au dossier'
+      : (d.ordonnance_mode === 'transmise' ? '📄 À transmettre' : '🚚 À remettre à la livraison'));
 
     // Couverture santé + reste à charge. Polygraphie GLQP007 = 151,68 € → acte
     // « onéreux » (≥ 120 €) : participation forfaitaire fixe de 32 € (Ameli, 01/04/2026).

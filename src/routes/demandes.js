@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { getDb } = require('../db');
 const { emailNouvelleDemande } = require('../services/email');
+const express_raw = express.raw;
+const ordo = require('../services/ordonnances');
 
 // Réception d'une demande de polygraphie — PUBLIC, sans authentification.
 // Deux parcours : 'medecin' (avec RPPS + indication) ou 'patient' (grand public).
@@ -82,15 +84,61 @@ router.post('/', (req, res) => {
 
     const numero = result.lastInsertRowid;
 
+    // Jeton à usage unique autorisant l'envoi de l'ordonnance qui suit.
+    // Sans lui, n'importe qui pourrait joindre un fichier à n'importe quelle demande.
+    const jeton = ordo.nouveauJeton();
+    db.prepare('UPDATE demandes SET ordonnance_token = ? WHERE id = ?').run(jeton, numero);
+
     // Notification interne à l'admin (best-effort, ne bloque pas la réponse)
     const demande = db.prepare('SELECT * FROM demandes WHERE id = ?').get(numero);
     emailNouvelleDemande(demande).catch(e => console.error('[Demande] Notif admin échouée:', e.message));
 
-    res.status(201).json({ success: true, numero });
+    res.status(201).json({ success: true, numero, upload_token: jeton });
   } catch (e) {
     console.error('[Demande] Erreur:', e);
     res.status(500).json({ error: 'Erreur lors de l\'envoi de la demande' });
   }
 });
+
+// Envoi de l'ordonnance, en deux temps : la demande est créée d'abord, le
+// document suit. Le corps arrive en binaire brut — le parseur JSON global ne
+// le touche pas, et la limite de taille reste cantonnée à cette route.
+router.post('/:numero/ordonnance',
+  express_raw({ type: 'application/octet-stream', limit: ordo.TAILLE_MAX + 1024 }),
+  (req, res) => {
+    try {
+      const numero = parseInt(req.params.numero, 10);
+      const jeton = req.get('X-Upload-Token') || '';
+      if (!numero || !jeton) return res.status(400).json({ error: 'Requête incomplète' });
+
+      const db = getDb();
+      const d = db.prepare('SELECT id, ordonnance_token, ordonnance_fichier FROM demandes WHERE id = ?').get(numero);
+      if (!d || !d.ordonnance_token || d.ordonnance_token !== jeton) {
+        return res.status(403).json({ error: 'Envoi non autorisé' });
+      }
+
+      if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
+        return res.status(400).json({ error: 'Fichier vide' });
+      }
+
+      const r = ordo.enregistrer(numero, req.body);
+      if (r.erreur) return res.status(400).json({ error: r.erreur });
+
+      // Un remplacement ne doit pas laisser l'ancien fichier derrière lui.
+      if (d.ordonnance_fichier) ordo.supprimer(d.ordonnance_fichier);
+
+      // Le jeton est consommé : un seul envoi par demande.
+      db.prepare('UPDATE demandes SET ordonnance_fichier = ?, ordonnance_mime = ?, ordonnance_token = NULL WHERE id = ?')
+        .run(r.nom, r.mime, numero);
+
+      res.json({ success: true });
+    } catch (e) {
+      if (e.type === 'entity.too.large') {
+        return res.status(413).json({ error: 'Fichier trop volumineux — 5 Mo maximum.' });
+      }
+      console.error('[Ordonnance] Erreur:', e);
+      res.status(500).json({ error: "Impossible d'enregistrer l'ordonnance" });
+    }
+  });
 
 module.exports = router;

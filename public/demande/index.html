@@ -40,6 +40,19 @@
     .pas-ordo strong { display: block; color: #b25e00; font-size: .9rem; margin-bottom: 5px; }
     .pas-ordo p { font-size: .84rem; color: var(--text-mid); line-height: 1.55; margin: 0 0 10px; }
     .pas-ordo-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    /* Dépôt de l'ordonnance */
+    .depot { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 16px;
+      border: 1.5px dashed var(--border); border-radius: var(--radius-sm); background: var(--bg);
+      cursor: pointer; transition: border-color .15s, background .15s; }
+    .depot:hover { border-color: var(--accent); background: #f0faf4; }
+    .depot.rempli { border-style: solid; border-color: var(--accent); background: #f0faf4; }
+    .depot-ico { font-size: 1.3rem; flex: 0 0 auto; }
+    .depot-txt { display: flex; flex-direction: column; min-width: 0; }
+    .depot-txt strong { font-size: .92rem; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .depot-txt small { font-size: .8rem; color: var(--text-light); margin-top: 1px; }
+    .depot-retirer { margin-top: 8px; background: none; border: none; padding: 0; cursor: pointer;
+      font-family: inherit; font-size: .82rem; color: var(--text-light); text-decoration: underline; }
+    .depot-retirer:hover { color: #b23b3b; }
     /* Déclarations du médecin prescripteur (portée médico-légale) */
     .declaration {
       display: flex; align-items: flex-start; gap: 10px; cursor: pointer;
@@ -202,6 +215,20 @@
             </label>
           </div>
 
+          <!-- Pièce jointe : l'ordonnance peut être envoyée dès maintenant -->
+          <div class="form-group" id="blocPieceJointe">
+            <label for="ordonnanceFichier">Joindre l'ordonnance <span style="font-weight:400;color:var(--text-light)">(facultatif)</span></label>
+            <label class="depot" id="depotZone" for="ordonnanceFichier">
+              <span class="depot-ico">📎</span>
+              <span class="depot-txt">
+                <strong id="depotNom">Ajouter une pièce jointe</strong>
+                <small id="depotAide">Photo ou PDF de votre ordonnance — 5 Mo maximum</small>
+              </span>
+            </label>
+            <input type="file" id="ordonnanceFichier" accept="application/pdf,image/jpeg,image/png,image/heic,.pdf,.jpg,.jpeg,.png,.heic" onchange="majPieceJointe()" hidden>
+            <button type="button" class="depot-retirer d-none" id="depotRetirer" onclick="retirerPieceJointe()">Retirer le fichier</button>
+          </div>
+
           <p class="section-hint" style="margin-top:6px">Couverture santé <span style="font-weight:400">(pour estimer votre reste à charge)</span></p>
           <div class="form-group">
             <label>Votre situation</label>
@@ -243,6 +270,7 @@
         <h2>Demande envoyée !</h2>
         <p class="lead" style="margin-bottom:14px">Votre demande a bien été reçue. Notre équipe la valide et vous recontacte rapidement pour organiser la livraison du boîtier.</p>
         <p>Numéro de demande : <span class="num" id="successNum">—</span></p>
+        <p class="d-none" id="successOrdo" style="font-size:.9rem;color:var(--text-mid);margin-top:6px"></p>
         <a href="/" class="btn btn-secondary btn-lg" style="margin-top:18px;display:inline-block">Retour à l'accueil</a>
       </div>
     </div>
@@ -339,6 +367,56 @@ function trackEvt(nom, data) {
 
 // Personnalise la déclaration du prescripteur avec le nom du patient saisi.
 // Échappe le texte pour éviter toute injection HTML.
+const TAILLE_MAX_ORDO = 5 * 1024 * 1024;
+
+function majPieceJointe() {
+  const inp = document.getElementById('ordonnanceFichier');
+  const zone = document.getElementById('depotZone');
+  const nom = document.getElementById('depotNom');
+  const aide = document.getElementById('depotAide');
+  const retirer = document.getElementById('depotRetirer');
+  const f = inp.files && inp.files[0];
+
+  if (!f) { retirerPieceJointe(); return; }
+
+  // On prévient tout de suite plutôt que de laisser le serveur refuser après coup.
+  if (f.size > TAILLE_MAX_ORDO) {
+    showAlert('Ce fichier fait ' + (f.size / 1048576).toFixed(1) + ' Mo. La taille maximale est de 5 Mo — reprenez la photo en qualité réduite.');
+    retirerPieceJointe();
+    return;
+  }
+
+  zone.classList.add('rempli');
+  nom.textContent = f.name;
+  aide.textContent = (f.size / 1024).toFixed(0) + ' Ko — prêt à être envoyé';
+  retirer.classList.remove('d-none');
+}
+
+function retirerPieceJointe() {
+  const inp = document.getElementById('ordonnanceFichier');
+  inp.value = '';
+  document.getElementById('depotZone').classList.remove('rempli');
+  document.getElementById('depotNom').textContent = 'Ajouter une pièce jointe';
+  document.getElementById('depotAide').textContent = 'Photo ou PDF de votre ordonnance — 5 Mo maximum';
+  document.getElementById('depotRetirer').classList.add('d-none');
+}
+
+// L'ordonnance part après la création de la demande : elle en a besoin du numéro.
+// Un échec ici ne remet pas la demande en cause — elle est déjà enregistrée.
+async function envoyerOrdonnance(numero, jeton) {
+  const f = document.getElementById('ordonnanceFichier').files[0];
+  if (!f || !jeton) return true;
+  try {
+    const res = await fetch(`${API}/api/demandes/${numero}/ordonnance`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/octet-stream', 'X-Upload-Token': jeton },
+      body: f
+    });
+    if (!res.ok) { const d = await res.json().catch(() => ({})); console.warn('[Ordonnance]', d.error); return false; }
+    return true;
+  } catch (e) { console.warn('[Ordonnance] Envoi échoué:', e); return false; }
+}
+
 function majDeclarationOrdonnance() {
   const el = document.getElementById('labelOrdoMedecin');
   if (!el) return;
@@ -510,11 +588,22 @@ async function submitDemande(e) {
     const data = await res.json();
     if (res.ok) {
       // Conversion : aucune donnée patient transmise, seulement le type de parcours
-      trackEvt('demande_envoyee', { parcours: parcours, ordonnance: payload.ordonnance_mode });
+      const avecFichier = !!document.getElementById('ordonnanceFichier').files[0];
+      const ordoOk = await envoyerOrdonnance(data.numero, data.upload_token);
+      trackEvt('demande_envoyee', { parcours: parcours, ordonnance: payload.ordonnance_mode, piece_jointe: avecFichier });
       // Conversion Google Ads — ne part que si le visiteur a accepté les cookies
       try { if (window.somnohubConversion) window.somnohubConversion(); } catch (e) {}
       document.getElementById('formView').classList.add('d-none');
       document.getElementById('successNum').textContent = '#' + data.numero;
+      const noteOrdo = document.getElementById('successOrdo');
+      if (avecFichier) {
+        noteOrdo.textContent = ordoOk
+          ? '📎 Votre ordonnance a bien été reçue.'
+          : "⚠️ Votre demande est enregistrée, mais l'ordonnance n'a pas pu être envoyée. Nous vous recontacterons pour l'obtenir.";
+        noteOrdo.classList.remove('d-none');
+      } else {
+        noteOrdo.classList.add('d-none');
+      }
       document.getElementById('successView').classList.remove('d-none');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
