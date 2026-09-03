@@ -359,7 +359,7 @@
             <div class="filter-chip" onclick="filterDemandes('validee', this)">Validées</div>
             <div class="filter-chip" onclick="filterDemandes('programmee', this)">Programmées</div>
             <div class="filter-chip" onclick="filterDemandes('realisee', this)">Réalisées</div>
-            <div class="filter-chip" onclick="filterDemandes('cr_signe', this)">CR signé</div>
+            <div class="filter-chip" onclick="filterDemandes('cr_signe', this)">Examen terminé</div>
             <div class="filter-chip" onclick="filterDemandes('cloturee', this)">Clôturées</div>
             <div class="filter-chip" onclick="filterDemandes('refusee', this)">Refusées</div>
           </div>
@@ -1239,7 +1239,7 @@ const STATUTS_DEMANDE = {
   validee:    { label: 'Validée',    color: '#00838f' },
   programmee: { label: 'Programmée', color: '#e65100' },
   realisee:   { label: 'Réalisée',   color: '#6a1b9a' },
-  cr_signe:   { label: 'CR signé',   color: '#2e7d32' },
+  cr_signe:   { label: 'Examen terminé', color: '#2e7d32' },
   cloturee:   { label: 'Clôturée',   color: '#555' },
   refusee:    { label: 'Refusée',    color: '#c62828' }
 };
@@ -1357,8 +1357,7 @@ async function openDemande(id) {
     } else if (d.statut === 'programmee') {
       F.push(`<button class="btn btn-primary btn-sm" onclick="avancerDemande(${d.id},'realisee')">Marquer réalisée</button>`);
     } else if (d.statut === 'realisee') {
-      const dis = d.ordonnance_presente ? '' : 'disabled title="Ordonnance absente du dossier"';
-      F.push(`<button class="btn btn-success btn-sm" ${dis} onclick="avancerDemande(${d.id},'cr_signe')">✍️ Signer le CR</button>`);
+      F.push(`<button class="btn btn-success btn-sm" onclick="terminerExamen(${d.id}, '${(d.email || '').replace(/['\\]/g, '\\$&')}')">✅ Examen terminé — prévenir le patient</button>`);
     } else if (d.statut === 'cr_signe') {
       F.push(`<button class="btn btn-secondary btn-sm" onclick="avancerDemande(${d.id},'cloturee')">Clôturer</button>`);
     }
@@ -1391,6 +1390,26 @@ async function refuserDemande(id) {
     const data = await res.json();
     if (res.ok) { showToast('Demande refusée', 'success'); closeModal('demandeModal'); loadDemandes(); }
     else showToast(data.error || 'Échec', 'error');
+  } catch (e) { showToast('Erreur réseau', 'error'); }
+}
+
+// Marque l'examen terminé et invite le patient à réserver la consultation de
+// remise des résultats. L'envoi d'un email au patient n'est pas annulable :
+// on le confirme avant.
+async function terminerExamen(id, email) {
+  const avert = email
+    ? `Un email sera envoyé à ${email} pour l'inviter à prendre rendez-vous.`
+    : "⚠️ Aucune adresse email au dossier : le patient ne sera pas prévenu automatiquement.";
+  if (!confirm(`Marquer l'examen comme terminé ?\n\n${avert}`)) return;
+  try {
+    const res = await fetch(`${API}/api/admin/demandes/${id}/statut`, {
+      method: 'PUT', headers: authHeaders(), body: JSON.stringify({ statut: 'cr_signe' })
+    });
+    const data = await res.json();
+    if (!res.ok) { showToast(data.error || 'Échec', 'error'); return; }
+    showToast(data.email_envoye ? 'Examen terminé — patient prévenu par email' : 'Examen terminé', 'success');
+    closeModal('demandeModal');
+    loadDemandes();
   } catch (e) { showToast('Erreur réseau', 'error'); }
 }
 

@@ -9,7 +9,7 @@ const { genererAlertes } = require('../services/scheduler');
 const { backupNow, dernieresSauvegardes } = require('../services/backup');
 const { creerPatientAvecBoitier } = require('./medecin');
 const { envoyerSMSTest, twilioConfigure } = require('../services/sms');
-const { emailDemandeValidee, emailDemandeRefusee, emailConfigure, emailMode, envoyerEmail, adminEmail } = require('../services/email');
+const { emailDemandeValidee, emailDemandeRefusee, emailExamenRealise, emailConfigure, emailMode, envoyerEmail, adminEmail } = require('../services/email');
 const ordo = require('../services/ordonnances');
 
 // ─── Boîtiers ───────────────────────────────────────────────────────────────
@@ -587,13 +587,22 @@ router.put('/demandes/:id/statut', auth(['admin']), (req, res) => {
   const allowed = ['realisee', 'cr_signe', 'cloturee'];
   if (!allowed.includes(statut)) return res.status(400).json({ error: 'Statut non autorisé' });
 
-  // Garde-fou : pas de signature de CR sans ordonnance au dossier
-  if (statut === 'cr_signe' && !d.ordonnance_presente) {
-    return res.status(400).json({ error: 'Ordonnance absente du dossier — signature du CR bloquée' });
-  }
+  // 'cr_signe' est la valeur historique en base ; elle désigne désormais
+  // « examen terminé ». Les comptes-rendus se gèrent sur une plateforme
+  // sécurisée distincte — la contrainte CHECK fige la liste des statuts, on ne
+  // reconstruit pas la table pour un simple changement de libellé.
+  const passageExamenTermine = statut === 'cr_signe' && d.statut === 'realisee';
 
   db.prepare(`UPDATE demandes SET statut = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(statut, d.id);
-  res.json({ success: true });
+
+  // Le patient est invité à réserver la consultation de remise des résultats.
+  // Conditionné au passage depuis 'realisee' : rejouer l'action ne renvoie rien.
+  if (passageExamenTermine) {
+    emailExamenRealise({ prenom: d.patient_prenom, email: d.email })
+      .catch(e => console.error('[Examen terminé] Email patient échoué:', e.message));
+  }
+
+  res.json({ success: true, email_envoye: passageExamenTermine && !!d.email });
 });
 
 // ─── Suppression patient / désassignation boîtier ───────────────────────────
