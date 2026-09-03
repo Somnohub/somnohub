@@ -212,14 +212,18 @@ async function emailExamenRealise(patient) {
   const texte = [
     `Bonjour ${patient.prenom || ''},`,
     ``,
-    `Votre examen a bien été réalisé et nous avons récupéré le boîtier.`,
+    `Votre examen a bien été réalisé et nous avons récupéré le boîtier. Merci.`,
     ``,
-    `L'enregistrement est maintenant analysé par un médecin. Le compte-rendu est établi sous 48 à 72 h.`,
+    `L'enregistrement est actuellement analysé par un médecin. Le compte-rendu est établi sous 48 à 72 h.`,
     ``,
-    `Vos résultats vous seront remis et expliqués par notre médecin partenaire, lors d'une consultation.`,
-    `Prenez rendez-vous dès maintenant : ${DOCTOLIB_PARTENAIRE}`,
+    `IMPORTANT — Vos résultats vous seront remis exclusivement au cours d'une consultation ou d'une téléconsultation avec notre médecin partenaire. Ils ne sont communiqués ni par email, ni par téléphone.`,
     ``,
-    `Prendre le rendez-vous sans attendre vous évite de perdre du temps une fois le compte-rendu prêt.`,
+    `Prenez dès maintenant votre rendez-vous, en cabinet ou en téléconsultation :`,
+    DOCTOLIB_PARTENAIRE,
+    ``,
+    `Le médecin vous expliquera vos résultats et, si une prise en charge est nécessaire, la marche à suivre.`,
+    ``,
+    `En réservant sans attendre, vous obtenez un créneau au moment où votre compte-rendu sera prêt.`,
     ``,
     `L'équipe SomnoHub`,
   ].join('\n');
@@ -227,10 +231,17 @@ async function emailExamenRealise(patient) {
   const html = gabarit('Votre examen a bien été réalisé', [
     p(`Bonjour <strong>${ech(patient.prenom || '')}</strong>,`),
     p(`Votre examen a bien été réalisé et nous avons <strong>récupéré le boîtier</strong>. Merci.`),
-    p(`L'enregistrement est à présent analysé par un médecin. Le compte-rendu est établi <strong>sous 48 à 72 h</strong>.`),
-    p(`Vos résultats vous seront <strong>remis et expliqués par notre médecin partenaire</strong>, au cours d'une consultation.`),
+    p(`L'enregistrement est actuellement analysé par un médecin. Le compte-rendu est établi <strong>sous 48 à 72 h</strong>.`),
+    `<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;background:#fff8ee;border:1px solid #ffd9a0;border-radius:10px;margin:0 0 18px">
+       <tr><td style="padding:15px 17px;font-family:Helvetica,Arial,sans-serif;font-size:14px;line-height:1.6;color:#4a5e53">
+       <strong style="color:#b25e00">Comment obtenir vos résultats</strong><br>
+       Ils vous seront remis <strong>exclusivement au cours d'une consultation ou d'une téléconsultation</strong>
+       avec notre médecin partenaire. Ils ne sont communiqués ni par email, ni par téléphone.
+       </td></tr></table>`,
+    p(`<strong style="color:#1a3d2b">Prenez dès maintenant votre rendez-vous</strong>, en cabinet ou en téléconsultation :`),
     bouton(DOCTOLIB_PARTENAIRE, 'Prendre rendez-vous sur Doctolib', '#0596DE'),
-    p(`<span style="color:#7a9186;font-size:13px">Prendre le rendez-vous dès maintenant vous évite d'attendre une fois le compte-rendu prêt.</span>`),
+    p(`Le médecin vous expliquera vos résultats et, si une prise en charge est nécessaire, la marche à suivre.`),
+    p(`<span style="color:#7a9186;font-size:13px">En réservant sans attendre, vous obtenez un créneau au moment où votre compte-rendu sera prêt.</span>`),
   ].join(''));
 
   return envoyerEmail(patient.email, sujet, texte, html);
