@@ -9,7 +9,7 @@ const { genererAlertes } = require('../services/scheduler');
 const { backupNow, dernieresSauvegardes } = require('../services/backup');
 const { creerPatientAvecBoitier } = require('./medecin');
 const { envoyerSMSTest, twilioConfigure, smsResultatsDisponibles } = require('../services/sms');
-const { emailDemandeValidee, emailDemandeRefusee, emailExamenRealise, emailConfigure, emailMode, envoyerEmail, adminEmail } = require('../services/email');
+const { emailDemandeValidee, emailDemandeRefusee, emailResultatsDisponibles, emailConfigure, emailMode, envoyerEmail, adminEmail } = require('../services/email');
 const ordo = require('../services/ordonnances');
 
 // ─── Boîtiers ───────────────────────────────────────────────────────────────
@@ -598,7 +598,7 @@ router.put('/demandes/:id/statut', auth(['admin']), (req, res) => {
   // Le patient est invité à réserver la consultation de remise des résultats.
   // Conditionné au passage depuis 'realisee' : rejouer l'action ne renvoie rien.
   if (passageExamenTermine) {
-    emailExamenRealise({ prenom: d.patient_prenom, email: d.email })
+    emailResultatsDisponibles({ prenom: d.patient_prenom, email: d.email })
       .catch(e => console.error('[Examen terminé] Email patient échoué:', e.message));
     // Le SMS double l'email : beaucoup de patients ne consultent pas leur boîte.
     // Il exige un patient_id, présent dès la programmation de la demande.

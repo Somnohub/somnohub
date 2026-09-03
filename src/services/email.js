@@ -204,34 +204,31 @@ async function emailDemandeRecue(demande) {
   return envoyerEmail(demande.email, sujet, texte, html);
 }
 
-// ── Examen réalisé, boîtier récupéré ──────────────────────────────────
-async function emailExamenRealise(patient) {
+// ── Résultats disponibles ─────────────────────────────────────────────
+// Déclenché quand le compte-rendu est prêt, pas à la récupération du boîtier :
+// le patient est invité à réserver la consultation où ils lui seront remis.
+async function emailResultatsDisponibles(patient) {
   if (!patient || !patient.email) return { ignore: 'pas d\'email' };
-  const sujet = 'Votre examen a bien été réalisé — SomnoHub';
+  const sujet = 'Les résultats de votre polygraphie sont disponibles — SomnoHub';
 
   const texte = [
     `Bonjour ${patient.prenom || ''},`,
     ``,
-    `Votre examen a bien été réalisé et nous avons récupéré le boîtier. Merci.`,
+    `Les résultats de votre polygraphie ventilatoire (test du sommeil) sont disponibles.`,
     ``,
-    `L'enregistrement est actuellement analysé par un médecin. Le compte-rendu est établi sous 48 à 72 h.`,
-    ``,
-    `IMPORTANT — Vos résultats vous seront remis exclusivement au cours d'une consultation ou d'une téléconsultation avec notre médecin partenaire. Ils ne sont communiqués ni par email, ni par téléphone.`,
+    `IMPORTANT — Ils vous seront remis exclusivement au cours d'une consultation ou d'une téléconsultation avec notre médecin partenaire. Ils ne sont communiqués ni par email, ni par téléphone.`,
     ``,
     `Prenez dès maintenant votre rendez-vous, en cabinet ou en téléconsultation :`,
     DOCTOLIB_PARTENAIRE,
     ``,
     `Le médecin vous expliquera vos résultats et, si une prise en charge est nécessaire, la marche à suivre.`,
     ``,
-    `En réservant sans attendre, vous obtenez un créneau au moment où votre compte-rendu sera prêt.`,
-    ``,
     `L'équipe SomnoHub`,
   ].join('\n');
 
-  const html = gabarit('Votre examen a bien été réalisé', [
+  const html = gabarit('Vos résultats sont disponibles', [
     p(`Bonjour <strong>${ech(patient.prenom || '')}</strong>,`),
-    p(`Votre examen a bien été réalisé et nous avons <strong>récupéré le boîtier</strong>. Merci.`),
-    p(`L'enregistrement est actuellement analysé par un médecin. Le compte-rendu est établi <strong>sous 48 à 72 h</strong>.`),
+    p(`Les résultats de votre <strong>polygraphie ventilatoire</strong> (test du sommeil) sont disponibles.`),
     `<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;background:#fff8ee;border:1px solid #ffd9a0;border-radius:10px;margin:0 0 18px">
        <tr><td style="padding:15px 17px;font-family:Helvetica,Arial,sans-serif;font-size:14px;line-height:1.6;color:#4a5e53">
        <strong style="color:#b25e00">Comment obtenir vos résultats</strong><br>
@@ -241,7 +238,6 @@ async function emailExamenRealise(patient) {
     p(`<strong style="color:#1a3d2b">Prenez dès maintenant votre rendez-vous</strong>, en cabinet ou en téléconsultation :`),
     bouton(DOCTOLIB_PARTENAIRE, 'Prendre rendez-vous sur Doctolib', '#0596DE'),
     p(`Le médecin vous expliquera vos résultats et, si une prise en charge est nécessaire, la marche à suivre.`),
-    p(`<span style="color:#7a9186;font-size:13px">En réservant sans attendre, vous obtenez un créneau au moment où votre compte-rendu sera prêt.</span>`),
   ].join(''));
 
   return envoyerEmail(patient.email, sujet, texte, html);
@@ -321,4 +317,4 @@ async function emailDemandeValidee(demande) {
 }
 
 module.exports = { envoyerEmail, emailConfigure, emailMode, emailNouvelleDemande,
-  emailDemandeValidee, emailDemandeRecue, emailExamenRealise, emailDemandeRefusee, adminEmail };
+  emailDemandeValidee, emailDemandeRecue, emailResultatsDisponibles, emailDemandeRefusee, adminEmail };
